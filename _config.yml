@@ -19,20 +19,44 @@
 # in the templates via {{ site.myvariable }}.
 
 title: "Poor Blog ; Leave out"
-email: your-email@example.com
+email: kdw6485@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Write an awesome description for your new site here. You can edit this
-  line in _config.yml. It will appear in your document head meta (for
-  Google search results) and in your feed.xml site description.
+  부족한 블로그입니다. 볼 거 없으니 당장 나가주세요. :)
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
-github_username:  jekyll
+  #twitter_username: jekyllrb
+github_username:  m1ser4ble
 
 # Build settings
-theme: minima
-plugins:
-  - jekyll-feed
+#remote_theme: sujaykundu777/devlopr-jekyll
+
+theme: jekyll-theme-potato-hacker
+theme_base: "dark"       # Theme palette (light | dark)
+theme_switch: on         # Show color switch (on | off)
+  # Extra settings
+blog: on                 # Show blog tag and post list (on | off)
+avatar: off               # Show avatar (on | off)
+  #avatar_image: "assets/img/avatar.jpg"
+  #avatar_description: "My name is Popotato and I'm a HACKER."
+highlighter_theme: monokai  # Theme of the syntax_highlighter [base16 |
+                            # colorful | github | gruvbox | molokai |
+                            # monokai | pastie | thankful_eyes | tulip ]
+toolbar_priority:        # Order of the items in the toolbar (except for blog and home)
+  - dropdown2
+  - About
+  - dropdown1
+
+# Collections
+collections:
+  dropdown:
+    output: true
+  items:
+    output: true
+  #theme: jekyll-theme-devlopr
+  #theme: minima
+#theme: jekyll-theme-time-machine
+  #plugins:
+  #  - jekyll-feed
 
 # Exclude from processing.
 # The following items will not be processed, by default.
