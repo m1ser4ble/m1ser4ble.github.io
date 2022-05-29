@@ -30,7 +30,7 @@ github_username:  m1ser4ble
 # Build settings
 #remote_theme: sujaykundu777/devlopr-jekyll
 markdown: kramdown
-theme: minimal-mistakes-jekyll
+theme: minimal-mistakes
 plugins:
   - jekyll-feed
 minimal_mistakes_skin    : "neon"
