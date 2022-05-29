@@ -29,9 +29,10 @@ github_username:  m1ser4ble
 
 # Build settings
 #remote_theme: sujaykundu777/devlopr-jekyll
+remote_theme: "mmistakes/minimal-mistakes@4.24.0"
 markdown: kramdown
-theme: minimal-mistakes
 plugins:
+  - jekyll-include-cache
   - jekyll-feed
 minimal_mistakes_skin    : "neon"
 
