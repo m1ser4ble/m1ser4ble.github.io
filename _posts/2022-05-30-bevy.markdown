@@ -92,6 +92,28 @@ Query 에 해당되는 entity 가 하나도 존재하지 않는다면 해당 sys
 Entity 와 Component 의 관계나 system 을 등록하는 과정을 보면 builder pattern 을 기본으로 하고 있음을 알 수 있다. 
 굉장히 유연하고 fancy 한 ECS paradigm 프레임워크라고 생각한다. 
 
+## Stage
+
+혹시 위에서 말했던 내용을 기억하는가...
+> ( 이렇게 말했지만 사실은 어떤 작업이 항상 먼저 실행되어야한다 라는 것을 보장해주려면 control flow 에 대한 이해가 필요하다... ) 
+> 
+
+내부적으로 Bevy 는 built-in stage 를 가지고 있음. 각 stage 는 아래와 같다. 
+
+main app(CoreStage) : First-> PreUpdate -> PostUpdate-> Last
+sub-app(RenderStage) : Extract-> Prepare-> Queue-> PhaseSort-> Render-> Cleanup
+
+ECS 의 모든 system 들은 모두 stage 에 들어간다. 
+```
+app()
+.add_system(gravity_system) // == .add_to_stage(CoreStage::Update, gravity_system) 
+...
+```
+bevy 는 각 stage 를 차례대로 다 수행하고 나면 다음 frame 을 가지고 각 stage 를 차례로 수행하기를 반복한다. 
+bevy scheduler 는 같은 stage 에 있는 system 들을 병렬적으로 실행한다. 
+그렇기 때문에 우리가 선후관계, depedency 가 명확하게 존재하는 system 들은 서로 다른 stage 에 둬야한다. 
+각 stage 에는 hard synchronization point 들이 존재하기 때문에 이전 stage 의 모든 system 이 다 끝날 때까지 다음 stage 의 system 을 실행하지 않게 된다.
+
 
 ## State
 
