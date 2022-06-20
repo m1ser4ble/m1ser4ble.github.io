@@ -100,7 +100,7 @@ Entity 와 Component 의 관계나 system 을 등록하는 과정을 보면 buil
 
 내부적으로 Bevy 는 built-in stage 를 가지고 있음. 각 stage 는 아래와 같다. 
 
-main app(CoreStage) : First-> PreUpdate -> PostUpdate-> Last
+main app(CoreStage) : First-> PreUpdate -> Update -> PostUpdate-> Last
 sub-app(RenderStage) : Extract-> Prepare-> Queue-> PhaseSort-> Render-> Cleanup
 
 ECS 의 모든 system 들은 모두 stage 에 들어간다. 
@@ -112,6 +112,17 @@ app()
 bevy 는 각 stage 를 차례대로 다 수행하고 나면 다음 frame 을 가지고 각 stage 를 차례로 수행하기를 반복한다. 
 bevy scheduler 는 같은 stage 에 있는 system 들을 병렬적으로 실행한다. 
 그렇기 때문에 우리가 선후관계, depedency 가 명확하게 존재하는 system 들은 서로 다른 stage 에 둬야한다. 
+예를 들면, collision 이 발생했을 때 entity 를 despawn 하는 system 이 존재하고, 또 같은 stage 에 Query 를 이용하여 그 entity 에 
+접근해서 component 를 insert 하는 system 이 존재한다고 해보자. 
+그러면 두 system 이 병렬적으로 실행되기 때문에 Query 에는 element 가 존재하여 접근하게 되는데 이 때 despawn 이 먼저 일어난 상태라면 아래와 같은 코드에서 문제가 생길 것이다. 
+```
+for (entity,...) in query.iter() { 
+cmd.entity(entity).insert(component) // makes a trouble!
+}
+or
+query.get(entity).unwrap() // makes a trouble ! 
+```
+정리하자면, despawn 을 하는 것과 entity 에 참조하는 두 system 의 실행 순서를 보장할 수 없다. 따라서 despawn 관련 system 들과 insert 관련 system 들의 stage 를 분리하는 것이 좋다.   
 각 stage 에는 hard synchronization point 들이 존재하기 때문에 이전 stage 의 모든 system 이 다 끝날 때까지 다음 stage 의 system 을 실행하지 않게 된다.
 
 
