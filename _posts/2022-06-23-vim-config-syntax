@@ -1,0 +1,40 @@
+
+# Mapping key
+
+```
+map_mode <typeing-key> <what-to-execute>
+"example
+map <Leader>tt <ESC>:TagbarToggle<CR>
+nmap <buffer> K <plug>(lsp-hover)
+```
+map mode 
+- nnoremap/ inoremap / vnoremap : 각각 normal/insert/visual mode 에서의 key mapping
+
+### special key : <leader> key
+
+대부분 사용하지 않는 키로 차별화를 두고 싶을 때 leader 키를 사용한다. 
+default 로는 backslash(\) 키로 지정되어있고 기호에 따라 다음과 같이 변경할 수 있다. 
+```
+let mapleader = "/" # leader key 를 /로 변경
+```
+나 같은 경우에 MRU 를 사용하기 위해서 <leader>ru 를 사용하고 있다. 
+
+### special arguments
+
+키 매핑을 지정할 때 아래와 같은 special arguments 들을 이용할 수 있다. 
+
+<buffer> : 
+<nowait> : 
+<silent> :  
+<special>:  
+<script> : 
+<expr> :                                                                                                                                    
+<unique> :  
+
+더 자세한 내용이 필요하다면 vim 에서 아래의 커맨드를 실행 
+```
+:help map-modes
+```
+# Reference
+
+https://www.freecodecamp.org/news/vimrc-configuration-guide-customize-your-vim-editor/
