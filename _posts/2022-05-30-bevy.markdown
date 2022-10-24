@@ -1,0 +1,167 @@
+---
+layout: single
+title:  "Introduction to ECS in Bevy"
+date:   2022-05-29 15:30:09 +0900
+categories: jekyll update
+toc: true
+toc_sticky: true
+
+---
+
+# Bevy 
+bevy 는 ECS (Entity , Component, System) 을 이용하는 rust 기반의 data driven programming framework.
+data driven 이라는 말이 잘 이해가 되지 않을 수 있지만 이 framework 를 사용해보면 무슨 의미인지 바로 와닿는다. 
+전체적인 control flow 를 생각하지 않아도 된다. 단순히 내가 필요한 데이터만을 가져와서(query) 적절한 처리만 하면 된다. 
+( 이렇게 말했지만 사실은 어떤 작업이 항상 먼저 실행되어야한다 라는 것을 보장해주려면 control flow 에 대한 이해가 필요하다... ) 
+rust 의 game development 프레임워크로 빠른 속도로 성장 중이다. 
+
+game programming 은 처음인 나로서는 programming convention 이나 개념에 대해 생소하여 documentation 이 필요했음. 
+bevy project 의 example code 들이 많은 도움이 되었음.
+
+## Installation 
+
+사실 bevy 는 rust 의 패키지로 등록이되어있어서 따로 install 을 하는데 문제는 없다. 
+Cargo.toml 에 dependency 만 적어두면 game program 을 빌드할 때 알아서 설치가 된다. 
+windows, mac 에서는 bevy 가 dependency 를 지니고 있는 패키지까지 다 알아서 설치해주었는데, 2021.10.xx 기준으로 linux 에서는 알아서 설치되지 않았기 때문에 메모해둔다. 
+
+### Requirements for building bevy in Linux 
+
+다 graphic driver, audio driver 에 관련된 패키지들임. 
+```
+# apt install mesa-vulkan-drivers
+# apt install libvulkan-dev
+# apt install librust-libudev-sys-dev
+
+# apt install librust-alsa-sys-dev
+# apt install build-essential
+```
+
+## ECS 
+
+bevy 는 ECS paradigm 를 기초로 하고 있다. ECS 는 2007 년도에 등장한 게임 개발에 주로 사용되는 소프트웨어 설계의 일종이다. 
+-어디서 듣기로는 unreal engine 도 ECS 로 간다는 소리가...-
+ECS 는 각각 Entity, Component, System 를 뜻한다. 
+
+Entity : 말 그대로 개체임. 우리가 게임에서 다룰 대부분의 대상들은 이 Entity 를 하나씩 가지고 있다. 어떻게 보면 어떤 객체의 중심점, ID 인 셈이다. 
+우리는 어떤 객체(예를 들면 Player) 를 생성하게 된다면 우선 Entity 라는 것을 만들고 
+아래의 코드처럼 building block 마냥 하나하나 덧붙여나간다. 
+
+```
+cmd.spawn().insert(Name).insert(Weapon).insert(Glasses).insert(Shoes)... 
+```
+
+게임으로 치면 Player 를 Entity 로 볼 수 있음. bevy programming 에서는 Bundle 로서 표현된다고 보면 됨.
+
+Component : 객체를 이루는 구성품. Player 를 만든다고 하면 무기, 이름, 신발 등이 구성품이 될 수 있음. 이 구성품들은 Entity 에 덕지덕지 붙게된다. 
+그런데, Player 라고 하면 보통 지니고 있는 Component set 이라고 하는게 존재한다. 예를 들면, Player 라고하면 이름, 무기, 신발 등등 을 지니고 있어야한다. 
+매번 위의 코드처럼 하나하나 insert 할 수 없으니, Component 들을 모아서 Bundle 이라고 정의해서 한번에 spawn 할 수 있다. 
+
+```
+[derive(Bundle)]
+struct PlayerBundle {
+  name: Name,
+  weapon: Weapon,
+  shoes: Shoes,
+  ...
+}
+cmd.spawn_bundle(PlayerBundle{...})
+```
+
+System : 개체들이 적용 받을 규칙들에 대한 함수. 예를 들면, 중력계같은 것들이 해당될 수 있음.
+이 함수들은 매 frame 마다 실행된다. 
+Query 를 매개변수로 하여 이 규칙에 적용받을 Entity 들의 특징을 기술할 수 있다. 예를 들면, 배경이미지, 별과 같은 Entity 들이 있는 프로그램에서
+Player Entity 만 중력을 받고 싶다고 가정해보자. 그러면 아래와 같은 식으로 Query 템플릿에 Player Component 를 적어두면 된다. 
+Query 는 Iterator trait 을 지니고 있어서 iter() 메소드를 사용해서 component 들을 가져올 수 있는데 여기에는 Player Component 만 들어있기 때문에 Star Component 에는 
+적용하지 않을 수 있다. 
+
+```
+fn gravity_system(query: Query<&Player>) {
+...
+}
+fn mc_system(query: Query<(Entity, &Player, &Name )>) { //multiple components 
+...
+}
+fn mqmc_system(player_q: Query<(Entity, &Player, &Name), With<Player>> , //multiple query with multiple components
+               star_q: Query<(Entity, &Star, &Name), With<Star>>,){
+...               
+}
+```
+multiple query 를 할 때 유의할 점은 너무 일반적인 Component 가 있다면 두 query 에 겹치는 entity 가 존재할 수 있으니 With/Without 템플릿을 통해 구분해주자. 
+Query 에 해당되는 entity 가 하나도 존재하지 않는다면 해당 system 은 아예 호출이 되지 않는다. 
+
+Entity 와 Component 의 관계나 system 을 등록하는 과정을 보면 builder pattern 을 기본으로 하고 있음을 알 수 있다. 
+굉장히 유연하고 fancy 한 ECS paradigm 프레임워크라고 생각한다. 
+
+## Stage
+
+혹시 위에서 말했던 내용을 기억하는가...
+> ( 이렇게 말했지만 사실은 어떤 작업이 항상 먼저 실행되어야한다 라는 것을 보장해주려면 control flow 에 대한 이해가 필요하다... ) 
+> 
+
+내부적으로 Bevy 는 built-in stage 를 가지고 있음. 각 stage 는 아래와 같다. 
+
+main app(CoreStage) : First-> PreUpdate -> Update -> PostUpdate-> Last
+sub-app(RenderStage) : Extract-> Prepare-> Queue-> PhaseSort-> Render-> Cleanup
+
+ECS 의 모든 system 들은 모두 stage 에 들어간다. 
+```
+app()
+.add_system(gravity_system) // == .add_to_stage(CoreStage::Update, gravity_system) 
+...
+```
+bevy 는 각 stage 를 차례대로 다 수행하고 나면 다음 frame 을 가지고 각 stage 를 차례로 수행하기를 반복한다. 
+bevy scheduler 는 같은 stage 에 있는 system 들을 병렬적으로 실행한다. 
+그렇기 때문에 우리가 선후관계, depedency 가 명확하게 존재하는 system 들은 서로 다른 stage 에 둬야한다. 
+예를 들면, collision 이 발생했을 때 entity 를 despawn 하는 system 이 존재하고, 또 같은 stage 에 Query 를 이용하여 그 entity 에 
+접근해서 component 를 insert 하는 system 이 존재한다고 해보자. 
+그러면 두 system 이 병렬적으로 실행되기 때문에 Query 에는 element 가 존재하여 접근하게 되는데 이 때 despawn 이 먼저 일어난 상태라면 아래와 같은 코드에서 문제가 생길 것이다. 
+```
+for (entity,...) in query.iter() { 
+cmd.entity(entity).insert(component) // makes a trouble!
+}
+or
+query.get(entity).unwrap() // makes a trouble ! 
+```
+정리하자면, despawn 을 하는 것과 entity 에 참조하는 두 system 의 실행 순서를 보장할 수 없다. 따라서 despawn 관련 system 들과 insert 관련 system 들의 stage 를 분리하는 것이 좋다.   
+각 stage 에는 hard synchronization point 들이 존재하기 때문에 이전 stage 의 모든 system 이 다 끝날 때까지 다음 stage 의 system 을 실행하지 않게 된다.
+
+
+## State
+
+## Breakthough 
+
+여기서부터는 설계면에서 딱히 solution 이 정해져있지 않는 문제들에 대해 나의 해결 방법들에 대해 기술할 것이다. 
+
+### single system working on several states 
+
+state 가 달라도 여전히 동작해야하는 동일한 system 들이 있을 것이다.
+예를 들면, 내가 채팅을 치고 있는 동안에도 여전히 캐릭터는 움직여야한다.
+( 채팅모드와 컨트롤 모드로 나눈 상태 )
+두 상태에서 동작하는 system(...Changed<Component>>) 은 어떻게 동작할까..?
+채팅모드에서 컨트롤 모드로 변경한다면
+컨트롤 모드는 채팅모드로 진입하기 전( 이전의 컨트롤모드 ) 의 Component 가
+다시 컨트롤모드가 되었을 때의 Component 와 같은지를 확인해서 Change를 판단하는 것으로 보임.
+그러면 내가 의도했던 것이랑 다소 다름.
+뿐만 아니라, 같은 system 을 각각의 state 에 등록해야하기 때문에 코드가 지저분해보이고,
+state 에 비례해서 코드가 증가하게 될 것임.
+이런 문제점 때문에 분명 모든 state 에 대해 적용되는 system 을 등록하는 방법이 있을 것이고 이를 찾아봐야할 것 같음.
+이 문제에 대해 내가 생각한 솔루션은 다음과 같다.
+stateX1 stateX2 에서 하나의 system 이 적용되게 하려면, 전체 app 에 add_system 을 사용해서 적용한다.
+```
+app().add_system(system_on_X)
+...
+
+fn system_on_X(mut cmd : Commadns, query : Query<&X>,..){ ... }
+```
+system_on_X는 X component 가 존재해야만 호출된다.
+StateA-> EnteringStateX-> StateX1<-> StateX2-> ExitingStateX
+의 관계를 가지는 state 들을 모두 생성해두고 enteringStateX 에서 다음과 같은 system 이 최소 한번 호출되도록 한다.
+```
+fn enterX(mut cmd : Commands,  ..){ cmd.spawn().insert(X); }
+```
+마찬가지로 ExitingStateX 에서 아래의 system 이 최소 한번 호출되도록 하면 된다.
+```
+fn exitX(mut cmd: Commands, ..){ cmd.despawn(X;) }
+```
+  
+### Giving dynamics and Too many arguments
