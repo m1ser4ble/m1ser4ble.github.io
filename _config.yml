@@ -39,16 +39,13 @@ minimal_mistakes_skin    : "neon"
 
 jekyll-archives:
   enabled: all
+  layout: archive
   layouts:
-    year: archive/year
-    month: archive/month
-    day: archive/day
-    tag: archive/tag
-    category: archive/category
+    year: year
+    tag: tag
+    category: category
   permalinks:
     year: '/:year/'
-    month: '/:year/:month/'
-    day: '/:year/:month/:day/'
     tag: '/tags/:name/'
     category: '/category/:name/'
 
