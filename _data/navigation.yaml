@@ -1,0 +1,10 @@
+# main links
+main:
+  #- title: "Home"
+  #  url: "/"
+  - title: "Introduce"
+    url: /about/
+  - title: "Rust"
+    url: "/category/rust"
+  - title: "Tags"
+    url: /tags/
