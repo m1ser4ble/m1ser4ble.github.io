@@ -55,6 +55,13 @@ collections:
     output: true
     permalink: /archives/:path/
 
+category_archive:
+  type: liquid
+  path: /categories/
+tag_archive:
+  type: liquid
+  path: /tags/
+
 default:
   toc: true
   toc_sticky: true
