@@ -56,11 +56,11 @@ collections:
     permalink: /archives/:path/
 
 category_archive:
-  type: liquid
-  path: /categories/
+  type: jekyll-archives
+  path: /category/
 tag_archive:
-  type: liquid
-  path: /tags/
+  type: jekyll-archives
+  path: /tag/
 
 default:
   toc: true
