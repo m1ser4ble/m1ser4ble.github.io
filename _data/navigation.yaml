@@ -4,7 +4,14 @@ main:
   #  url: "/"
   - title: "Introduce"
     url: /about/
-  - title: "Rust"
-    url: "/category/rust"
+  - title: "Language"
+    url: "/category/language"
+    sublinks:
+      - title: Rust
+        url: "/category/rust"
+      - title: Python
+        url: "/category/python"
+      - title: C++
+        url: "/category/c++"
   - title: "Tags"
     url: /tags/
