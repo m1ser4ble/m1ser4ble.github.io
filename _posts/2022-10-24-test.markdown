@@ -5,6 +5,7 @@ date:   2022-10-24 11:56:13 +0900
 categories: test
 toc: true
 toc_sticky: true
+tags: mytest test
 comments: true
 ---
 
@@ -12,3 +13,8 @@ comments: true
 
 
 the test page desita
+
+
+{% include category-list.html %}
+
+{% include tag-list.html %}
