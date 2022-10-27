@@ -2,7 +2,7 @@
 main:
   #- title: "Home"
   #  url: "/"
-  - title: "Introduce"
+  - title: "Me"
     url: /about/
   - title: "Language"
     url: "/category/language"
