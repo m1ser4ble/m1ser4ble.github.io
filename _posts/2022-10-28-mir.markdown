@@ -1,0 +1,25 @@
+---
+layout: single
+title:  "MIR in Rust"
+date:   2022-10-28 15:30:09 +0900
+categories: rust
+toc: true
+toc_sticky: true
+tags: rust
+
+---
+
+
+# MIR
+
+CS 에서 보통 IR 은 Intermediate Representation 을 의미한다. rust 에서는 MIR 이라는게 있는데 mid-level IR 을 의미함. HIR 은 high-level IR, 대략 AST.
+MIR 은 HIR 과 LLVM( 수준으로 따지면 low level IR 이 되겠다. ) 사이에 있다. MIR 도입 이전에는 Rust 를 machine code 와 비슷한 수준인 LLVM 으로 한방에 변환되었다면,
+이를 두 단계로 나눈 셈이다.
+That is, we are introducing a new intermediate representation (IR) of your program that we call MIR: MIR stands for mid-level IR, because the MIR comes between the existing HIR ("high-level IR", roughly an abstract syntax tree) and LLVM (the "low-level" IR). Previously, the "translation" phase in the compiler would convert from full-blown Rust into machine-code-like LLVM in one rather large step. But now, it will do its work in two phases, with a vastly simplified version of Rust -- MIR -- standing in the middle.
+
+If you're not a compiler enthusiast, this all might seem arcane and unlikely to affect you directly. But in reality, MIR is the key to ticking off a number of our highest priorities for Rust:
+
+
+### Reference
+
+[Rust Blog](https://blog.rust-lang.org/2016/04/19/MIR.html)
