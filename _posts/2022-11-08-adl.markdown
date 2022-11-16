@@ -1,17 +1,75 @@
 ---
 layout: single
-title:  "Introduction to ECS in Bevy"
-date:   2022-05-29 15:30:09 +0900
-categories: bevy
+title:  "Access To Private Member in C++"
+date:   2022-11-16 15:30:09 +0900
+categories: C++, Langugage
 toc: true
 toc_sticky: true
 
 ---
 
+C++ 처럼 memory address 를 직접적으로 다룰 수 있는 언어는 강제적 형변환을 통해 private member 에 접근하면 된다.
+하지만, 이런 방식은 어떤 면에서 위험하다. 예를 들면, 어떤 라이브러리에 정의된 Class 의 private member 에 접근하고자 한다면
+그 라이브러리의 버전이 변경되는 등의 이유로 Class 의 구조가 변경될 수 있다. 그럴 때마다 offset 을 계산해서 내 코드도 변경해줘야한다.
+뿐만 아니라 실제로 undefined behavior 로 불리는 행위임. target class 가 vtable 을 갖고 있는지 등의 이유로 offset 은 언제든 변할 수 있음.
+
+[litb](https://bloglitb.blogspot.com/2011/12/access-to-private-members-safer.html) 의 블로그에서 이런 문제점을 해결해주는 trick 을 소개하고 있다.
+
+이 trick 을 이해하기 위해서는 friend keyword, member pointer, ADL 에 대해 알 필요가 있다. 하나하나 알아보도록 하자.
+
+# friend keyword
+
+friend keyword 는 이 기능 자체로 private member 에 접근할 수 있도록 허용해주는 것임. 그러나 이 키워드는 내부에서 문을 열어주는 느낌임.
+예를 들면, 아래 코드는 friend 를 통해서 A 의 private member access 권한을 x 함수에게 줬다.
+```
+Class A{
+//private members
+	int x;
+	friend void x(A a); // open the door to function 'x'
+}
+void x(A a){
+	printf("%d\n",a.x);
+}
+
+```
+
+library 에서는 이런 것을 아직 정의도 되지 않은 함수, class 에 대해 열어줄 리 만무하다.
+
+
+
+# member pointer
+
+:: 를 사용하면 우리는 클래스의 member 를 지칭할 수 있다. 예를 들면 아래 코드처럼 어떤 클래스(instance 가 아님) 의 멤버에 대한 refernece 를
+변수(p) 에 담아 어떤 객체(instance) 의 멤버에 접근하는데 사용할 수 있다.
+
+```
+struct A {
+    A(int a):a(a) { }
+    int b;
+private:
+    int a;
+};
+void test() {
+    auto p = &A::b;
+    std::cout << a.*p << std::endl;
+}
+```
+
+그러면 이 방식을 바로 사용해서 private member 에 접근하면 안될까? 컴파일러에서 막는다.
+
+> error: ‘int A::a’ is private within this context
+
+하지만, test 함수에 대해 friend 선언을 하면 접근이 가능하다.
+
+
+# ADL
+
 
 # Reference
 
-https://stackoverflow.com/questions/12993219/access-private-member-using-template-trick
-https://bloglitb.blogspot.com/2011/12/access-to-private-members-safer.html
-https://en.cppreference.com/w/cpp/language/adl
-
+[](https://stackoverflow.com/questions/12993219/access-private-member-using-template-trick)
+[](https://bloglitb.blogspot.com/2011/12/access-to-private-members-safer.html)
+[](https://en.cppreference.com/w/cpp/language/adl)
+https://stackoverflow.com/questions/437250/friend-scope-in-c
+https://en.cppreference.com/w/cpp/language/friend
+https://www.ibm.com/docs/en/i/7.1?topic=only-friend-scope-c
