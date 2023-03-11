@@ -1,0 +1,45 @@
+---
+layout: single
+title:  "App Development with Tauri"
+date:   2023-03-12 11:56:13 +0900
+categories: rust tauri
+toc: true
+toc_sticky: true
+
+---
+
+# Introduction
+
+독일어 단어장을 만들고싶어서 이 짓을 시작하게 되었다. 참고로 나는 웹 앱에 대해 아는 것이 없는 사람이다. 
+그렇기 때문에 틀린 내용이 많을 수 있으니 참고 바란다. 
+rust 를 이용한 앱을 만드는 방식으로 크게 Tauri, egui framework 를 사용하는 방식이 있었다. 둘 다 웹 앱을 만드는 framework 지만
+egui 는 android/ios app 으로 만드는 명확한 방법을 제공하고 있지 않았기 때문에 Tauri 로 선정했다. 
+egui 는 WASM 으로 컴파일이 가능해서 WASM 을 로딩하게끔 앱을 새로 파면 되겠지만, 또 하나의 공수가 드는 것으로 보였다. 
+반면 tauri 는 tauri-mobile 와 wry(Webview Rendering libraY) 를 통해 쉽게 android/ios app 을 만들 수 있는 것으로 보였다. 
+
+
+
+# Tauri
+
+Tauri 는 Electron 과 함께 대표적인 web application 개발 framework 다. backend 로는 rust 를 사용하고  
+frontend 로는 거의 다 지원한다고 보면 된다. Electron 보다 빠르고 가벼운 binary 를 생산해낸다는 장점이 있고
+Tauri 에 대한 더 자세한 내용이나 Electron 과의 구체적인 비교가 필요하다면 [이곳](https://www.incodom.kr/Tauri) 을 참고
+
+# Frontend framework
+
+Tauri 는 웹 앱이기 때문에 web design 이 결국 필요하다. 그래서 Web Development framework 를 사용하는게 좋다. 
+
+## Yarn
+
+web 개발에서 사용하는 패키지들을 관리해주는 package manager 를 먼저 선정해야하는데, 예전에는 npm 이 사용됐다면 
+요즘에는 yarn 이 많이 사용되는 것으로 보인다. Yet Another Resource Negotiator 의 약자로 빅테크 기업들과 다른 개발자들이 
+함께 개발한 패키지 매니저로,  패키지 설치 프로세스를 병렬화해서 빠르다는 장점이 있다. 
+
+
+
+
+
+# Reference 
+
+[ㅇㅣㄴㅋㅗㄷㅓ](https://www.incodom.kr/Tauri)  
+[yceffort](https://yceffort.kr/2022/05/npm-vs-yarn-vs-pnpm#%EC%84%A0%EA%B5%AC%EC%9E%90-npm)
