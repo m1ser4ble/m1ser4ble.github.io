@@ -10,36 +10,157 @@ toc_sticky: true
 
 # Introduction
 
-독일어 단어장을 만들고싶어서 이 짓을 시작하게 되었다. 참고로 나는 웹 앱에 대해 아는 것이 없는 사람이다. 
-그렇기 때문에 틀린 내용이 많을 수 있으니 참고 바란다. 
+독일어 단어장을 만들고싶어서 이 짓을 시작하게 되었다. 참고로 나는 웹 앱에 대해 아는 것이 없는 사람이다.
+그렇기 때문에 틀린 내용이 많을 수 있으니 참고 바란다.
 rust 를 이용한 앱을 만드는 방식으로 크게 Tauri, egui framework 를 사용하는 방식이 있었다. 둘 다 웹 앱을 만드는 framework 지만
-egui 는 android/ios app 으로 만드는 명확한 방법을 제공하고 있지 않았기 때문에 Tauri 로 선정했다. 
-egui 는 WASM 으로 컴파일이 가능해서 WASM 을 로딩하게끔 앱을 새로 파면 되겠지만, 또 하나의 공수가 드는 것으로 보였다. 
-반면 tauri 는 tauri-mobile 와 wry(Webview Rendering libraY) 를 통해 쉽게 android/ios app 을 만들 수 있는 것으로 보였다. 
+egui 는 android/ios app 으로 만드는 명확한 방법을 제공하고 있지 않았기 때문에 Tauri 로 선정했다.
+egui 는 WASM 으로 컴파일이 가능해서 WASM 을 로딩하게끔 앱을 새로 파면 되겠지만, 또 하나의 공수가 드는 것으로 보였다.
+반면 tauri 는 tauri-mobile 와 wry(Webview Rendering libraY) 를 통해 쉽게 android/ios app 을 만들 수 있는 것으로 보였다.
 
 
 
 # Tauri
 
-Tauri 는 Electron 과 함께 대표적인 web application 개발 framework 다. backend 로는 rust 를 사용하고  
+Tauri 는 Electron 과 함께 대표적인 web application 개발 framework 다. backend 로는 rust 를 사용하고
 frontend 로는 거의 다 지원한다고 보면 된다. Electron 보다 빠르고 가벼운 binary 를 생산해낸다는 장점이 있고
 Tauri 에 대한 더 자세한 내용이나 Electron 과의 구체적인 비교가 필요하다면 [이곳](https://www.incodom.kr/Tauri) 을 참고
 
 # Frontend framework
 
-Tauri 는 웹 앱이기 때문에 web design 이 결국 필요하다. 그래서 Web Development framework 를 사용하는게 좋다. 
+Tauri 는 웹 앱이기 때문에 web design 이 결국 필요하다. 그래서 Web Development framework 를 사용하는게 좋다.
+
+## Nodejs
+
+기본적인 정의는 아래처럼 간단 명료하다.
+`an open-source, cross-platform JavaScript runtime environment.`
+추가적인 특징으로는 Async event-driven 이기 때문에 scalable network application 을 만드는데 유리하다.
+설치는 다양한 방법을 통해 가능하다.
+[via-package-manager](https://nodejs.org/en/download/package-manager/)
+
+`$ brew install node`
+
 
 ## Yarn
 
-web 개발에서 사용하는 패키지들을 관리해주는 package manager 를 먼저 선정해야하는데, 예전에는 npm 이 사용됐다면 
-요즘에는 yarn 이 많이 사용되는 것으로 보인다. Yet Another Resource Negotiator 의 약자로 빅테크 기업들과 다른 개발자들이 
-함께 개발한 패키지 매니저로,  패키지 설치 프로세스를 병렬화해서 빠르다는 장점이 있다. 
+web 개발에서 사용하는 third party 패키지들을 설치 및 관리해주는 package manager 를 먼저 선정해야하는데, 예전에는 npm 이 사용됐다면
+요즘에는 yarn 이 많이 사용되는 것으로 보인다. Yet Another Resource Negotiator 의 약자로 빅테크 기업들과 다른 개발자들이
+함께 개발한 패키지 매니저로,  패키지 설치 프로세스를 병렬화해서 빠르다는 장점이 있다.
+또, Yarn 을 사용하는 이유는 npm 이 지니는 약점을 해결했기 때문인데,
+npm 은 어떤 프로젝트의 dependency 가 있다면 그 프로젝트의 node_modules 라는 subdirectory 에 패키지가 download/copy 되기 때문에 저장 용량의 낭비가 생긴다.
+또 보통 CI/CD server 들이 build server 가 network 를 통해서 모듈을 다운로드 받아서 접근하는 것을 원치 않기 때문에 npm 을 사용하길 꺼린다.
+
+
+
+### CorePack
+
+Yarn 을 npm 으로 설치하고 yarn berry 로 버전업을 해서 넘어가도 되지만, nodejs 공식 문서에서는 CorePack 을 이용한 설치를
+가이드하고 있다. CorePack 은 Node js 16.9 버전부터 릴리즈된 새로운 툴로, zero-runtime-dependency Node script 라고 설명된다.
+Node project 와 package manager 를 이어주는 다리 역할을 한다.
+보통 Node js 를 설치하면 당연히 package manager 를 설치해야하고 그렇기 때문에 이를 위한 CorePack 이 등장했다.
+앞서 말한 것 처럼 Nodejs 에 포함된 cli 로 접근가능한 스크립트다. 아직 experimental feature 라서 default 로 disable 되어있다.
+
+나는 brew 로 설치해서 그런지 corepack 이 자동으로 설치되어있지 않았다.
+
+`$ brew install corepack`
+으로 따로 설치해보니 동작하는 것을 확인했다.
+
+`$ corepack enable yarn`
+
+이렇게 enable 하니까 yarn version 이 1.3 인 것을 사용하고 있었다. 2.0 이상을 사용하고 싶었기 때문에
+아래 커맨드를 사용했다.
+
+`$ corepack prepare yarn@stable --activate`
+
+```
+$ yarn --version
+3.4.1
+```
+
+### Vite
+
+간단히 front-end development experience 를 향상시켜주는 build tool 이라 할 수 있다.
+이게 뭔지 경쟁 framework 는 뭔지, 역사가 어떻게 되는지 너무 복잡한 context 들이 있어서
+본 내용과는 크게 관련이 없어보여 조사하지 않고 Vite 를 선정해서 진행하도록 하겠다.
+편리한 장점으로 손꼽히는 것은 Hot Module Replacement(HMR) 이라는 기능이다.
+페이지 reloading 없이 어플리케이션 수행 도중에 HMR 이 모듈을 add,update,remove 해준다.
+
+
+```
+$ yarn create vite
+➤ YN0000: ┌ Resolution step
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Fetch step
+➤ YN0013: │ create-vite@npm:4.1.0 can't be found in the cache and will be fetched from the remote registry
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Link step
+➤ YN0000: │ ESM support for PnP uses the experimental loader API and is therefore experimental
+➤ YN0000: └ Completed
+➤ YN0000: Done with warnings in 0s 287ms
+
+✔ Project name: … DeutschWortschatz
+✔ Package name: … deutschwortschatz
+✔ Select a framework: › React
+✔ Select a variant: › TypeScript + SWC
+```
+
+여기서 React 를 선택한 이유는 Vue 보다 커뮤니티가 크고 더 많이 사용된다고 하기 때문임.
+Vue 가 정해진 방식이 있어 배우기 쉽고 더 빠르다는 장점이 있다고는 하지만 아무 것도 모르는 입장에서
+React 를 선택할 수 밖에 없음. ( 에러를 만났을 때 solution 이 잘 나와있을 것이기 때문)
+
+이제 Vite 으로 프로젝트가 생성되었을 것이다. 들어가서 server 를 가동시키고 web browser 로 url 접속을 해보자
+
+```
+$ cd project_name
+$ yarn
+$ yarn dev
+
+  VITE v4.1.4  ready in 242 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h to show help
+```
 
 
 
 
+### SWC
 
-# Reference 
+TODO:
+Typescript transpiling
 
-[ㅇㅣㄴㅋㅗㄷㅓ](https://www.incodom.kr/Tauri)  
-[yceffort](https://yceffort.kr/2022/05/npm-vs-yarn-vs-pnpm#%EC%84%A0%EA%B5%AC%EC%9E%90-npm)
+### Transpile
+
+보통 어떤 프로그래밍 언어에서 다른 언어로 변환하는 것을 컴파일이라고 한다.
+Transpile 은 어떤 프로그래밍 언어를 같은 레벨의 다른 언어로 변환하는 것이다.
+즉, C++ → 기계어 는 컴파일이지 Transpile 이 아님.
+Typescript → Javascript 는 컴파일이자 Transpile 임.
+
+### Tauri cli
+
+vite.config.ts 을 아래 가이드대로 수정.
+[](https://tauri.app/v1/guides/getting-started/setup/vite)
+
+cargo tauri init 을 통해 scaffold 프로젝트( Tauri 를 사용하기 위해 미리 설정된 minimal project) 를 생성하기 위해서
+아래 명령어를 수행한다
+$ cargo install tauri-cli
+
+```
+$ cargo tauri init
+✔ What is your app name? · deutschwortschartz
+✔ What should the window title be? · DeutschWortschartz
+? Where are your web assets (HTML/CSS/JS) located, relative to the "<current dir>/src-tauri/tauri.conf.json" file that will be created? › ../bu✔ Where are your web assets (HTML/CSS/JS) located, relative to the "<current dir>/src-tauri/tauri.conf.json" file that will be created? · ../build
+✔ What is the url of your dev server? · http://localhost:5173
+✔ What is your frontend dev command? · yarn dev
+✔ What is your frontend build command? · yarn run build
+$ cargo tauri dev
+```
+
+# Reference
+
+[ㅇㅣㄴㅋㅗㄷㅓ](https://www.incodom.kr/Tauri)
+[yceffort](https://yceffort.kr/2022/05/npm-vs-yarn-vs-pnpm)
+[yarn Official](https://yarnpkg.com/getting-started/install)
+[fek.io](https://fek.io/blog/what-is-corepack-in-node-js/)
+[](https://min9nim.vercel.app/2022-05-31-cra-with-swc/)
+[https://ooz.co.kr/416](https://ooz.co.kr/416)
