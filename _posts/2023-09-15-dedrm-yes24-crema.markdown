@@ -15,7 +15,10 @@ comments: true
 Yes24 에서 책을 구매하면 표준 epub 으로 제공한다고 명시되어있음. 하지만 막상 책을 구매하고 epub 을
 다른 e-book reader 기에 넣으면 읽을 수 없음. 왜냐면 DRM 이 걸려있기 때문.
 epub 형식은 대충 설명하자면 .epub 파일 속에 아래 사진처럼opf 파일이 있고 그 속에서 책의 내용을 control 한다  
-![basic structure](../_images/epub_structure.png).  
+| ![basic structure](../_images/epub_structure.png).|  
+|:--:| 
+| *The structure of normal epub* |
+ 
 실제 텍스트들은 .opf 파일 속 내용에 적혀있는 경로를 따라가보면 존재한다.
 yes24 에서 어떻게 drm 이 걸어뒀냐면, html 파일들의 내용들이 encrypt 되어서 이상한 값들로 채워져있다.
 yes24 crema 를 실행시켜보면, 문서폴더에서 임시파일들을 생성하는 것을 확인할 수 있다.
@@ -45,7 +48,10 @@ decrypt 로직을 분석해서 프로그램을 만드는 것이 좀 더 어렵�
 ### Analysis
 
 우선 암호화된 파일이 어떻게 사용되는지 data flow 를 쭉 따라가봤음. kernel32.dll 의 CreateFile 에 breakpoint 를 걸고 condition 도 함께 걸자.  
-![x32dbg breakpoint](../_images/conditional_breakpoint.png)  
+|![x32dbg breakpoint](../_images/conditional_breakpoint.png)|  
+|:--:| 
+|.bdb.html string 을 지닌 경우 break |  
+
 msdn 을 참조해보면 알겠지만, CreateFile 은 file handle 을 리턴할 뿐임. file handle 로 fread 를 하는 로직을 찾아서 데이터를 넣는 메모리를 따라갈 수 있다.
 그렇게 생성된 메모리에 hardware breakpoint 를 걸고 쭉쭉 따라가다보면 어느 순간 plain text 로 변경하는 순간이 있음.  
 ![hookpoint analysis](../_images/hookingpoint_analysis.png)  
