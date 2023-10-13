@@ -1,0 +1,20 @@
+---
+layout: single
+title:  "Template Meta Programming"
+date:   2023-06-21 11:56:13 +0900
+categories: C++
+toc: true
+toc_sticky: true
+
+---
+
+# Generic Programming
+
+function 과 class 따위의 entity 를 이후에 명시될 type 에 대해 작성하는 코드 패러다임
+
+# MetaProgramming
+
+
+# Fold expressions
+
+https://www.modernescpp.com/index.php/smart-tricks-with-fold-expressions/
