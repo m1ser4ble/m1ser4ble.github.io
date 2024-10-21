@@ -1,0 +1,28 @@
+---
+layout: single
+title:  "Crackmes"
+date:   2024-10-21 15:30:09 +0900
+categories: binary
+toc: true
+toc_sticky: true
+
+---
+
+## Problem
+
+[SecretKey](https://crackmes.one/crackme/66f1a42810703232965557d2)
+
+간단한 수준의 난독화 코드가 들어있는 간단한 문제.
+정해진 Key 가 존재하고 그게 무엇인지 맞추는 문제임
+
+## Analysis
+
+cutter + ghidra decompiler 로 본 메인 로직은 다음과 같음.
+실제로 메모리상에서 비교하는 arg1, arg2 는 lhs 가 static 하게 정해져있는 string 이고 rhs 가 내가 입력한 string  이 들어옴.
+lhs 와 rhs 메모리는 16byte 만 담기고 0x10 번째에는 항상 0xd, 0x18 에는 0xf 가 들어있다. 그러면 아래의 코드에서 불필요한 로직들을 제거해서 생각할 수 있다. 
+
+![alt text](secretkey_analysis.png)
+
+## Solution
+
+결국 `!;# % &\")!'+@` 에 char add 를 해서  `V|za{a{c}vzsr` 를 만드는 string 이 필요하기 때문에 역으로 두 string 을 char sub 을해서 key 를 얻을 수 있음.  
