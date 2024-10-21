@@ -21,7 +21,7 @@ cutter + ghidra decompiler 로 본 메인 로직은 다음과 같음.
 실제로 메모리상에서 비교하는 arg1, arg2 는 lhs 가 static 하게 정해져있는 string 이고 rhs 가 내가 입력한 string  이 들어옴.
 lhs 와 rhs 메모리는 16byte 만 담기고 0x10 번째에는 항상 0xd, 0x18 에는 0xf 가 들어있다. 그러면 아래의 코드에서 불필요한 로직들을 제거해서 생각할 수 있다. 
 
-![alt text](./secretkey_analysis.png)
+![alt text](../_images/secretkey_analysis.png)
 
 ## Solution
 
