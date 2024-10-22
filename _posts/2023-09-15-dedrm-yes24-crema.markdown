@@ -16,7 +16,7 @@ Yes24 에서 책을 구매하면 표준 epub 으로 제공한다고 명시되어
 다른 e-book reader 기에 넣으면 읽을 수 없음. 왜냐면 DRM 이 걸려있기 때문.
 epub 형식은 대충 설명하자면 .epub 파일 속에 아래 사진처럼opf 파일이 있고 그 속에서 책의 내용을 control 한다  
 
-| <img src="{{site.baseurl | prepend: site.url}}assets/_images/epub_structure.png" alt="basic structure" /> |
+| <img src="{{site.baseurl | prepend: site.url}}assets/epub_structure.png" alt="basic structure" /> |
 |:--:| 
 | *The structure of normal epub* |
  
