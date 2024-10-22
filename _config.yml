@@ -23,7 +23,7 @@ email: kdw6485@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   부족한 블로그입니다. 볼 거 없으니 당장 나가주세요. :)
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://m1ser4ble.github.io/" # the base hostname & protocol for your site, e.g. http://example.com
   #twitter_username: jekyllrb
 github_username:  m1ser4ble
 
