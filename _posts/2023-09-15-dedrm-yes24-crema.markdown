@@ -6,6 +6,7 @@ categories: reversing
 toc: true
 toc_sticky: true
 tags: reversing
+published: false
 comments: true
 ---
 
@@ -49,13 +50,13 @@ decrypt 로직을 분석해서 프로그램을 만드는 것이 좀 더 어렵�
 ### Analysis
 
 우선 암호화된 파일이 어떻게 사용되는지 data flow 를 쭉 따라가봤음. kernel32.dll 의 CreateFile 에 breakpoint 를 걸고 condition 도 함께 걸자.  
-|![x32dbg breakpoint]({{site.baseurl | prepend: site.url}}assets/conditional_breakpoint.png)|  
+|<img src="{{site.baseurl | prepend: site.url}}assets/conditional_breakpoint.png" />|  
 |:--:| 
 |.bdb.html string 을 지닌 경우 break |  
 
 msdn 을 참조해보면 알겠지만, CreateFile 은 file handle 을 리턴할 뿐임. file handle 로 fread 를 하는 로직을 찾아서 데이터를 넣는 메모리를 따라갈 수 있다.
 그렇게 생성된 메모리에 hardware breakpoint 를 걸고 쭉쭉 따라가다보면 어느 순간 plain text 로 변경하는 순간이 있음.  
-![hookpoint analysis]({{site.baseurl | prepend: site.url}}assets/hookingpoint_analysis.png)  
+<img src="{{site.baseurl | prepend: site.url}}assets/hookingpoint_analysis.png" />
 그러면 이 지점에서 hook 을 걸고 메모리를 탈취해서 새로운 파일로 만들면 되겠다라는 생각이 든다.
 한 가지 주의해야할 점은 이 메모리의 첫 3바이트는 signature 라서 무시하고 end of string( null ) 까지가 내용임.
 
@@ -63,10 +64,10 @@ msdn 을 참조해보면 알겠지만, CreateFile 은 file handle 을 리턴할 
 
 이 함수는 내부적으로 사용되는 함수기 때문에 import table 의 조작으로 hook 을 할 수 없음. 기본적으로 그냥 code hook 이 제일 깔끔하고 좋아서 이 방식을 선호함.
   
-![hookpoint interface]({{site.baseurl | prepend: site.url}}assets/hookingpoint_interface.png)  
+<img src="({{site.baseurl | prepend: site.url}}assets/hookingpoint_interface.png" />
 인터페이스를 보면 argument1, argument2 는 register 로 들어가고, 나머지는 스택으로 들어감.
 calling convention은 usercall 이라고 되어있지만 실제로는 cdecl임. call 이후에 스택 정리로직이 있는 것을 볼 수 있음  
-![hookpoint interface]({{site.baseurl | prepend: site.url}}assets/evidence_of_cdecl.png)  
+<img src="{{site.baseurl | prepend: site.url}}assets/evidence_of_cdecl.png" />
 
 
 훅을 하고 나면 아래와 같은 시나리오로 프로그램이 제어될 것이다.
@@ -97,7 +98,7 @@ dll hook 을 만드는데 있었던 문제는 주로 visual studio 설정들이�
 ### Make a decrypted epub by hand
 
 아래 그림처럼 문서 폴더 내의 Yes24 폴더에 text 말고는 모두 decrypted 된 epub 형식의 폴더가 존재한다.  
-![bdb contents]({{site.baseurl | prepend: site.url}}assets/contents_of_bdb.png)  
+<img src="{{site.baseurl | prepend: site.url}}assets/contents_of_bdb.png" />  
 이 폴더에서 text 들을 모두 복호화된 파일들로 갈아치우고 zip 파일을 생성한다.
 calibre 프로그램으로 zip to epub 컨버팅을 하게 되면 decrypted epub 파일을 갖게된다.
 작업 결과물은 어느 정도 만족스럽지만, 각주에 대해 미흡하고 몇가지 알 수 없는 기호들이 거슬린다.
