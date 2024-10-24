@@ -1,0 +1,47 @@
+---
+layout: single
+title:  "QEMU"
+date:   2024-02-28 11:56:13 +0900
+categories: qemu
+toc: true
+toc_sticky: true
+
+---
+
+linux x86 machine 이 없어서 qemu 로 돌려야겠다는 생각이 들어서 qemu 기본적인 것들 정리하기 위한 문서
+
+## Installation on mac
+
+`$ brew install qemu`
+
+## Run
+
+나는 disk 를 만들 필요 없이 이미 qemu 용 disk 에 os 가 설치된 파일을 얻었기 때문에 바로 실행을 함
+
+`qemu-system-x86_64 -m 1G -smp 2 -accel hvf -accel tcg \
+ -hda linux_hd.qcow2 `
+
+-m : guest machine memory
+-smp : # of cores to be assigned
+-accel : 더 나은 성능을 위한 가속기 선택
+hvf : macos native hypervisor
+여기서 두 개를 지정했는데; fallback 으로 tcg를 사용하겠다는 의미
+tcg :
+-full-screen : full screen 으로 시작
+
+
+
+Trouble 이 있다면 UTM 을 사용하는 것도 방법
+import qemu disk to utm 
+https://www.youtube.com/watch?v=enF3zbyiNZA
+
+
+이런 자세한 옵션들은 아래 링크 참조
+
+https://www.qemu.org/docs/master/system/qemu-manpage.html
+
+
+## Reference
+
+https://alexsantee.xyz/emulating-x86-linux-in-apple-silicon-with-qemu-system/
+
