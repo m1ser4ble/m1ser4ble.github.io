@@ -18,6 +18,31 @@ Jellyfin 으로 music media server 를 구축하려고 하는데, plugin 생태�
 
 # C# programming
 
+## property
+
+public data member 인것 처럼 사용되지만 accessor 라는 메소드를 이용하게 됨. 안전성과 유연성을 향상시킨다고 하네.
+
+```
+public class Person
+{
+    private string _firstName;
+    private string _lastName;
+
+    public Person(string first, string last)
+    {
+        _firstName = first;
+        _lastName = last;
+    }
+
+    public required decimal Price
+    { get; set; }
+
+    public string Name => $"{_firstName} {_lastName}";
+}
+```
+
+직관적이어서 이 코드 하나로 사용법을 끝낼 수 있을듯.
+
 ## nullable type
 
 간단하게 말하면 Type? 의 형태로 사용하는데 이렇게 만든 변수는 null 을 가질 수 있음.
@@ -74,6 +99,10 @@ catch(){
 throw
 }
 ```
+
+## Async
+
+[Why would I want to use ConfigureAwait(false)?](https://devblogs.microsoft.com/dotnet/configureawait-faq/)
 
 # 프로젝트 구성 Jellyfin Template
 
@@ -168,6 +197,12 @@ public class WeatherForecastController : ControllerBase
     }
 }
 ```
+
+#### Authorization
+
+\[Authorize\] attribute 을 사용하면 authenticated user 만 사용할 수있게 할 수 있음. 즉, api 가 노출됐지만 login 하지 않은 unknown 으로부터 api 가 호출되는 것을 막을 수있음.
+
+[MS official](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/simple?view=aspnetcore-8.0)
 
 ## Balzor and Razor
 
@@ -301,3 +336,17 @@ jellyfin config plugins 에 본인의 디렉토리를 생성하고 생성된 프
 
 [koreaner](https://blog.naver.com/okcharles/222138969070)
 [ASP routing](https://learn.microsoft.com/ko-kr/aspnet/core/mvc/controllers/routing?view=aspnetcore-8.0#ar6)
+
+### Http
+
+일반 텍스트인 경우 `Content(contents, "text/html")` 로 리턴하면 되지만, 리소스 (img 등등) 인 경우에
+이런 포맷을 가지고 있음. $"data:image/png;base64,{base64Image}" 그래서 이런 처리를 해주는 File 이라는
+함수가 있으니 이를 이용하면 됨.
+
+# Troubleshooting
+
+## inactive plugin
+
+한번 로드 실패한 plugin( 나의 경우에는 jellyfin package , 예를 들면 Jellyfin.Model, 의 버전을 더 높게 잡아서 문제가 됐음)
+은 inactive 가 되는데, on/off 기능이 없는 심플한 플러그인인 경우에 다시 활성화 시킬 수 없음.
+그럴때는 plugin directory 의 meta.json 을 없애고 다시 시작하면 됨.

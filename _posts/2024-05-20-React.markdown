@@ -1,0 +1,15 @@
+webpack :
+
+webhook:
+
+useRef : https://hihiha2.tistory.com/19
+
+useEffect : 주로 컴포넌트가 생성될 때 한 번 실행하기 위해 사용하거나,
+여하튼 어떤 구성요소가 변할 때 마다 호출되게 하는 등의 dependency 를 설정하기 위해 사용함.
+내가 한 번 실행하기 위해 의도했는데 두번 실행되는 경우를 정리해놓은
+[링크](https://stackoverflow.com/questions/60618844/react-hooks-useeffect-is-called-twice-even-if-an-empty-array-is-used-as-an-ar).
+링크에 따르면, Strict mode 인 경우 에러없는지 확인하기 위해서 한 번 더 호출한다고 함.
+
+알아야할것 :
+interface 란 무엇이고
+그에 맞는 type 을 만들고싶은데 어떻게 이용해야하는지
