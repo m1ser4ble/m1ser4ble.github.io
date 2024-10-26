@@ -16,6 +16,10 @@ comments: true
 [Junkrat](https://crackmes.one/crackme/62dc0ecd33c5d44a934e9922)
 난독화된 코드와 anti-debugging technique 이 적용된 프로그램  
 하지만 packing 이나 virtualization 이 적용되지 않았기 때문에 난이도가 높지 않을 것으로 예상됨. 
+전형적인 key 를 찾는 문제임. 
+
+# Analysis
+
 메인이 되는 subroutine 의 길이가 너무 커서 decompile 이 되지 않는 점, 심지어는 cutter 라는 정적 분석툴의 경우에는 프로그램이 터져버린다. 
 subroutine 의 길이가 긴 이유는 설명한 바와 같이 난독화로 인해 쓸데없는 코드들과 debugger check 함수를 계속 호출해서다.  
 결국 secret key 를 찾는 문제이므로 input 이 어디로 들어가서 어떤 값과 비교하는 지를 확인해야함.  
