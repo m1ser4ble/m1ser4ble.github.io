@@ -90,8 +90,8 @@ tag_archive:
   type: jekyll-archives
   path: /tag/
 
-default:
-    - scope:
+defaults:
+  - scope:
       path: ""
       type: posts
     values:
