@@ -33,7 +33,7 @@ author:
   location: "@Seoul"
   links:
     - label: "GitHub"
-      #icon: "fab fa-fw fa-github"
+      icon: "fab fa-fw fa-github"
       url: "https://github.com/m1ser4ble"
 
 
@@ -90,6 +90,8 @@ tag_archive:
   type: jekyll-archives
   path: /tag/
 
+enable_copy_code_button: true
+
 defaults:
   - scope:
       path: ""
@@ -99,4 +101,4 @@ defaults:
       toc: true
       toc_sticky: true
       read_time: true
-      enable_copy_code_button: true
+      author_profile: true
