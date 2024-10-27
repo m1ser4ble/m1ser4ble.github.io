@@ -26,7 +26,18 @@ baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://m1ser4ble.github.io/" # the base hostname & protocol for your site, e.g. http://example.com
   #twitter_username: jekyllrb
 github_username:  m1ser4ble
+author:
+  name: "m1ser4ble"
+  #avatar: "/assets/images/bio-photo.jpg"
+  bio: "A Dumb Dumb software engineer." # Note: Markdown is allowed
+  location: "@Seoul"
+  links:
+    - label: "GitHub"
+      #icon: "fab fa-fw fa-github"
+      url: "https://github.com/m1ser4ble"
 
+
+search: true
 # Build settings
 #remote_theme: sujaykundu777/devlopr-jekyll
 remote_theme: "mmistakes/minimal-mistakes@4.24.0"
@@ -48,6 +59,10 @@ jekyll-archives:
     year: '/:year/'
     tag: '/tags/:name/'
     category: '/category/:name/'
+
+lunr:
+  search_within_pages: true
+  search_full_content: true
 
 elasticsearch:
   url: "https://m1ser4ble.github.io/"     # Required. Supports auth and SSL: https://user:pass@someurl.com
@@ -76,5 +91,12 @@ tag_archive:
   path: /tag/
 
 default:
-  toc: true
-  toc_sticky: true
+    - scope:
+      path: ""
+      type: posts
+    values:
+      show_date: true
+      toc: true
+      toc_sticky: true
+      read_time: true
+      enable_copy_code_button: true
