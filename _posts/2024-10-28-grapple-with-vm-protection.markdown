@@ -1,7 +1,7 @@
 ---
 layout: single
 title:  "Grapple with VM protection"
-date:   2024-10-23 11:56:13 +0900
+date:   2024-10-28 11:56:13 +0900
 categories: reversing
 toc: true
 toc_sticky: true

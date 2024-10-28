@@ -18,7 +18,7 @@ toc_sticky: true
 # Cow in Rust
 
 Rust 에서는 std::borrow::Cow 로 다음과 같이 정의되어 있음.
-```
+```rs
 pub enum Cow<'a, B> where    B: 'a + ToOwned + ?Sized,  {
     Borrowed(&'a B),
     Owned(<B as ToOwned>::Owned),

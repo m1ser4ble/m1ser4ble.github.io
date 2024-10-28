@@ -21,7 +21,7 @@ Lifetime 은 rust 에서 reference 를 다룰 때 등장하는 개념으로,
 'a 와 같은 식으로 표기한다. 여기서 a 는 우리가 일반 변수를 선언하듯이 lifeitme 에 이름을 준 것이다.
 
 ### Generic type parameter
-```
+```rust
 fn longest_with_an_announcement<'a, T>(
     x: &'a str,
     y: &'a str,
@@ -41,13 +41,13 @@ where
 
 ## Rust Compiler's view
 
-```
+```rust
 let x = 0;
 let y = &x;
 let z = &y;
 ```
 개발자 입장에서 우리는 위의 코드를 작성하고 보지만, 컴파일러 입장에서는 아래와 같이 lifetime 을 생각하며 추론,컴파일을 한다.
-```
+```rust
 // NOTE: `'a: {` and `&'b x` is not valid syntax!
 'a: {
     let x: i32 = 0;
@@ -67,14 +67,14 @@ let z = &y;
 JAVA, C# 같은 OOP 에 흔히 있는 개념으로 다음과 같은 관계를 의미한다.
 - Subtype 은 Supertype(혹은 Basetype) 보다 더욱 구체적인 type. ( Subtype inherits Basetype )
 - 수학적으로는  S <: B
-```
+```rust
 let s: Sub = ...;
 let u: Base = s;      // ok!
 ```
 
 물론 Rust 에서는 상속개념이 없기 때문에 type 에 대해서는 이와 같은 관계를 보기 힘들고,
 Lifetime 에서 Subtype 관계를 확인할 수 있다.
-```
+```rust
 let s: &'longer str = ...;
 let u: &'short str = s;     // ok!
 ```

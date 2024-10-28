@@ -15,7 +15,7 @@ Python Global Interpreter Lock 의 약자로 간단히 말하면 mutex 라고 �
 
 python interpreter 에 대한 제어를 한 thread 만 가질 수 있게 해주는 메커니즘
 
-```
+```py
 import sys
 a = []
 b = a

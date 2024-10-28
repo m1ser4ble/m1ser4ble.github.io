@@ -46,7 +46,7 @@ Entity : 말 그대로 개체임. 우리가 게임에서 다룰 대부분의 대
 우리는 어떤 객체(예를 들면 Player) 를 생성하게 된다면 우선 Entity 라는 것을 만들고
 아래의 코드처럼 building block 마냥 하나하나 덧붙여나간다.
 
-```
+```rs
 cmd.spawn().insert(Name).insert(Weapon).insert(Glasses).insert(Shoes)...
 ```
 
@@ -56,7 +56,7 @@ Component : 객체를 이루는 구성품. Player 를 만든다고 하면 무기
 그런데, Player 라고 하면 보통 지니고 있는 Component set 이라고 하는게 존재한다. 예를 들면, Player 라고하면 이름, 무기, 신발 등등 을 지니고 있어야한다.
 매번 위의 코드처럼 하나하나 insert 할 수 없으니, Component 들을 모아서 Bundle 이라고 정의해서 한번에 spawn 할 수 있다.
 
-```
+```rs
 [derive(Bundle)]
 struct PlayerBundle {
   name: Name,
@@ -74,7 +74,7 @@ Player Entity 만 중력을 받고 싶다고 가정해보자. 그러면 아래�
 Query 는 Iterator trait 을 지니고 있어서 iter() 메소드를 사용해서 component 들을 가져올 수 있는데 여기에는 Player Component 만 들어있기 때문에 Star Component 에는
 적용하지 않을 수 있다.
 
-```
+```rs
 fn gravity_system(query: Query<&Player>) {
 ...
 }
@@ -104,7 +104,7 @@ main app(CoreStage) : First-> PreUpdate -> Update -> PostUpdate-> Last
 sub-app(RenderStage) : Extract-> Prepare-> Queue-> PhaseSort-> Render-> Cleanup
 
 ECS 의 모든 system 들은 모두 stage 에 들어간다.
-```
+```rs
 app()
 .add_system(gravity_system) // == .add_to_stage(CoreStage::Update, gravity_system)
 ...
@@ -115,7 +115,7 @@ bevy scheduler 는 같은 stage 에 있는 system 들을 병렬적으로 실행�
 예를 들면, collision 이 발생했을 때 entity 를 despawn 하는 system 이 존재하고, 또 같은 stage 에 Query 를 이용하여 그 entity 에
 접근해서 component 를 insert 하는 system 이 존재한다고 해보자.
 그러면 두 system 이 병렬적으로 실행되기 때문에 Query 에는 element 가 존재하여 접근하게 되는데 이 때 despawn 이 먼저 일어난 상태라면 아래와 같은 코드에서 문제가 생길 것이다.
-```
+```rs
 for (entity,...) in query.iter() {
 cmd.entity(entity).insert(component) // makes a trouble!
 }
@@ -147,7 +147,7 @@ state 에 비례해서 코드가 증가하게 될 것임.
 이런 문제점 때문에 분명 모든 state 에 대해 적용되는 system 을 등록하는 방법이 있을 것이고 이를 찾아봐야할 것 같음.
 이 문제에 대해 내가 생각한 솔루션은 다음과 같다.
 stateX1 stateX2 에서 하나의 system 이 적용되게 하려면, 전체 app 에 add_system 을 사용해서 적용한다.
-```
+```rs
 app().add_system(system_on_X)
 ...
 
@@ -156,11 +156,11 @@ fn system_on_X(mut cmd : Commadns, query : Query<&X>,..){ ... }
 system_on_X는 X component 가 존재해야만 호출된다.
 StateA-> EnteringStateX-> StateX1<-> StateX2-> ExitingStateX
 의 관계를 가지는 state 들을 모두 생성해두고 enteringStateX 에서 다음과 같은 system 이 최소 한번 호출되도록 한다.
-```
+```rs
 fn enterX(mut cmd : Commands,  ..){ cmd.spawn().insert(X); }
 ```
 마찬가지로 ExitingStateX 에서 아래의 system 이 최소 한번 호출되도록 하면 된다.
-```
+```rs
 fn exitX(mut cmd: Commands, ..){ cmd.despawn(X;) }
 ```
 

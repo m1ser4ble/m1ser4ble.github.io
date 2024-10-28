@@ -42,7 +42,7 @@ C# system library 로서 제공됨.
 ## exception
 c++ 과 크게 다를 바 없음.
 
-```
+```c#
 try
 {
     // Code to try goes here.
@@ -60,7 +60,7 @@ finally
 
 rethrow
 
-```
+```c#
 catch(){
 throw
 }
@@ -72,20 +72,20 @@ throw
 여기서 프로젝트를 그대로 가져와서 사용하면 된다.
 
 현 프로젝트에 대해 linter 적용
-```
+```bash
 $ dotnet format
 ```
 현 프로젝트 빌드
-```
+```bash
 $ dotnet build
 ```
 현 프로젝트를 빌드하고 배포에 필요한 dependecy 파일들 모두 생성.
-```
+```bash
 $ dotnet publish
 ```
 
 package dependency 추가
-```
+```bash
 $ dotnet add package PACKAGE_NAME
 ```
 
@@ -121,7 +121,7 @@ Route 에 기술된 url( [controller] 는 해당 class 에서 Controller 를 제
 method 에서 `HttpGet("forecast")` 으로 등록했기 때문에 `https://localhost/weatherforcast/forecast` url
 에 대한 http get response 를 주게 된다.
 
-```
+```c#
 [ApiController]
 [Route("[controller]")]
 public class WeatherForecastController : ControllerBase
@@ -159,7 +159,7 @@ RR 은 Rapid Rease 로 4주에 한번씩 major update 가 발생함. 반면에,
 ESR 은 Extended Support Release 의 약자로 42주에 한번씩 major update 가, minor update 는 4주에 한번씩 발생하기 때문에 굉장히 보수적인 릴리즈라고 할수 있음.
 
 
-```
+```bash
 $ apt install firefox-esr
 ```
 
@@ -172,7 +172,7 @@ $ apt install firefox-esr
 
 ### Usage code
 
-```
+```c#
 using OpenQA.Selenium;
 using OpenQA.Selenium.Firefox;
 
@@ -213,7 +213,7 @@ FirefoxProfile 은 실제 firefox browser 에서 preference 를 수정하겠다�
 아래처럼 빌드하게 되면 dependency package 까지 함께 제공되기 때문에 배포하기에 좋다.
 특히 Selenium WebDriver 를 의존하고 있는데, 아래 커맨드를 수행하게 되면 WebDriver.Dll 도 함께 나오며,
 jellyfin plugin directory 에 함께 넣기만 하면 되서 편리함. 시스템에 설치할 필요가 없음.
-```
+```bash
 $ dotnet publish
 ```
 jellyfin config plugins 에 본인의 디렉토리를 생성하고 생성된 프로젝트의 dll 과 WebDriver 를 함께 넣기만 하면 된다.
