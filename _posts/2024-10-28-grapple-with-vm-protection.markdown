@@ -16,16 +16,17 @@ comments: true
 
 ## Anti Debugging Techniques
 
-### Exception Handler
+* Exception Handler
+  * int1 ; triggers a single step exception
+  * debugger 가 있다면 debugger 가 exception 을 먹고 처리하기 때문에 exception handler 가 걸리지 않을 것. 
+  * 중요한 것은 이 handler 에서 어떤 중요한 로직을 수행할 것이라는 것임. 
+  * 예를 들면 register 에 특정 값을 넣는다든지.. 
+  * 그 다음에 프로그램은 그 값이 세팅되어있는지 확인할 거고 debugger 가 붙어있는지 누군가 조작을 했는지를 유추할 수 있음. 
+* Winapi 를 이용한 check
+  * CheckRemoteDebugger
+  * NtQueryInformationProcess
+  * NtSetInformationThread
 
-int1 ; triggers a single step exception
-debugger 가 있다면 debugger 가 exception 을 먹고 처리하기 때문에 exception handler 가 걸리지 않을 것. 중요한 것은 이 handler 에서 어떤 중요한 로직을 수행할 것이라는 것임. 예를 들면 register 에 특정 값을 넣는다든지.. 그다음에 프로그램은 그 값이 세팅되어있는지 확인할 거고 debugger 가 붙어있는지 누군가 조작을 했는지를 유추할 수 있음. 
-
-###  CheckRemoteDebugger
-
-###  NtQueryInformationProcess,
-
-###  NtSetInformationThread
 
 ## VM 기본 구조
 
