@@ -16,7 +16,7 @@ comments: true
 [VmAdventures](https://crackmes.one/crackme/63bd7f5733c5d43ab4ecf3ad)
 전형적인 password finding 문제
 
-### asm
+## asm
 
 `cmovz` 
 는 conditional move 의 약자며 마지막의 z는 zero 인 경우가 조건으로 붙는 명령어다. 
@@ -35,7 +35,7 @@ comments: true
 분석을 다 끝내고 보니 느낄 수 있는 것은 `sub_71170` 에서 암호화 과정을 거치고 그 값을 암호화된 정답과 비교하는 형태일 것만 같다.  
 실제로 v1 은 입력한 string 의 길이이며 `byte_732e0` 메모리에 정답이 들어있다. 길이가 0X20 일때만 정답 로직으로 갈 수 있다는 것을 유념하고 `sub_71170` 을 확인해보자
 
-<img src="{{site.baseurl | prepend: site.url}}assets/junkrat_importsub_71170.png"/>
+<img src="{{site.baseurl | prepend: site.url}}assets/sub_71170.png"/>
 
 vm 의 동작 방식을 굉장히 단순한 형태로 모사했다. state 를 남길 필요가 없는 연산들로만 구성했기 때문에 register save/load 가 없고 그래서인지 decompile 이 문제없이 수행되었다. 
 정답이 0X20 의 길이를 지닌다는 것을 생각하면 난독화를 위한 쓸데없는 코드들이 보일 것이다. 
