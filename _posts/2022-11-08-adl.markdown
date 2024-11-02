@@ -1,4 +1,5 @@
----
+______________________________________________________________________
+
 layout: single
 title:  "Access To Private Member in C++"
 date:   2022-11-16 15:30:09 +0900
@@ -6,7 +7,7 @@ categories: C++, Langugage
 toc: true
 toc_sticky: true
 
----
+______________________________________________________________________
 
 C++ 처럼 memory address 를 직접적으로 다룰 수 있는 언어는 강제적 형변환을 통해 private member 에 접근하면 된다.
 하지만, 이런 방식은 어떤 면에서 위험하다. 예를 들면, 어떤 라이브러리에 정의된 Class 의 private member 에 접근하고자 한다면
@@ -21,7 +22,8 @@ C++ 처럼 memory address 를 직접적으로 다룰 수 있는 언어는 강제
 
 friend keyword 는 이 기능 자체로 private member 에 접근할 수 있도록 허용해주는 것임. 그러나 이 키워드는 내부에서 문을 열어주는 느낌임.
 예를 들면, 아래 코드는 friend 를 통해서 A 의 private member access 권한을 x 함수에게 줬다.
-```
+
+```cpp
 Class A{
 //private members
 	int x;
@@ -35,14 +37,12 @@ void x(A a){
 
 library 에서는 이런 것을 아직 정의도 되지 않은 함수, class 에 대해 열어줄 리 만무하다.
 
-
-
 # member pointer
 
 :: 를 사용하면 우리는 클래스의 member 를 지칭할 수 있다. 예를 들면 아래 코드처럼 어떤 클래스(instance 가 아님) 의 멤버에 대한 refernece 를
 변수(p) 에 담아 어떤 객체(instance) 의 멤버에 접근하는데 사용할 수 있다.
 
-```
+```c++
 struct A {
     A(int a):a(a) { }
     int b;
@@ -61,15 +61,40 @@ void test() {
 
 하지만, test 함수에 대해 friend 선언을 하면 접근이 가능하다.
 
+# ADL ( Argument Dependent Lookup)
 
-# ADL
+Koenig lookup 라고도 불리는데, ADL 은 함수 호출 표현식에서 unqualified function name 을 찾는 일련의 규칙.
+이름에서 알 수 있듯이, 기존의 scope 와 namesapce 에 더해  argument 의 namespace 를 참고해서 찾는다.
 
+```cpp
+#include <iostream>
+ 
+int main()
+{
+    std::cout << "Test\n"; // There is no operator<< in global namespace, but ADL
+                           // examines std namespace because the left argument is in
+                           // std and finds std::operator<<(std::ostream&, const char*)
+    operator<<(std::cout, "Test\n"); // Same, using function call notation
+ 
+    // However,
+    std::cout << endl; // Error: “endl” is not declared in this namespace.
+                       // This is not a function call to endl(), so ADL does not apply
+ 
+    endl(std::cout); // OK: this is a function call: ADL examines std namespace
+                     // because the argument of endl is in std, and finds std::endl
+ 
+    (endl)(std::cout); // Error: “endl” is not declared in this namespace.
+                       // The sub-expression (endl) is not an unqualified-id
+}
+```
+
+endl 함수는 인자의 namespace 가 std::cout 이니 std::endl() 을 이용하게 된다.
 
 # Reference
 
-[](https://stackoverflow.com/questions/12993219/access-private-member-using-template-trick)
-[](https://bloglitb.blogspot.com/2011/12/access-to-private-members-safer.html)
-[](https://en.cppreference.com/w/cpp/language/adl)
-https://stackoverflow.com/questions/437250/friend-scope-in-c
-https://en.cppreference.com/w/cpp/language/friend
-https://www.ibm.com/docs/en/i/7.1?topic=only-friend-scope-c
+- [stackoverflow](https://stackoverflow.com/questions/12993219/access-private-member-using-template-trick)
+- [bloglitb](https://bloglitb.blogspot.com/2011/12/access-to-private-members-safer.html)
+- [cpp reference](https://en.cppreference.com/w/cpp/language/adl)
+- https://stackoverflow.com/questions/437250/friend-scope-in-c
+- https://en.cppreference.com/w/cpp/language/friend
+- https://www.ibm.com/docs/en/i/7.1?topic=only-friend-scope-c
