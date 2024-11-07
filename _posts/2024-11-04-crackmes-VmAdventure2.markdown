@@ -3,6 +3,7 @@ layout: single
 title:  "Crackmes VmAdventures2"
 date:   2024-11-04 11:56:13 +0900
 categories: reversing
+excerpt: "Difficulty : ★★★★☆☆"
 toc: true
 toc_sticky: true
 tags: reversing
