@@ -1,0 +1,39 @@
+---
+layout: single
+title:  "Binary Analysis"
+date:   2024-10-24 15:30:09 +0900
+categories: binary
+toc: true
+toc_sticky: true
+
+---
+
+## x64 레지스터
+
+![alt text](image.png)
+
+주로 rax ... al 류는 자주 사용해서 알고있었는데, 
+rdi 류는 dil 이 1바이트를 표기하는 명칭이라 찾아보게 되었음.
+
+## x64 calling convention ( Windows )
+
+x64 binary 에서 함수가 호출되면 스택 프레임은 다음과 같은 방식으로 사용된다. 
+
+* RCX, RDX , R8, R9 레지스터가 각각 첫 네개의 integer argument 들을 담당함. 
+* argument 5 부터는 스택에 push됨
+* caller 의 다음 instruction 을 담고있는 return address 는 rsp + 0x0 에 저장되어있음
+* return address 아래로 32바이트는 callee 가 4개의 argument 보다 적게 사용할지라도 항상 RCX, RDX, R8, R9 를 위해 할당된다.  
+* 지역변수랑 non-volatile register 들은 return address 보다 위에 저장되어있다. 
+* x86 에서와는 다르게 rbp 는 local variable이나 function argument 를 referencing 하는 용도로 사용되지 않는다.
+  * alloca 를 사용하는 함수는 예외
+* rsp 가 이제 그 역할을 하고 그래서 function body 에서 변경되지 않는다. push pop 이 epilogue/prologue 를 위해서만 사용된다. 
+
+
+
+[Red Team Notes](https://www.ired.team/miscellaneous-reversing-forensics/windows-kernel-internals/windows-x64-calling-convention-stack-frame)
+
+
+## 참고
+
+[koreaner](https://blog.naver.com/okcharles/222138969070)
+[ASP routing](https://learn.microsoft.com/ko-kr/aspnet/core/mvc/controllers/routing?view=aspnetcore-8.0#ar6)

@@ -1,0 +1,100 @@
+---
+layout: single
+title:  "Research on Breaking Obfuscation"
+date:   2024-11-13 11:56:13 +0900
+categories: reversing
+excerpt: "Difficulty : ★★★★☆☆"
+toc: true
+toc_sticky: true
+tags: reversing
+comments: true
+---
+
+
+# Control Flow Flattening
+
+loop, conditional branch 같은 코드의 흐름을 전부 하나의 거대한 switch 문에 넣어서 다른 블록으로의 이동이 단 하나의 블록으로 이루어지게 만들어서 코드 분석이 어려워지게 만드는 기법. 
+
+
+# Syntia
+
+* VM 기반의 obfuscation 이 가장 악랄하다
+* 이에 대한 난독화 제거는 사실상 static analysis 는 힘들고 dyanmic analysis 로 모두 전환했다. 
+* VM obfuscation 에 사용된 핸들러를 분석하는거는 너무 복잡하고 시간이 많이 드는 작업이다. 
+* syntia 는 이를 해결함. 
+
+### Mixed Boolean Arithmetic
+
+* VM 기반 난독화와랑은 다른 종류. code chunk 분석기법이랑도 달다. 
+https://github.com/RUB-SysSec/syntia
+
+
+
+
+
+
+# Deobfuscation through Symbolic Execution and Compilation Optimiation
+
+* 저자는 아래의 3단계를 통해서 난독화를 제거할 수 있다고 했다.
+  * A trace analysis module
+    * 난독화된 바이너리의 런타임 정보를 기록하고 handler function 을 추출하기 위해 offline analysis 를 수행하는 단계
+  * A Symbolic execution module
+    * 각 handler function 과 symbolic expression 결과물의 semantic 정보를 분석하는 모듈
+  * A Compilation module
+    * symbolic expression 을 c code로 변환하고 난독화가 제거된 코드를 생성하는 모듈
+
+## Trace Analaysis
+
+* 저자는 Pin 을 이용해서 이 단계를 구현함
+* pin 에서 바로 분석까지 할 수 있지만 trace 만 하는 이유는 executable 을 직접 돌리지 않고도 여러번 분석을 돌릴 수 있기 때문이라고 함. 
+  * 잘 와닿지는 않음.
+
+### CFG(Control Flow Graph) Construction
+
+indirect jump 들로 난독화되어있기 때문에 CFG 를 정적으로 재구성한다는 것은 어려움. 예를 들면 VMProtect 2.13 에서는 다음과 같이 난독화한다고 한다. 대부분의 쓸데없는 코드는 없앴다고 한다. 
+
+```asm
+mov al, byte ptr [esi-0x1]
+mov ecx, dword ptr [eax*4+0x4058da]
+mov dword ptr [esp+0x28], ecx
+push dword ptr [esp+0x28]
+ret 0x2c
+```
+
+보면 알겠지만, esi 에 저장된 VM Program Counter(VPC) 를 al 로 가져와서 그에 적절한 handler 를 ecx 에 담고 그곳으로 jmp 하는 코드다. 그러나 각 실제 handler 가 어디에 있는지, 무슨 정보를 들고있는지는 dynamic execution 으로만 알 수 있다. 
+CFG 를 재구성하는 구체적인 방법은 다음과 같음
+* basic block 을 초기화함
+  * basic block 은 instruction sequence 의 한 단위인데 보통 어떤 jump 등을 통해서 하나의 basic block 이 구분된다. 
+  * 그러면 jump 혹은 instruction 의 배열에 따라 basic block 간의 directed graph 를 생성할 수 있게 된다.
+*  basic block 간의 병합
+  * basic block B1 의 outbound degree 가 1, basic block B2 의 inbound degree 가 1 이면서 B1->B2 의 그래프가 형성되어있다면 B12 로 하나의 basic block 으로 병합할 수 있다.
+* 더이상 병합되는 basic block 이 없을때까지 반복. 
+
+VMProtect 와 Code Virtualizer 는  `fetch-decode-dispatch loop` 를 지니고 있는데, dispatcher node 에서 굉장히 많은 branch 가 나오고 다시 모든 handler 들은 dispatcher node 로 되돌아가는 구조다. 
+이런 특성을 이용하면 우리는 dispatcher 와 handler 를 구분할 수 있다. 
+
+### Handler 의 Semantic 분석
+
+* 각 handler 에 대해 symbolic execution 을 적용함
+  * handler 는 주로 simple logic 을 지니고 있기 때문에 path explosion 을 피할 수 있음. 
+  * symbolic expression 을 만들어서 symbolic engine 에 던지면 쓸데없는 코드들은 정리해버리기 때문에 난독화도 제거할 수 있음. 
+  * 본 논문에서는 모든 레지스터, handler function 속에서 사용되는 memory 들은 모두 symbolic variable 로 초기화도니다. 
+
+* 이렇게 하면 path explosion 이 생기기 어려움
+
+
+### 컴파일과 코드 복구
+
+* function summary 가 deadcode elimination 을 해주지만, virtual instruction 중에서 난독화 다루는 데 있어서 효과적이지 못하다. 
+
+We instead choose to reconstruct the CFG from the dynamic execution trace.
+The basic steps of reconstructing the CFG from trace are as follows:
+
+
+[Reference](https://cis.temple.edu/~qzeng/papers/deobfuscation-icics2017.pdf)
+
+
+
+
+
+
