@@ -19,6 +19,8 @@ javacscript code snippet 이나 library 를 다양한 플랫폼(windows,macos, l
 
 Frida 를 사용하려면 우선 jailbreak 를 한 iphone 이 필요하다. 나는 버리는 것을 잘 하지 못해서 이전에 사용하던 아이폰 공기계(iphone 8) 가 수중에 있어서 이것으로 진행한다. 보통 이런 루팅을 하는데는 벽돌이 될 위험을 감수해야하기 때문에 실제 사용하는 휴대폰을 이용하는 것을 권장하지 않는다..
 
+탈옥을 하는데 있어서도, frida 를 사용하는데 있어서도 다른 pc 가 필수적이다. 다른 pc 를 앞으로 system 이라고 칭하고, iphone 을 mobile device 라고 칭하겠다. 
+
 ### Jailbreak
 
 탈옥은 처음해보는데 생각보다 방법이 다양해서 혼란스럽다. 
@@ -77,6 +79,28 @@ Dopamine 으로 설치한 패키지매니저 ( 본인은 Sileo ) 를 켜서 frid
 설치된 frida version 을 확인할 수 있음. 본인은 16.5.9 
 이에 맞는 frida tools 를 본인 system 에 설치한다. 
 본인은 pip install frida-tools==12.5.1 frida==16.5.9 
+
+
+### install ssh
+
+selio package manager 에서 소스 탭에 들어간 뒤 밑으 죽 잡아당기면 source update 가 일어난다. 
+그럼 apt.procurs.us repo 는 Procursus 라는 이름을 가지게 됨. 여기 들어가서 모든 카테고리에서 검색을 ssh 로 하면 openssh 패키지를 찾을 수 있다. 이걸 설치해두자. 
+그리고 system pc 에서 ssh mobile@mobile_device_ip_addr 로 접속한다. 패스워드는 dopamine 을 설치할 때 입력했던 password 다. 
+그리고 sudo su 를 이용해서 root 로 로그인 한 뒤 passwd 로 비밀번호를 설정하자. 
+나는 이후 frida-dump script 에서 root/alpine 을 사용하기에 거기에 맞춤.
+
+## ipa dump with frida-dump
+
+[참고 문서](https://kyundev.tistory.com/36)
+
+
+[frida-ios-dump](https://github.com/AloneMonkey/frida-ios-dump) 는 더이상 업데이트도 하지 않고 있음에도 여전히 유효한 방법으로 보인다. 참고 문서에서 이 툴을 이용해서 dump 하는 방법을 이용하면 된다. 
+
+
+## Disassemble 
+
+[참고 문서](https://www.corellium.com/blog/ios-mobile-reverse-engineering)에 따르면 
+.ipa 파일은 결국 unzip 하면 .app 파일이 나오고 이를 ida pro, ghidra 등등 기존의 disassembler 로 모두 분석이 가능하고 함.
 
 
 #### Tweaks
