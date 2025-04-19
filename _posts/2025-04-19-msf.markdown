@@ -1,0 +1,54 @@
+
+
+
+
+## msf
+
+msfconsole 은 context 로 관리된다. 
+그러니까 전역 변수로 세팅되지 않으면 모든 파라미터 세팅들은 사용하고자 하는 모듈을 변경하면 날아갈거다.
+로컬 변수 세팅은 
+`set rhosts 10.10.165.39`
+전역 변수 세팅은 
+`setg rhosts 10.10.165.39`
+로 가능하다
+
+use module
+을 하게되면 context 가 변경됨. 이를 enter 라고 함. 
+
+`show options`
+는 선택한 exploit 과 관련된 옵션들을 출력해줌. 
+context 에 따라 다른 출력물일것이다. 이를 테면 RHOSTS, RPORT 같은 variable 을 세팅하라고 할 것이다. 
+반면에 post-exploitation module 은 SESSION ID 만 요구할 것이다. 
+session 은 post-exploitation module 이 사용할 target system 에 존재하는 연결을 의미함. 
+
+`show payloads`
+
+`back` command 를 사용하면 context 를 벗어날 수 있음. 
+`info` 를 context 내에서 모듈에 대한 사용하면 많은 정보를 준다.
+
+`search` command 를 사용하면 CVE 와 관련된 exploit 들을 검색해줌. 
+그러니까 함께 준 search parameter 와 관련된 모듈들을 찾아주는 것임. 
+예를 들면, CVE number 나 exploit name(eternealblue, heartbleed, 등등) 혹은 타겟 시스템을 사용해서 검색을 수행할 수 있다는 것 
+
+Meterpreter ; 
+meterpreter agent 라는 Payload 가 있음. 이게 target system 에 로드돼서 얘가 내 컴퓨터에 다시 접속하는 형태로 연결되면 meterpreter prompt 로 볼 수 있음. 
+
+# 모듈 사용하기
+
+모든 모듈 파라미터를 설정했다면 이제 `exploit` 커맨드를 사용해서 모듈을 실행시킬 수 있다. 
+run 이라고 하는 커맨드도 alias 로 제공되는데 그 이유는 exploit 이 아닌 모듈들에 exploit 을 하는게 말이 안되기 때문이다. 
+예를 들면 port scanner, vulnerability scanner 같은 것들을 실행하는데 exploit 이라고 하는 것은 이상하기 때문. 
+
+exploit -z 로 실행하면 exploit 을 실행하고 session 이 열리자마자 session 을 background 로 감춤
+
+
+# 세션
+
+vulnerability 가 성공적으로 exploit 되면 session 이 생성될 것이다. target system 과 metasploit 간에 생성된 통신 채널임. 
+
+background command 를 이용해서 session prompt 를 background 로 감추고 msfconsole prompt 로 돌아갈 수 있음. 
+혹은 ctrl+z 로도 백그라운드로 만들 수 있음. 
+
+
+sessions command 로 현재 존재하는 session 들을 확인할 수 있음. 
+세션에 붙으려면 session -i 2 이런 식으로 attach 가능
