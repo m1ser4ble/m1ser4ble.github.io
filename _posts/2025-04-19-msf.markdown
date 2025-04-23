@@ -171,5 +171,105 @@ meterpreter 버전을 선택할 때는 다음의 세가지 요소를 고려해�
 msfvenom 으로 생성한 standalone payload 를 사용하지 않을 거라면, 선택은 exploit 에 의해 제한될 거다. 
 어떤 exploit 들은 default meterpreter payload 가 있다는 걸 알것이다. 
 
+Meterpreter 는 단순히 reverse shell 만은 아님. 
+meterpreter> help 
 
- 
+라고 치면 가능한 커맨드 목록이 나온다. 
+
+Core commands
+
+background: Backgrounds the current session
+exit: Terminate the Meterpreter session
+guid: Get the session GUID (Globally Unique Identifier)
+help: Displays the help menu
+info: Displays information about a Post module
+irb: Opens an interactive Ruby shell on the current session
+load: Loads one or more Meterpreter extensions
+migrate: Allows you to migrate Meterpreter to another process
+run: Executes a Meterpreter script or Post module
+sessions: Quickly switch to another session
+File system commands
+
+cd: Will change directory
+ls: Will list files in the current directory (dir will also work)
+pwd: Prints the current working directory
+edit: will allow you to edit a file
+cat: Will show the contents of a file to the screen
+rm: Will delete the specified file
+search: Will search for files
+upload: Will upload a file or directory
+download: Will download a file or directory
+Networking commands
+
+arp: Displays the host ARP (Address Resolution Protocol) cache
+ifconfig: Displays network interfaces available on the target system
+netstat: Displays the network connections
+portfwd: Forwards a local port to a remote service
+route: Allows you to view and modify the routing table
+System commands
+
+clearev: Clears the event logs
+execute: Executes a command
+getpid: Shows the current process identifier
+getuid: Shows the user that Meterpreter is running as 
+kill: Terminates a process
+pkill: Terminates processes by name
+ps: Lists running processes
+reboot: Reboots the remote computer
+shell: Drops into a system command shell
+shutdown: Shuts down the remote computer
+sysinfo: Gets information about the remote system, such as OS
+Others Commands (these will be listed under different menu categories in the help menu)
+
+idletime: Returns the number of seconds the remote user has been idle
+keyscan_dump: Dumps the keystroke buffer
+keyscan_start: Starts capturing keystrokes
+keyscan_stop: Stops capturing keystrokes
+screenshare: Allows you to watch the remote user's desktop in real time
+screenshot: Grabs a screenshot of the interactive desktop
+record_mic: Records audio from the default microphone for X seconds
+webcam_chat: Starts a video chat
+webcam_list: Lists webcams
+webcam_snap: Takes a snapshot from the specified webcam
+webcam_stream: Plays a video stream from the specified webcam
+getsystem: Attempts to elevate your privilege to that of local system
+hashdump: Dumps the contents of the SAM database
+
+
+이 중 몇가지를 짚자면, getuid 로 내 권한 정도를 알 수 있다. 
+예를 들면, 
+```
+meterpreter > getuid
+Server username: NT AUTHORITY\SYSTEM
+```
+라고 나오면 windows system 에서 admin 권한임. 
+
+migrate 은 다른 프로세스로 migration 하는 것이다. 예를 들면, word processor 가 target system 에서 실행되고 있는 것을 확인했다. 
+word processor 로 migrate 하면 word processor 에 유저가 타이핑하는 keystroke 를 캡쳐할 수 있다. 
+어떤 Meterpreter version 은 keyscan_start/stop/dump 라는 것을 제공할텐데, meterpreter 가 keylogger 처럼 동작하게 할 수 있다. 
+다른 프로세스로 migrate 하는 거는 더 안정적인 meterpreter session 을 확보하는데 도움을 줄 수 있다. 
+
+어떤 프로세스로 migration 하기 위해서는 migrate PID 를 하면 된다. 
+
+
+Hashdump
+
+hashdump 커맨드는 SAM database 의 내용을 리스팅 해준다. SAM(Security Account Manager) 데이터베이스는 유저의 암호를 windows system 상에 저장하고 있다. 
+이 암호들은 NTLM(New Technology LAN Manager ) format 으로 저장되어있다. 
+
+수학적으로 이 해쉬값들을 crack 할 수는 없지만 cleartext password 를 online NTLM database 를 사용하거나 rainbow table attack 을 이용해서 확인할 수 있다. 
+이 hash 들은 또 Pass-the-Hash attack 에 사용해서 이 유저들이 접근가능한 네트워크 상의 다른 시스템들에 인증할 수 있다. 
+
+
+Search
+
+특정 파일들이나 원하는 정보가 있는 곳을 찾는데 유용함. 
+
+```
+meterpreter > search -f flag2.txt
+Found 1 result...
+    c:\Windows\System32\config\flag2.txt (34 bytes)
+```
+
+
+
