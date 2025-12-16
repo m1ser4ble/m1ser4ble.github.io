@@ -3,9 +3,10 @@ layout: single
 title:  "Cow in Rust"
 date:   2022-06-06 11:56:13 +0900
 categories: rust
+excerpt: "Rust의 Copy-On-Write 스마트 포인터 std::borrow::Cow 분석"
 toc: true
 toc_sticky: true
-
+tags: rust
 ---
 
 # Cow

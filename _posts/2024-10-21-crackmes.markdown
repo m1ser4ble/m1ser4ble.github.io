@@ -1,11 +1,12 @@
 ---
 layout: single
-title:  "Crackmes"
+title:  "Crackmes - SecretKey"
 date:   2024-10-21 15:30:09 +0900
-categories: binary
+categories: reversing
+excerpt: "간단한 난독화가 적용된 crackme 문제 풀이"
 toc: true
 toc_sticky: true
-
+tags: reversing
 ---
 
 ## Problem

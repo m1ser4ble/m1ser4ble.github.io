@@ -1,13 +1,12 @@
 ---
 layout: single
-title:  "Crackmes VmAdventures2"
+title:  "Crackmes - VmAdventures2"
 date:   2024-11-04 11:56:13 +0900
 categories: reversing
-excerpt: "Difficulty : ★★★★☆☆"
+excerpt: "VM Interpreter 분석과 Disassembler 제작 (★★★★☆☆)"
 toc: true
 toc_sticky: true
 tags: reversing
-comments: true
 ---
 
 

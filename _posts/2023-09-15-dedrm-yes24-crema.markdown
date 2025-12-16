@@ -64,7 +64,7 @@ msdn 을 참조해보면 알겠지만, CreateFile 은 file handle 을 리턴할 
 
 이 함수는 내부적으로 사용되는 함수기 때문에 import table 의 조작으로 hook 을 할 수 없음. 기본적으로 그냥 code hook 이 제일 깔끔하고 좋아서 이 방식을 선호함.
   
-<img src="({{site.baseurl | prepend: site.url}}assets/hookingpoint_interface.png" />
+<img src="{{site.baseurl | prepend: site.url}}assets/hookingpoint_interface.png" />
 인터페이스를 보면 argument1, argument2 는 register 로 들어가고, 나머지는 스택으로 들어감.
 calling convention은 usercall 이라고 되어있지만 실제로는 cdecl임. call 이후에 스택 정리로직이 있는 것을 볼 수 있음  
 <img src="{{site.baseurl | prepend: site.url}}assets/evidence_of_cdecl.png" />

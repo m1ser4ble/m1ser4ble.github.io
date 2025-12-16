@@ -1,13 +1,12 @@
 ---
 layout: single
 title:  "Research on Breaking Obfuscation"
-date:   2024-11-13 11:56:13 +0900
+date:   2024-11-26 11:56:13 +0900
 categories: reversing
-excerpt: "Difficulty : ★★★★☆☆"
+excerpt: "Syntia, Symbolic Execution을 이용한 난독화 제거 연구"
 toc: true
 toc_sticky: true
 tags: reversing
-comments: true
 ---
 
 
@@ -91,7 +90,10 @@ We instead choose to reconstruct the CFG from the dynamic execution trace.
 The basic steps of reconstructing the CFG from trace are as follows:
 
 
-[Reference](https://cis.temple.edu/~qzeng/papers/deobfuscation-icics2017.pdf)
+## Reference
+
+- [Syntia GitHub](https://github.com/RUB-SysSec/syntia)
+- [Deobfuscation through Symbolic Execution](https://cis.temple.edu/~qzeng/papers/deobfuscation-icics2017.pdf)
 
 
 

@@ -1,13 +1,12 @@
 ---
 layout: single
-title:  "Bazel"
+title:  "Bazel 기초"
 date:   2024-12-09 11:56:13 +0900
 categories: bazel
-excerpt: "Bazel 의 기초와 프로젝트 해석 방법에 대한 내용"
+excerpt: "Bazel 프로젝트 구성 파일과 빌드 시스템 기초"
 toc: true
 toc_sticky: true
 tags: bazel
-comments: true
 ---
 
 
@@ -54,7 +53,9 @@ comments: true
 
 
 
-[Reference](https://cis.temple.edu/~qzeng/papers/deobfuscation-icics2017.pdf)
+## Reference
+
+- [Bazel 공식 문서](https://bazel.build/docs)
 
 
 

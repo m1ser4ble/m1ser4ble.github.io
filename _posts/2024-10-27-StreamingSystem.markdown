@@ -1,14 +1,13 @@
-______________________________________________________________________
-
+---
 layout: single
 title:  "Streaming Systems"
 date:   2024-10-27 15:30:09 +0900
 categories: system
+excerpt: "도서 Streaming Systems를 읽으며 정리한 스트리밍 시스템 개념"
 toc: true
 toc_sticky: true
-enable_copy_code_button: true
-
-______________________________________________________________________
+tags: system
+---
 
 도서 Streaming Systems ( 타일러 아키다우 저) 에 대해 이해하는 과정을 기록하는 문서.
 개인적인 이해를 기록하기 때문에 정확하지 않은 내용을 포함하고 있음. ( 다수일 가능성 큼 )

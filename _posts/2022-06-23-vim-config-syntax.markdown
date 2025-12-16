@@ -2,10 +2,11 @@
 layout: single
 title:  "Vim Config Syntax"
 date:   2022-06-23 15:30:09 +0900
-categories: jekyll update
+categories: tools
+excerpt: "Vim의 key mapping, autocommand 등 설정 문법 정리"
 toc: true
 toc_sticky: true
-
+tags: vim
 ---
 
 
@@ -80,7 +81,7 @@ vimrc 는 source 할때마다 실행하기 때문에 autocmd 도 반복적으로
 vim 내에서 source ~/.vimrc 를 여러번 수행하고 :w 를 하게 되면 한 번에 여러개의 메시지가 발생하는 것을 볼 수 있다.
 즉, source 할 때 마다 점점 느려지게 될 것이다.
 지금까지 정의된 autocmd 를 날리고싶다면 autocmd! 를 치면 된다.
-# Reference
+## Reference
 
-https://learnvimscriptthehardway.stevelosh.com/chapters/14.html
-https://www.freecodecamp.org/news/vimrc-configuration-guide-customize-your-vim-editor/
+- [Learn Vimscript the Hard Way](https://learnvimscriptthehardway.stevelosh.com/chapters/14.html)
+- [freeCodeCamp - Vimrc Configuration Guide](https://www.freecodecamp.org/news/vimrc-configuration-guide-customize-your-vim-editor/)

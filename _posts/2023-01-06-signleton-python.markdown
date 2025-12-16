@@ -1,14 +1,12 @@
 ---
 layout: single
-title:  "Singleton approach in python"
+title:  "Singleton Pattern in Python"
 date:   2023-01-06 11:56:13 +0900
-categories: python language
+categories: python
+excerpt: "Python에서 Singleton 구현하기 - Metaclass, Decorator, Classic 비교"
 toc: true
 toc_sticky: true
 tags: python
-comments: true
-enable_copy_code_button: true
-
 ---
 
 
@@ -112,7 +110,7 @@ class A:
     * 코드가 지저분함
     * 여러 클래스에 적용하기 어려움
 
-## 참고
+## Reference
 
-https://itnext.io/deciding-the-best-singleton-approach-in-python-65c61e90cdc4
+- [ITNext - Best Singleton Approach in Python](https://itnext.io/deciding-the-best-singleton-approach-in-python-65c61e90cdc4)
 

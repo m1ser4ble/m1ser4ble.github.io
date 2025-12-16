@@ -2,10 +2,11 @@
 layout: single
 title:  "Jellyfin Plugin Development"
 date:   2024-05-11 15:30:09 +0900
-categories: jellyfin, asp
+categories: csharp
+excerpt: "Jellyfin 플러그인 개발을 위한 C#, ASP.NET Core, Selenium 가이드"
 toc: true
 toc_sticky: true
-
+tags: csharp asp
 ---
 
 Jellyfin 으로 music media server 를 구축하려고 하는데, plugin 생태계가 생각보다 부족함.

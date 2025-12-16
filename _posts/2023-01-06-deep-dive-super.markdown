@@ -1,13 +1,12 @@
 ---
 layout: single
-title:  "Deep Dive super() in python"
+title:  "Deep Dive super() in Python"
 date:   2023-01-06 11:56:13 +0900
-categories: python language
+categories: python
+excerpt: "Python의 super() 함수와 MRO(Method Resolution Order) 심층 분석"
 toc: true
 toc_sticky: true
 tags: python
-comments: true
-enable_copy_code_button: true
 ---
 
 
@@ -101,7 +100,7 @@ class RightPyramid(Triangle, Square):
 
 그러니... mro 에 의존할 것이 아니고 super 를 사용할 때 사용할 class 를 명시하는 게 권장될 것 같다.
 
-## 참고
+## Reference
 
-- [bound/unbound method](https://www.geeksforgeeks.org/bound-unbound-and-static-methods-in-python/)
-- [deep dive super](https://realpython.com/python-super/)
+- [GeeksforGeeks - Bound/Unbound Method](https://www.geeksforgeeks.org/bound-unbound-and-static-methods-in-python/)
+- [Real Python - Deep Dive super()](https://realpython.com/python-super/)

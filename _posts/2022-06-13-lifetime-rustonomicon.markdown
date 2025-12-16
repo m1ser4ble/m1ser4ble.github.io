@@ -1,11 +1,12 @@
 ---
 layout: single
-title:  "Rustnomicon"
+title:  "Rustonomicon - Lifetime"
 date:   2022-06-13 15:30:09 +0900
 categories: rust
+excerpt: "Rust의 Lifetime, Subtype, Variance 개념 심층 분석"
 toc: true
 toc_sticky: true
-tag: rust
+tags: rust
 ---
 
 
@@ -97,9 +98,10 @@ lifetime 이 subtype 에 영향을 주기 때문에 generic type 의 reference �
 ## Lifetime Elision
 
 
-Reference :   https://medium.com/@kennytm/variance-in-rust-964134dd5b3e
+## Reference
 
-  https://doc.rust-lang.org/nomicon/lifetime-elision.html
+- [Medium - Variance in Rust](https://medium.com/@kennytm/variance-in-rust-964134dd5b3e)
+- [Rustonomicon - Lifetime Elision](https://doc.rust-lang.org/nomicon/lifetime-elision.html)
 
 
 

@@ -3,9 +3,10 @@ layout: single
 title:  "Introduction to ECS in Bevy"
 date:   2022-05-29 15:30:09 +0900
 categories: bevy
+excerpt: "Rust 기반 게임 프레임워크 Bevy의 ECS 패러다임 소개"
 toc: true
 toc_sticky: true
-
+tags: rust bevy
 ---
 
 # Bevy

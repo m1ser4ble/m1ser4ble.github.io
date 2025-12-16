@@ -1,12 +1,12 @@
 ---
 layout: single
-title:  "Grapple with VM protection"
+title:  "Grapple with VM Protection"
 date:   2024-10-28 11:56:13 +0900
 categories: reversing
+excerpt: "VM 기반 바이너리 보호 기법과 분석 방법론"
 toc: true
 toc_sticky: true
 tags: reversing
-comments: true
 ---
 
 가장 수준 높은 binary protection 기법인 virtual machine 기법을 설명한 [블로그](https://blog.deobfuscate.io/reversing-vmcrack) 가 있길래 이를 참고삼아 정리해보고자 한다. 
@@ -50,7 +50,7 @@ Original Post 의 그림을 가져와서 설명하는 것도 이상하니  Crack
 
 
 
-## 참고
+## Reference
 
-https://blog.deobfuscate.io/reversing-vmcrack
+- [Reversing VMCrack - VM Protection 분석](https://blog.deobfuscate.io/reversing-vmcrack)
 

@@ -1,16 +1,15 @@
 ---
 layout: single
-title:  "Binary Analysis"
+title:  "x64 Binary Analysis Basics"
 date:   2024-10-24 15:30:09 +0900
-categories: binary
+categories: reversing
+excerpt: "x64 레지스터와 Windows calling convention 정리"
 toc: true
 toc_sticky: true
-
+tags: reversing
 ---
 
 ## x64 레지스터
-
-![alt text](image.png)
 
 주로 rax ... al 류는 자주 사용해서 알고있었는데, 
 rdi 류는 dil 이 1바이트를 표기하는 명칭이라 찾아보게 되었음.
@@ -33,7 +32,6 @@ x64 binary 에서 함수가 호출되면 스택 프레임은 다음과 같은 �
 [Red Team Notes](https://www.ired.team/miscellaneous-reversing-forensics/windows-kernel-internals/windows-x64-calling-convention-stack-frame)
 
 
-## 참고
+## Reference
 
-[koreaner](https://blog.naver.com/okcharles/222138969070)
-[ASP routing](https://learn.microsoft.com/ko-kr/aspnet/core/mvc/controllers/routing?view=aspnetcore-8.0#ar6)
+- [Red Team Notes - x64 Calling Convention](https://www.ired.team/miscellaneous-reversing-forensics/windows-kernel-internals/windows-x64-calling-convention-stack-frame)

@@ -1,13 +1,12 @@
 ---
 layout: single
-title:  "Crackmes JUMPOUT_0xFF"
+title:  "Crackmes - JUMPOUT_0xFF"
 date:   2024-11-13 11:56:13 +0900
 categories: reversing
-excerpt: "Difficulty : ★★★★☆☆"
+excerpt: "Instruction Overlapping 난독화 분석 (★★★★☆☆)"
 toc: true
 toc_sticky: true
 tags: reversing
-comments: true
 ---
 
 
@@ -19,24 +18,17 @@ comments: true
 * 전형적인 key finding 문제
 * 64bit architecture / windows OS  
 
-![alt text](image.png)
-> 도발적인 실패 에러메시지...
-
+<!-- TODO: 실패 에러메시지 스크린샷 추가 필요 -->
 
 # Analysis
 
 ## Obfuscation
 
-![alt text](image-1.png)
+동일한 address(실제로는 next instruction) 에 대해 jz,jnz 를 걸어둔 형태의 subroutine 들로 프로그램이 구성되어있다. 이런 난독화를 통해 decompile 을 어렵게하고 있다.
 
-동일한 address(실제로는 next instruction) 에 대해 jz,jnz 를 걸어둔 형태의 subroutine 들로 프로그램이 구성되어있다. 이런 난독화를 통해 decompile 을 어렵게하고 있다. 
+### Instruction overlapping
 
-### Instruction overlapping 
-
-![alt text](image-2.png)
-위 처럼 alignment 를 의도적으로 다르게해서 disassembler 에게 혼란을 주는 난독화를 해두었다. jump target 으로 가서 convert to data( shortcut : d) 를 한 뒤 convert to code(shortcut : c) 를 하면 아래와 같이 제대로된 assembly 를 볼 수 있다. 
-
-![alt text](image-3.png)
+alignment 를 의도적으로 다르게해서 disassembler 에게 혼란을 주는 난독화를 해두었다. jump target 으로 가서 convert to data( shortcut : d) 를 한 뒤 convert to code(shortcut : c) 를 하면 제대로된 assembly 를 볼 수 있다.
 
 ### useless operations
 

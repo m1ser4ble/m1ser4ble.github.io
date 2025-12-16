@@ -1,13 +1,12 @@
 ---
 layout: single
-title:  "Reversing of iApp"
+title:  "iOS App Reversing"
 date:   2024-12-29 11:56:13 +0900
 categories: reversing
-excerpt: "iphone App 을 리버싱 하는 방법"
+excerpt: "iPhone 탈옥, Frida 설치, IPA 덤프까지 iOS 리버싱 가이드"
 toc: true
 toc_sticky: true
-tags: reversing
-comments: true
+tags: reversing ios
 ---
 
 # Frida

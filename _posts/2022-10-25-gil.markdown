@@ -1,12 +1,12 @@
 ---
 layout: single
-title:  "GIL"
+title:  "Python GIL (Global Interpreter Lock)"
 date:   2022-10-25 11:56:13 +0900
-categories: python language
+categories: python
+excerpt: "Python의 GIL이 필요한 이유와 멀티스레딩 제약사항"
 toc: true
 toc_sticky: true
 tags: python
-comments: true
 ---
 
 # GIL
@@ -57,7 +57,7 @@ GIL 을 없애도 문제가 없던 솔루션들이 있었지만 performance 저�
 3. CPython 에서 GIL 을 제거하는 작업이 진행중이기 때문에 이런 것들을 기다려봐라
 
 
-# Refernce
+## Reference
 
-[realpython.com](https://realpython.com/python-gil/#what-problem-did-the-gil-solve-for-python)
+- [Real Python - Python GIL](https://realpython.com/python-gil/#what-problem-did-the-gil-solve-for-python)
 

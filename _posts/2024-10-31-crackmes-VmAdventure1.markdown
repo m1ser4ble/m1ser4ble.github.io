@@ -1,12 +1,12 @@
 ---
-layout: single 
-title:  "Crackmes VmAdventures1" 
+layout: single
+title:  "Crackmes - VmAdventures1"
 date:   2024-10-30 11:56:13 +0900
-categories: reversing 
-toc: true 
-toc_sticky: true 
-tags: reversing 
-comments: true
+categories: reversing
+excerpt: "간단한 VM 기반 crackme 문제 풀이 (★★★☆☆☆)"
+toc: true
+toc_sticky: true
+tags: reversing
 ---
 # Problem
 

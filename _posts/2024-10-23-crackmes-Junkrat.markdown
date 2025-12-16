@@ -1,12 +1,12 @@
 ---
 layout: single
-title:  "Crackmes Junkrat"
+title:  "Crackmes - Junkrat"
 date:   2024-10-23 11:56:13 +0900
 categories: reversing
+excerpt: "난독화와 Anti-Debugging이 적용된 crackme 문제 풀이"
 toc: true
 toc_sticky: true
 tags: reversing
-comments: true
 ---
 
 
