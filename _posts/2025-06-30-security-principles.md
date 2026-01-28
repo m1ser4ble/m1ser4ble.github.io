@@ -5,7 +5,7 @@ date: 2025-06-30 18:31 +0900
 description:
 category: security
 tags: [theory, cia]
-excerpt: ""
+excerpt: "보안의 기본 원칙인 CIA 삼각형과 공격자 관점의 DAD 모델 정리"
 ---
 
 ## CIA
@@ -28,5 +28,5 @@ CIA 에 다음의 3요소를 더함
 공격자 입장에서 CIA 를 깨뜨리는 3요소는 DAD 임.
 
 * Disclosure(노출) : 기밀성의 반대개념.
-* Aleratation (변경 ) : 무결성의 반대개념.
+* Alteration(변경): 무결성의 반대개념.
 * Destruction/Denial : 가용성의 반대개념

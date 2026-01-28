@@ -1,19 +1,14 @@
 ---
 layout: post
-title: Privilege Escalation
+title: "[THM] Linux Privilege Escalation"
 date: 2025-06-16 20:53 +0900
 description:
 category: security
 tags: [pentest, linux, privilege-escalation]
+excerpt: "Linux 권한 상승 기법 총정리: sudo, SUID/SGID, Capabilities, Cron, NFS"
 ---
 
-You can launch the target machine and access it directly from your browser.
-
-Alternatively, you can access it over SSH with the low-privilege user credentials below:
-
-Username: karen
-
-Password: Password1
+## Sudo 권한 악용
 
 sudo command 로는 모든 프로그램을 root 권한으로 실행시킬 수 있는 반면, 어떤 조건 하에서만 특정 유저에게 root 권한으로 실행시킬 수 있도록 설정할 수도 있다. 예를 들면, SOC analyst 는 nmap 을 주기적으로 사용해야하는데, 이를 위해 관리자가 이 유저에게 nmap 만 root 권한으로 실행할 수 있도록 설정할 수 있다.
 sudo -l 을 하면 현재 내의 root 권한에 관해서 어떤 조건을 부여받았는지 확인할 수 있다.
@@ -52,8 +47,11 @@ cron job 설정은 crontabs 에 저장되어서 다음 예정시간에 대한 �
 PATH 에 유저가 write permission 을 지닌 폴더가 있다면 어플리케이션이 스크립트를 실행하도록 hijack 할 수 있다.
 절대경로로 정의되거나 shell 내장 커맨드가 아니라면 리눅스는 path 에서 찾음.
 
+### Network 기반 권한 상승
+
 권한 상승 경로는 internal access 에만 국한된건 아니다. ssh 와 telnet 같은 shared folder 와 remote management interface 도 root access 를 얻는데 도움을 줄 수 있다. 어떤 경우는 root ssh private key 를 찾고 ssh 에 연결하는것처럼 여러 escalation vector 를 이용해야할 수 있음.
-Privilege escalation
+
+### NFS 악용
 
 다른 경로는 더 CTF 나 테스트와 관련되어있는데, 이는 잘못 설정된 network shell 이다. 이 경로는 침투 테스트 동안에 볼 수 있다.
 
