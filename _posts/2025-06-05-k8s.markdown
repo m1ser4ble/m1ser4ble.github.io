@@ -1,0 +1,45 @@
+---
+layout: post
+title: k8s
+date: 2025-06-05 13:49 +0900
+description:
+category: infrastructure
+tags: [k8s, network, cni]
+---
+
+CNI(Container Network Interface)는 컨테이너 간의 네트워킹을 제어할 수 있는 플러그인을 만들기 위한 표준.
+쉽게말하면 Kubelet 이 네트워크를 설정해주고 pod 간의 통신을 하기 위한 레이어임.
+Kubernetes 등 컨테이너 플랫폼이 Pod에 네트워크 기능을 부여하기 위해 사용하는 표준 인터페이스이다.
+
+cilium 은 cni 를 넘어서 다음의 기능들도 지원함.
+network policy, kube-proxy, service msh , multicluster/overlay
+
+VXLAN(Virtual Extensible Lan),
+
+**VXLAN (Virtual eXtensible LAN)**은 L2 이더넷 프레임을 L3 네트워크 상에서 전달할 수 있게 해주는 오버레이 터널링 프로토콜이다.
+기존 VLAN의 확장판으로, 데이터센터 간 L2 네트워크 가상화에 사용되며, Kubernetes와 같은 클라우드 환경에서도 핵심적으로 쓰인다.
+
+IP-in-IP  ( encapsulated network model ) L3 를 encapsulation 하여 가상의 ip 를 두는 방식
+
+자율 시스템(AS, Autonomous System)
+
+* 동일한 관리 기관(예: ISP, 기업 네트워크)에 의해 운영되는 IP 네트워크 집합
+* 고유 번호인 **ASN(AS Number)**을 가짐 (예: AS15169 = Google)
+
+BGP (Border Gateway Protocol )
+인터넷에서 **자율 시스템(AS) 간 라우팅 정보를 교환하는 외부 게이트웨이 프로토콜(EGP)**이다.
+전 세계 인터넷의 백본을 형성하는 라우팅 프로토콜
+
+AS 간에 최적의 경로를 선택하여 라우팅 테이블을 구성
+
+* 라우팅 정책(정책 기반 라우팅, 필터링, 경로 우선순위 등) 적용 가능
+* 네트워크 간 트래픽 경로 결정
+
+"주변의 여러 라우터들에게 어떤 라우터가 어느 AS에 속해 있는지에 대한 정보를 소문 내는 것" 이다.
+
+계층 격리 방식 설명
+네트워크|  VXLAN, CNI 정책| Pod 간 통신 제한, Overlay 네트워크 분리
+네임스페이스| Kubernetes Namespace| 리소스 이름 충돌 방지, 기본 단위
+인증/인가| RBAC, OIDC| 사용자별 접근 권한 제어
+컴퓨팅| 리소스쿼터, 노드셀렉터| CPU/메모리 사용 제한, 특정 노드 고정
+저장소| PVC + StorageClass| 볼륨 접근 제한
