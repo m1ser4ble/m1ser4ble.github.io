@@ -6,7 +6,7 @@ categories: frontend
 excerpt: "Carbon Design System (IBM)의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Carbon, Design, System, (IBM)]
+tags: [Carbon, Design, System, IBM]
 ---
 
 # TL;DR

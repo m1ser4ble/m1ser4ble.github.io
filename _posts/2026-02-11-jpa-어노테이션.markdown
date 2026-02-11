@@ -6,7 +6,7 @@ categories: backend
 excerpt: "JPA 핵심 어노테이션 완벽 가이드의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [JPA, @MappedSuperclass, @EntityListeners, Auditing, @CreatedDate, @LastModifiedDate, @Embeddable, @Inheritance]
+tags: [JPA, MappedSuperclass, EntityListeners, Auditing, CreatedDate, LastModifiedDate, Embeddable, Inheritance]
 ---
 
 # TL;DR

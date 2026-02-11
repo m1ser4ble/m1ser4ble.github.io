@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Kotlin @Transactional 어노테이션의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Kotlin, @Transactional, 어노테이션]
+tags: [Kotlin, Transactional, 어노테이션]
 ---
 
 # TL;DR

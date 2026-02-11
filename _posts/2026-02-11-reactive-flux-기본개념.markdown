@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Reactive Programming & Flux 기본 개념의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Reactive, Programming, &, Flux, 기본, 개념]
+tags: [Reactive, Programming, Flux, 기본, 개념]
 ---
 
 # TL;DR

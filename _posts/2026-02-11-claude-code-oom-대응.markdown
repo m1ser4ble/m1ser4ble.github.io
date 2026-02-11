@@ -6,7 +6,7 @@ categories: devops
 excerpt: "Claude Code OOM (Out of Memory) 대응의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Claude, Code, OOM, (Out, of, Memory)]
+tags: [Claude, Code, OOM, Out, of, Memory]
 ---
 
 # TL;DR

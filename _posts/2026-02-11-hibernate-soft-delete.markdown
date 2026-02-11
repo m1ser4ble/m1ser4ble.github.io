@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Hibernate와 Soft Delete의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Hibernate, ORM, JPA, Soft Delete, Hard Delete, @SQLDelete, @SQLRestriction, @SoftDelete, 논리적 삭제, Gavin King]
+tags: [Hibernate, ORM, JPA, Soft Delete, Hard Delete, SQLDelete, SQLRestriction, SoftDelete, 논리적 삭제, Gavin King]
 ---
 
 # TL;DR
