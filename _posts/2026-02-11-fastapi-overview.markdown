@@ -16,7 +16,7 @@ tags: [FastAPI, Python, ASGI, Pydantic, Web]
 
 ---
 
-# 1) FastAPI의 개념
+# 1. FastAPI의 개념
 FastAPI는 **Python으로 API를 빠르고 안정적으로 만들기 위한 프레임워크**다.
 
 핵심은 세 가지다:
@@ -28,7 +28,7 @@ FastAPI는 **Python으로 API를 빠르고 안정적으로 만들기 위한 프�
 
 ---
 
-# 2) 등장 배경 (왜 필요했나?)
+# 2. 등장 배경 (왜 필요했나?)
 2018년 전후 Python 웹 환경은 다음 한계가 있었다:
 
 - Django/Flask는 **동기(WGSI)** 기반이라 동시성 처리에 불리
@@ -40,7 +40,7 @@ FastAPI는 “**현대적인 Python 기능을 적극 활용하자**”는 철학
 
 ---
 
-# 3) FastAPI의 핵심 특징
+# 3. FastAPI의 핵심 특징
 ### ✅ 1. 성능 (ASGI 기반 비동기)
 - Starlette 기반 비동기 처리
 - Node.js, Go 수준의 성능 목표
@@ -63,7 +63,7 @@ FastAPI는 “**현대적인 Python 기능을 적극 활용하자**”는 철학
 
 ---
 
-# 4) 핵심 구성 요소
+# 4. 핵심 구성 요소
 ```
 FastAPI
  ├─ Starlette (ASGI 웹 코어)
@@ -77,7 +77,7 @@ FastAPI
 
 ---
 
-# 5) 기본 사용법 (Hello World)
+# 5. 기본 사용법 (Hello World)
 ```python
 from fastapi import FastAPI
 
@@ -95,7 +95,7 @@ uvicorn main:app --reload
 
 ---
 
-# 6) 타입 검증 예시 (Pydantic)
+# 6. 타입 검증 예시 (Pydantic)
 ```python
 from pydantic import BaseModel, EmailStr
 
@@ -111,7 +111,7 @@ class User(BaseModel):
 
 ---
 
-# 7) 의존성 주입 (Dependency Injection)
+# 7. 의존성 주입 (Dependency Injection)
 FastAPI는 인증/DB연결 같은 공통 로직을 주입하는 기능을 내장 제공한다.
 
 ```python
@@ -136,7 +136,7 @@ def get_users(db=Depends(get_db)):
 
 ---
 
-# 8) 비동기 처리 예시
+# 8. 비동기 처리 예시
 ```python
 @app.get("/async")
 async def async_endpoint():
@@ -147,7 +147,7 @@ async def async_endpoint():
 
 ---
 
-# 9) FastAPI vs Flask vs Django
+# 9. FastAPI vs Flask vs Django
 | 항목 | FastAPI | Flask | Django |
 |---|---|---|---|
 | 비동기 | ✅ | ❌ | ⚠️ 제한적 |
@@ -160,7 +160,7 @@ async def async_endpoint():
 
 ---
 
-# 10) 추천 프로젝트 구조
+# 10. 추천 프로젝트 구조
 ```
 my_project/
 ├── app/
@@ -174,7 +174,7 @@ my_project/
 
 ---
 
-# 11) 정리
+# 11. 정리
 FastAPI는 **속도·안정성·문서화**를 동시에 잡는 API 프레임워크다.
 - API 서버 → FastAPI 거의 표준
 - 풀스택 웹앱 → Django
