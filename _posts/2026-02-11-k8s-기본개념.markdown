@@ -1,0 +1,435 @@
+---
+layout: single
+title: "Kubernetes 기본 개념"
+date: 2026-02-11 11:20:00 +0900
+categories: infra
+excerpt: "``` K8s = Kubernetes의 약어 K + 8글자(ubernete) + s = K8s"
+toc: true
+toc_sticky: true
+tags: [Kubernetes, 기본, 개념]
+---
+
+# TL;DR
+- **Kubernetes 기본 개념의 핵심 개념과 사용 범위를 한눈에 정리**
+- **등장 배경과 필요한 이유를 짚고 실무 적용 포인트를 연결**
+- **주요 특징과 체크리스트를 빠르게 확인**
+
+---
+
+## 1. 개념
+``` K8s = Kubernetes의 약어 K + 8글자(ubernete) + s = K8s
+
+## 2. 배경
+Kubernetes 기본 개념이(가) 등장한 배경과 기존 한계를 정리한다.
+
+## 3. 이유
+이 주제를 이해하고 적용해야 하는 이유를 정리한다.
+
+## 4. 특징
+- 약자
+- 개념
+- 역사
+- 전체 구조
+- 구성 요소 설명
+
+## 5. 상세 내용
+
+> **작성일**: 2026-01-28
+> **카테고리**: Infrastructure / Container Orchestration
+> **포함 내용**: Kubernetes, Pod, Service, Deployment, Node, Namespace
+
+---
+
+# 1. Kubernetes란?
+
+## 약자
+
+```
+K8s = Kubernetes의 약어
+      K + 8글자(ubernete) + s = K8s
+
+Kubernetes = 그리스어로 "조타수, 키잡이"
+             (κυβερνήτης)
+```
+
+## 개념
+
+```
+Kubernetes = 컨테이너 오케스트레이션 플랫폼
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  "컨테이너가 많아지면 생기는 문제"                       │
+│                                                         │
+│  컨테이너 1개 관리 → 쉬움                               │
+│  컨테이너 1000개 관리 → ???                             │
+│                                                         │
+│  ├── 어떤 서버에 배치?                                  │
+│  ├── 컨테이너 죽으면?                                   │
+│  ├── 트래픽 늘어나면?                                   │
+│  ├── 업데이트는 어떻게?                                 │
+│  ├── 서비스 간 통신은?                                  │
+│  └── 이걸 자동으로 해주는 게 "Kubernetes"               │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 역사
+
+```
+2014: Google이 오픈소스로 공개
+      └── 내부 시스템 Borg의 경험을 기반으로 개발
+
+2015: CNCF(Cloud Native Computing Foundation)에 기증
+
+현재: 컨테이너 오케스트레이션의 사실상 표준
+```
+
+---
+
+# 2. Kubernetes 아키텍처
+
+## 전체 구조
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Kubernetes Cluster                     │
+│                                                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              Control Plane (Master)              │   │
+│  │                                                  │   │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐        │   │
+│  │  │   API    │ │  etcd    │ │Scheduler │        │   │
+│  │  │  Server  │ │ (저장소) │ │(스케줄러)│        │   │
+│  │  └──────────┘ └──────────┘ └──────────┘        │   │
+│  │  ┌──────────────────────────────────────┐      │   │
+│  │  │      Controller Manager               │      │   │
+│  │  └──────────────────────────────────────┘      │   │
+│  └─────────────────────────────────────────────────┘   │
+│                          │                              │
+│                          ▼                              │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │              Worker Nodes (Data Plane)           │   │
+│  │                                                  │   │
+│  │  ┌───────────────┐     ┌───────────────┐       │   │
+│  │  │    Node 1     │     │    Node 2     │       │   │
+│  │  │ ┌───────────┐ │     │ ┌───────────┐ │       │   │
+│  │  │ │  kubelet  │ │     │ │  kubelet  │ │       │   │
+│  │  │ └───────────┘ │     │ └───────────┘ │       │   │
+│  │  │ ┌───────────┐ │     │ ┌───────────┐ │       │   │
+│  │  │ │ kube-proxy│ │     │ │ kube-proxy│ │       │   │
+│  │  │ └───────────┘ │     │ └───────────┘ │       │   │
+│  │  │ ┌───┐ ┌───┐  │     │ ┌───┐ ┌───┐  │       │   │
+│  │  │ │Pod│ │Pod│  │     │ │Pod│ │Pod│  │       │   │
+│  │  │ └───┘ └───┘  │     │ └───┘ └───┘  │       │   │
+│  │  └───────────────┘     └───────────────┘       │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 구성 요소 설명
+
+| 구성요소 | 역할 |
+|---------|------|
+| API Server | 모든 요청의 진입점, REST API 제공 |
+| etcd | 클러스터 상태 저장소 (Key-Value) |
+| Scheduler | Pod를 어떤 Node에 배치할지 결정 |
+| Controller Manager | 클러스터 상태 유지 (Deployment, ReplicaSet 등) |
+| kubelet | Node에서 Pod 실행/관리 |
+| kube-proxy | 네트워크 프록시, Service 구현 |
+
+---
+
+# 3. Pod
+
+## 개념
+
+```
+Pod = Kubernetes의 최소 배포 단위
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  Pod ≠ 컨테이너                                         │
+│  Pod = 1개 이상의 컨테이너 그룹                         │
+│                                                         │
+│  ┌─────────────────────────────────────┐               │
+│  │              Pod                     │               │
+│  │  ┌───────────┐   ┌───────────┐     │               │
+│  │  │ Container │   │ Container │     │               │
+│  │  │   (App)   │   │ (Sidecar) │     │               │
+│  │  └───────────┘   └───────────┘     │               │
+│  │                                     │               │
+│  │  공유: IP, 볼륨, 네트워크 네임스페이스│               │
+│  └─────────────────────────────────────┘               │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Pod 특징
+
+```
+1. 같은 Pod 내 컨테이너는:
+   - 같은 IP 주소 공유
+   - localhost로 서로 통신 가능
+   - 볼륨 공유 가능
+
+2. Pod는 휘발성:
+   - 언제든 죽을 수 있음
+   - 죽으면 새 Pod 생성 (같은 Pod가 아님)
+   - IP도 바뀔 수 있음
+
+3. 그래서 Service가 필요!
+```
+
+## Pod YAML 예시
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+  labels:
+    app: my-app
+spec:
+  containers:
+    - name: app
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+```
+
+---
+
+# 4. Service
+
+## 개념
+
+```
+Service = Pod에 접근하기 위한 안정적인 엔드포인트
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  문제: Pod IP는 언제든 바뀔 수 있음                     │
+│                                                         │
+│  Client → Pod IP (10.0.0.5) → ❌ Pod 죽음              │
+│                              → 새 Pod (10.0.0.8)        │
+│                              → Client가 모름!          │
+│                                                         │
+│  해결: Service                                          │
+│                                                         │
+│  Client → Service (고정 IP/DNS) → Pod (어떤 것이든)    │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Service 종류
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  1. ClusterIP (기본값)                                  │
+│     - 클러스터 내부에서만 접근 가능                     │
+│     - 내부 서비스 간 통신용                             │
+│                                                         │
+│  2. NodePort                                            │
+│     - 모든 Node의 특정 포트로 접근 가능                 │
+│     - 외부 접근 가능 (Node IP:Port)                     │
+│                                                         │
+│  3. LoadBalancer                                        │
+│     - 클라우드 로드밸런서 연동                          │
+│     - 외부 접근 가능 (LB IP)                            │
+│                                                         │
+│  4. ExternalName                                        │
+│     - 외부 DNS 이름 매핑                                │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Service YAML 예시
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  type: ClusterIP
+  selector:
+    app: my-app    # 이 라벨을 가진 Pod에 트래픽 전달
+  ports:
+    - port: 80         # Service 포트
+      targetPort: 8080 # Pod 포트
+```
+
+---
+
+# 5. Deployment
+
+## 개념
+
+```
+Deployment = Pod의 "원하는 상태"를 선언적으로 관리
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  "Pod 3개를 항상 유지해줘"                              │
+│                                                         │
+│  Deployment                                             │
+│     │                                                   │
+│     └──► ReplicaSet                                     │
+│              │                                          │
+│              ├──► Pod 1                                 │
+│              ├──► Pod 2                                 │
+│              └──► Pod 3                                 │
+│                                                         │
+│  Pod 하나가 죽으면?                                     │
+│  → Deployment가 자동으로 새 Pod 생성                    │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Deployment 기능
+
+```
+1. 복제본 관리 (replicas)
+2. 롤링 업데이트
+3. 롤백
+4. 스케일링 (수동/자동)
+```
+
+## Deployment YAML 예시
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+spec:
+  replicas: 3              # Pod 3개 유지
+  selector:
+    matchLabels:
+      app: my-app
+  template:                # Pod 템플릿
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: app
+          image: my-app:v1
+          ports:
+            - containerPort: 8080
+```
+
+---
+
+# 6. Namespace
+
+## 개념
+
+```
+Namespace = 클러스터 내 가상의 분리 공간
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  하나의 클러스터를 여러 팀/환경이 공유할 때             │
+│                                                         │
+│  Cluster                                                │
+│  ├── Namespace: dev                                     │
+│  │   ├── Pod: api                                       │
+│  │   └── Service: api-svc                               │
+│  │                                                      │
+│  ├── Namespace: staging                                 │
+│  │   ├── Pod: api                                       │
+│  │   └── Service: api-svc                               │
+│  │                                                      │
+│  └── Namespace: prod                                    │
+│      ├── Pod: api                                       │
+│      └── Service: api-svc                               │
+│                                                         │
+│  같은 이름(api, api-svc)이지만 서로 격리됨              │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 기본 Namespace
+
+```
+default      : 기본 네임스페이스
+kube-system  : 시스템 컴포넌트
+kube-public  : 공개 리소스
+kube-node-lease : 노드 상태 체크용
+```
+
+---
+
+# 7. ConfigMap과 Secret
+
+## ConfigMap
+
+```
+ConfigMap = 설정 데이터를 Key-Value로 저장
+
+용도: 환경 변수, 설정 파일 등
+```
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+data:
+  DATABASE_URL: "postgresql://db:5432"
+  LOG_LEVEL: "info"
+```
+
+## Secret
+
+```
+Secret = 민감한 데이터를 Base64로 인코딩하여 저장
+
+용도: 비밀번호, API 키, 인증서 등
+```
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+type: Opaque
+data:
+  password: cGFzc3dvcmQxMjM=  # base64 encoded
+```
+
+---
+
+# 8. 정리
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  Kubernetes = 컨테이너 오케스트레이션 플랫폼            │
+│                                                         │
+│  핵심 개념:                                             │
+│  ├── Cluster: K8s 전체 환경                             │
+│  ├── Node: 컨테이너가 실행되는 서버                     │
+│  ├── Pod: 최소 배포 단위 (1+ 컨테이너)                  │
+│  ├── Service: Pod 접근을 위한 안정적 엔드포인트         │
+│  ├── Deployment: Pod 상태 관리 (복제, 업데이트)         │
+│  ├── Namespace: 가상 분리 공간                          │
+│  ├── ConfigMap: 설정 데이터                             │
+│  └── Secret: 민감한 데이터                              │
+│                                                         │
+│  선언적 관리:                                           │
+│  "YAML로 원하는 상태를 정의하면                         │
+│   K8s가 그 상태를 유지해줌"                             │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 관련 키워드
+
+`Kubernetes`, `K8s`, `Pod`, `Service`, `Deployment`, `Node`, `Namespace`, `ConfigMap`, `Secret`, `컨테이너 오케스트레이션`

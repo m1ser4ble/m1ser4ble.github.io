@@ -1,0 +1,477 @@
+---
+layout: single
+title: "pnpm 패키지 매니저"
+date: 2026-02-11 11:20:00 +0900
+categories: build
+excerpt: "``` pnpm = Performant npm └── "빠르고 디스크 효율적인" 패키지 매니저 └── npm/yarn의 문제점을 해결하기 위해 등장 ```"
+toc: true
+toc_sticky: true
+tags: [pnpm, 패키지, 매니저]
+---
+
+# TL;DR
+- **pnpm 패키지 매니저의 핵심 개념과 사용 범위를 한눈에 정리**
+- **등장 배경과 필요한 이유를 짚고 실무 적용 포인트를 연결**
+- **주요 특징과 체크리스트를 빠르게 확인**
+
+---
+
+## 1. 개념
+``` pnpm = Performant npm └── "빠르고 디스크 효율적인" 패키지 매니저 └── npm/yarn의 문제점을 해결하기 위해 등장 ```
+
+## 2. 배경
+pnpm 패키지 매니저이(가) 등장한 배경과 기존 한계를 정리한다.
+
+## 3. 이유
+이 주제를 이해하고 적용해야 하는 이유를 정리한다.
+
+## 4. 특징
+- 개념
+- npm/yarn의 문제점
+- Flat node_modules의 문제
+- Content-Addressable Store
+- 심볼릭 링크 vs 하드 링크
+
+## 5. 상세 내용
+
+> **작성일**: 2026-02-09
+> **카테고리**: Build / Package Manager
+> **포함 내용**: pnpm, npm, yarn, Content-Addressable Store, Phantom Dependencies, Monorepo, workspace
+
+---
+
+# 1. pnpm이란?
+
+## 개념
+
+```
+pnpm = Performant npm
+      └── "빠르고 디스크 효율적인" 패키지 매니저
+      └── npm/yarn의 문제점을 해결하기 위해 등장
+```
+
+---
+
+# 2. 등장 배경
+
+## npm/yarn의 문제점
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  기존 방식 (npm/yarn):                                      │
+│                                                             │
+│  프로젝트 A          프로젝트 B          프로젝트 C         │
+│  └── node_modules/   └── node_modules/   └── node_modules/ │
+│      └── lodash@4        └── lodash@4        └── lodash@4  │
+│      └── react@18        └── react@18        └── react@18  │
+│      └── axios@1         └── axios@1         └── axios@1   │
+│      └── ...             └── ...             └── ...       │
+│                                                             │
+│  문제점:                                                    │
+│  ├── 같은 패키지가 프로젝트마다 중복 설치                   │
+│  ├── 디스크 공간 낭비 (프로젝트당 수백 MB ~ 수 GB)         │
+│  ├── 설치 시간 증가                                         │
+│  └── 네트워크 대역폭 낭비                                   │
+│                                                             │
+│  실제 사례:                                                 │
+│  "10개 프로젝트 × 500MB = 5GB 디스크 사용"                 │
+│  "같은 lodash가 10번 복사됨"                                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Flat node_modules의 문제
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  npm v3+, yarn의 "Flat" 구조:                              │
+│                                                             │
+│  의도: 중첩 깊이 줄이기 (Windows 경로 길이 제한 등)        │
+│                                                             │
+│  node_modules/                                              │
+│  ├── A/               ← 직접 의존성                        │
+│  ├── B/               ← A의 의존성인데 최상위로 끌어올림   │
+│  ├── C/               ← B의 의존성인데 최상위로 끌어올림   │
+│  └── ...                                                    │
+│                                                             │
+│  부작용: Phantom Dependencies 발생                          │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 3. pnpm의 해결책
+
+## Content-Addressable Store
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  pnpm 방식:                                                 │
+│                                                             │
+│  ~/.pnpm-store/              ← 글로벌 저장소 (딱 1곳)       │
+│  └── v3/                                                    │
+│      └── files/                                             │
+│          └── 00/                                            │
+│          └── 01/                                            │
+│          └── ...             ← 해시 기반 파일 저장          │
+│                                                             │
+│  프로젝트 A                  프로젝트 B                     │
+│  └── node_modules/           └── node_modules/             │
+│      └── .pnpm/              └── .pnpm/                    │
+│      └── lodash → 하드링크   └── lodash → 하드링크         │
+│      └── react → 하드링크    └── react → 하드링크          │
+│                                                             │
+│  핵심:                                                      │
+│  ├── 패키지 파일은 store에 1번만 저장                       │
+│  ├── 프로젝트에서는 하드 링크로 참조                        │
+│  ├── 디스크 사용량 대폭 감소 (70-90%)                      │
+│  └── 설치 속도 향상 (이미 store에 있으면 링크만)           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 심볼릭 링크 vs 하드 링크
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  심볼릭 링크 (Symbolic Link):                               │
+│  ├── "바로가기" 같은 개념                                   │
+│  ├── 원본 파일을 가리키는 포인터                            │
+│  └── 원본 삭제되면 깨짐                                     │
+│                                                             │
+│  하드 링크 (Hard Link):                                     │
+│  ├── 같은 파일 데이터를 가리키는 또 다른 이름               │
+│  ├── 원본과 동등한 존재                                     │
+│  ├── 원본 삭제해도 데이터 유지                              │
+│  └── 디스크 공간 추가 사용 없음                             │
+│                                                             │
+│  pnpm:                                                      │
+│  ├── 패키지 폴더 → .pnpm/ : 심볼릭 링크                    │
+│  └── 파일 → store : 하드 링크                              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 4. Phantom Dependencies 차단
+
+## 문제 설명
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  Phantom Dependency (유령 의존성):                          │
+│                                                             │
+│  package.json:                                              │
+│    dependencies: { "express": "4.18" }                     │
+│                                                             │
+│  express가 내부적으로 "accepts" 패키지 사용                 │
+│                                                             │
+│  npm/yarn (flat node_modules):                             │
+│  node_modules/                                              │
+│  ├── express/                                               │
+│  └── accepts/  ← express의 의존성이지만 최상위에 노출됨    │
+│                                                             │
+│  내 코드에서:                                               │
+│  import accepts from 'accepts'  // 동작함! (하지만 위험)   │
+│                                                             │
+│  문제:                                                      │
+│  ├── package.json에 없는 패키지를 사용 가능                 │
+│  ├── express가 accepts 제거하면 내 코드도 깨짐              │
+│  └── 의존성 그래프가 불명확해짐                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## pnpm의 엄격한 구조
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  pnpm node_modules 구조:                                    │
+│                                                             │
+│  node_modules/                                              │
+│  ├── .pnpm/                      ← 실제 패키지들 (격리됨)   │
+│  │   ├── express@4.18.0/                                   │
+│  │   │   └── node_modules/                                 │
+│  │   │       ├── express/        ← 실제 파일               │
+│  │   │       └── accepts/        ← express만 접근 가능     │
+│  │   └── accepts@1.3.8/                                    │
+│  │       └── node_modules/                                 │
+│  │           └── accepts/                                  │
+│  └── express/ → .pnpm/express@4.18.0/.../express           │
+│                                                             │
+│  내 코드에서:                                               │
+│  import express from 'express'   // ✅ 정상                 │
+│  import accepts from 'accepts'   // ❌ 에러! (올바른 동작)  │
+│                                                             │
+│  → 명시적으로 선언한 의존성만 접근 가능                     │
+│  → 더 안전하고 예측 가능한 의존성 관리                      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 5. npm vs yarn vs pnpm 비교
+
+## 기능 비교
+
+| 항목 | npm | yarn (classic) | pnpm |
+|------|-----|----------------|------|
+| 출시 | 2010 | 2016 | 2017 |
+| 저장 방식 | 프로젝트별 복사 | 프로젝트별 복사 | 글로벌 store + 링크 |
+| 디스크 사용 | 높음 | 높음 | **매우 낮음** |
+| 설치 속도 | 보통 | 빠름 | **가장 빠름** |
+| Lock 파일 | package-lock.json | yarn.lock | pnpm-lock.yaml |
+| node_modules | flat | flat (PnP 옵션) | **엄격한 중첩** |
+| Phantom Deps | 허용 | 허용 | **차단** |
+| Monorepo | workspaces | workspaces | **최적화된 workspace** |
+
+## 성능 벤치마크 (일반적인 경우)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  설치 시간 (cold cache):                                    │
+│  npm:  ████████████████████  100%                          │
+│  yarn: ████████████████      80%                           │
+│  pnpm: ████████████          60%                           │
+│                                                             │
+│  설치 시간 (warm cache - 이미 store에 있음):               │
+│  npm:  ████████████████████  100%                          │
+│  yarn: ████████████████      80%                           │
+│  pnpm: ████                  20%  ← 링크만 생성             │
+│                                                             │
+│  디스크 사용량:                                             │
+│  npm:  ████████████████████  100%                          │
+│  yarn: ████████████████████  100%                          │
+│  pnpm: ██████                30%  ← 공유 store             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 6. 주요 명령어
+
+## 기본 명령어
+
+```bash
+# pnpm 설치
+npm install -g pnpm
+# 또는
+corepack enable  # Node.js 16.13+ 내장
+
+# 버전 확인
+pnpm --version
+
+# 패키지 설치
+pnpm install                  # 모든 의존성 설치
+pnpm add lodash               # 프로덕션 의존성 추가
+pnpm add -D typescript        # 개발 의존성 추가
+pnpm add -g tsx               # 전역 설치
+
+# 패키지 제거
+pnpm remove lodash
+
+# 스크립트 실행
+pnpm run build                # npm run build와 동일
+pnpm build                    # run 생략 가능
+pnpm test
+pnpm start
+```
+
+## Store 관리
+
+```bash
+# store 경로 확인
+pnpm store path
+# → ~/.local/share/pnpm/store/v3
+
+# store 상태 확인
+pnpm store status
+
+# 사용하지 않는 패키지 정리
+pnpm store prune
+```
+
+## 유용한 옵션
+
+```bash
+# 프로젝트의 모든 의존성 업데이트
+pnpm update
+
+# 특정 패키지만 업데이트
+pnpm update lodash
+
+# 의존성 트리 확인
+pnpm list
+pnpm list --depth=2
+
+# 왜 이 패키지가 설치됐는지 확인
+pnpm why lodash
+```
+
+---
+
+# 7. Monorepo 지원
+
+## pnpm-workspace.yaml
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - 'packages/*'
+  - 'apps/*'
+  - '!**/test/**'  # test 폴더 제외
+```
+
+## Monorepo 구조
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  my-monorepo/                                               │
+│  ├── package.json           ← 루트 package.json             │
+│  ├── pnpm-workspace.yaml    ← workspace 설정               │
+│  ├── pnpm-lock.yaml         ← 단일 lock 파일               │
+│  ├── node_modules/          ← 공유 의존성                   │
+│  ├── apps/                                                  │
+│  │   ├── web/               ← Next.js 앱                   │
+│  │   │   └── package.json                                  │
+│  │   └── api/               ← Express 서버                 │
+│  │       └── package.json                                  │
+│  └── packages/                                              │
+│      ├── ui/                ← 공유 컴포넌트                 │
+│      │   └── package.json                                  │
+│      └── utils/             ← 공유 유틸리티                 │
+│          └── package.json                                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Workspace 명령어
+
+```bash
+# 특정 패키지에서 명령 실행
+pnpm --filter web build
+pnpm --filter @my/utils test
+
+# 모든 패키지에서 명령 실행
+pnpm -r run build           # recursive
+pnpm -r run test
+
+# 의존성 있는 패키지들만 빌드
+pnpm --filter web... build  # web과 web이 의존하는 모든 패키지
+
+# 워크스페이스 패키지를 의존성으로 추가
+pnpm add @my/utils --filter web --workspace
+```
+
+---
+
+# 8. 마이그레이션
+
+## npm/yarn에서 pnpm으로
+
+```bash
+# 1. 기존 node_modules 삭제
+rm -rf node_modules
+rm package-lock.json  # 또는 yarn.lock
+
+# 2. pnpm으로 설치
+pnpm install
+
+# 3. pnpm-lock.yaml 생성됨 (커밋 필요)
+git add pnpm-lock.yaml
+git commit -m "chore: migrate to pnpm"
+```
+
+## 주의사항
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  마이그레이션 시 주의:                                      │
+│                                                             │
+│  1. Phantom Dependencies 에러                               │
+│     → package.json에 누락된 의존성 추가 필요                │
+│     → pnpm add <missing-package>                           │
+│                                                             │
+│  2. 일부 패키지 호환성                                      │
+│     → shamefully-hoist 옵션으로 flat 구조 허용 가능        │
+│     → .npmrc에 shamefully-hoist=true                       │
+│     → (권장하지 않음, 임시 해결책)                          │
+│                                                             │
+│  3. CI/CD 수정 필요                                         │
+│     → npm install → pnpm install                           │
+│     → npm run → pnpm run                                   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 9. 설정 (.npmrc)
+
+## 주요 설정
+
+```ini
+# .npmrc
+
+# store 경로 변경 (기본: ~/.local/share/pnpm/store)
+store-dir=~/.pnpm-store
+
+# 엄격 모드 (기본값, phantom deps 차단)
+strict-peer-dependencies=true
+
+# 호환성 모드 (npm처럼 flat 구조, 권장 안 함)
+shamefully-hoist=true
+
+# Node.js 버전 관리
+use-node-version=18.17.0
+
+# 레지스트리 설정
+registry=https://registry.npmjs.org/
+```
+
+---
+
+# 10. 정리
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  pnpm = 빠르고 디스크 효율적인 패키지 매니저                │
+│                                                             │
+│  핵심 특징:                                                 │
+│  ├── Content-Addressable Store: 패키지 1번만 저장          │
+│  ├── 하드 링크: 디스크 공간 절약 (70-90%)                  │
+│  ├── 엄격한 node_modules: Phantom Dependencies 차단        │
+│  └── Monorepo 최적화: 효율적인 workspace 관리              │
+│                                                             │
+│  선택 기준:                                                 │
+│  ├── 디스크 공간이 중요 → pnpm                             │
+│  ├── Monorepo 운영 → pnpm                                  │
+│  ├── 엄격한 의존성 관리 → pnpm                             │
+│  ├── 기존 프로젝트 호환성 → npm                            │
+│  └── Yarn PnP 사용 중 → yarn                               │
+│                                                             │
+│  주요 기업 사용:                                            │
+│  Vue.js, Vite, Nuxt, Turborepo, Vercel 등                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 관련 키워드
+
+`pnpm`, `npm`, `yarn`, `패키지 매니저`, `node_modules`, `Content-Addressable Store`, `하드 링크`, `심볼릭 링크`, `Phantom Dependencies`, `유령 의존성`, `Monorepo`, `workspace`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.npmrc`

@@ -1,0 +1,572 @@
+---
+layout: single
+title: "Python 데이터 클래스 비교"
+date: 2026-02-11 11:20:00 +0900
+categories: backend
+excerpt: "``` ┌─────────────────────────────────────────────────────────┐ │            Python 데이터 클래스 도구들                   │ │                                                         │ │  dataclasses (표준)                                     │ │  └── 보일러플레이트 줄이기, 검증 없음                   │ │                                                         │ │  msgspec                                                │ │  └── 초고속 JSON 파싱 + 타입 검증                       │ │                                                         │ │  Pydantic                                               │ │  └── 풍부한 런타임 검증 + 타입 변환                     │ │                                                         │ │  용도에 따라 선택!                                      │ │                                                         │ └─────────────────────────────────────────────────────────┘ ```"
+toc: true
+toc_sticky: true
+tags: [Python, 데이터, 클래스, 비교]
+---
+
+# TL;DR
+- **Python 데이터 클래스 비교의 핵심 개념과 사용 범위를 한눈에 정리**
+- **등장 배경과 필요한 이유를 짚고 실무 적용 포인트를 연결**
+- **주요 특징과 체크리스트를 빠르게 확인**
+
+---
+
+## 1. 개념
+``` ┌─────────────────────────────────────────────────────────┐ │            Python 데이터 클래스 도구들                   │ │                                                         │ │  dataclasses (표준)                                     │ │  └── 보일러플레이트 줄이기, 검증 없음                   │ │                                                         │ │  msgspec                                                │ │  └── 초고속 JSON 파싱 + 타입 검증                       │ │                                                         │ │  Pydantic                                               │ │  └── 풍부한 런타임 검증 + 타입 변환                     │ │                                                         │ │  용도에 따라 선택!                                      │ │                                                         │ └─────────────────────────────────────────────────────────┘ ```
+
+## 2. 배경
+Python 데이터 클래스 비교이(가) 등장한 배경과 기존 한계를 정리한다.
+
+## 3. 이유
+from dataclasses import dataclass from typing import List import json
+
+## 4. 특징
+- 개념
+- 기본 사용법
+- 고급 옵션
+- dataclasses의 한계
+- JSON 직렬화 (직접 구현)
+
+## 5. 상세 내용
+
+> **작성일**: 2026-01-28
+> **카테고리**: Backend / Python / Data Validation
+> **포함 내용**: dataclasses, msgspec, Pydantic 비교, 타입 검증, JSON 직렬화
+
+---
+
+# 1. 개요
+
+```
+┌─────────────────────────────────────────────────────────┐
+│            Python 데이터 클래스 도구들                   │
+│                                                         │
+│  dataclasses (표준)                                     │
+│  └── 보일러플레이트 줄이기, 검증 없음                   │
+│                                                         │
+│  msgspec                                                │
+│  └── 초고속 JSON 파싱 + 타입 검증                       │
+│                                                         │
+│  Pydantic                                               │
+│  └── 풍부한 런타임 검증 + 타입 변환                     │
+│                                                         │
+│  용도에 따라 선택!                                      │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 2. dataclasses (Python 표준 라이브러리)
+
+## 개념
+
+```
+dataclasses = Python 3.7+에서 기본 제공되는 데이터 클래스 데코레이터
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  등장 배경:                                             │
+│                                                         │
+│  옛날 방식 (보일러플레이트 지옥):                       │
+│  class User:                                            │
+│      def __init__(self, name, age, email):             │
+│          self.name = name                               │
+│          self.age = age                                 │
+│          self.email = email                             │
+│                                                         │
+│      def __repr__(self):                               │
+│          return f"User({self.name}, {self.age})"       │
+│                                                         │
+│      def __eq__(self, other):                          │
+│          return self.name == other.name and ...        │
+│                                                         │
+│  → 반복적인 코드 너무 많음!                             │
+│                                                         │
+│  dataclasses 방식:                                      │
+│  @dataclass                                             │
+│  class User:                                            │
+│      name: str                                          │
+│      age: int                                           │
+│      email: str                                         │
+│                                                         │
+│  → 끝! __init__, __repr__, __eq__ 자동 생성            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 기본 사용법
+
+```python
+from dataclasses import dataclass, field
+from typing import Optional, List
+
+@dataclass
+class User:
+    name: str
+    age: int
+    email: str
+    is_active: bool = True  # 기본값
+    tags: List[str] = field(default_factory=list)  # 가변 객체 기본값
+
+# 사용
+user = User(name="홍길동", age=25, email="hong@test.com")
+print(user)  # User(name='홍길동', age=25, email='hong@test.com', is_active=True, tags=[])
+
+# 비교 자동 지원
+user2 = User(name="홍길동", age=25, email="hong@test.com")
+print(user == user2)  # True
+```
+
+## 고급 옵션
+
+```python
+from dataclasses import dataclass, field
+
+@dataclass(frozen=True)  # 불변 객체 (수정 불가)
+class Point:
+    x: int
+    y: int
+
+@dataclass(order=True)  # 비교 연산자 자동 생성 (<, >, <=, >=)
+class Student:
+    grade: int
+    name: str
+
+@dataclass(slots=True)  # Python 3.10+, 메모리 효율 향상
+class LightUser:
+    name: str
+    age: int
+```
+
+## dataclasses의 한계
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  ❌ dataclasses가 안 해주는 것:                         │
+│                                                         │
+│  1. 타입 검증 없음!                                     │
+│     user = User(name=123, age="스물다섯", email=None)  │
+│     → 에러 없이 그냥 생성됨!                           │
+│                                                         │
+│  2. JSON 직렬화 없음                                    │
+│     json.dumps(user)  # 에러!                          │
+│     → 직접 구현하거나 별도 라이브러리 필요              │
+│                                                         │
+│  3. 데이터 변환 없음                                    │
+│     User(age="25")  # "25" → 25 변환 안 됨             │
+│                                                         │
+│  즉, "편리한 클래스 생성"만 해줌                        │
+│  검증/직렬화는 직접 하거나 다른 라이브러리 필요         │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## JSON 직렬화 (직접 구현)
+
+```python
+from dataclasses import dataclass, asdict
+import json
+
+@dataclass
+class User:
+    name: str
+    age: int
+
+user = User(name="홍길동", age=25)
+
+# dict로 변환 후 JSON
+user_dict = asdict(user)
+json_str = json.dumps(user_dict, ensure_ascii=False)
+print(json_str)  # {"name": "홍길동", "age": 25}
+
+# JSON → dataclass (직접 구현 필요)
+data = json.loads(json_str)
+user2 = User(**data)
+```
+
+---
+
+# 3. msgspec (고성능 직렬화 + 검증)
+
+## 개념
+
+```
+msgspec = 매우 빠른 JSON/MessagePack 직렬화 + 타입 검증 라이브러리
+
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  특징:                                                  │
+│  ├── Pydantic보다 5~50배 빠름                           │
+│  ├── 메모리 사용량도 적음                               │
+│  ├── JSON, MessagePack, YAML, TOML 지원                │
+│  ├── 타입 검증 내장                                     │
+│  └── C로 작성된 코어                                    │
+│                                                         │
+│  등장 배경:                                             │
+│  "Pydantic 좋은데... 너무 느려!"                        │
+│  "JSON 파싱만 해도 오버헤드가 크네"                     │
+│  → msgspec: "빠르게 해줄게!"                           │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 설치
+
+```bash
+pip install msgspec
+```
+
+## 기본 사용법
+
+```python
+import msgspec
+
+# Struct 정의 (dataclass 대신)
+class User(msgspec.Struct):
+    name: str
+    age: int
+    email: str
+    is_active: bool = True
+
+# 객체 생성
+user = User(name="홍길동", age=25, email="hong@test.com")
+print(user)  # User(name='홍길동', age=25, email='hong@test.com', is_active=True)
+
+# JSON 직렬화 (매우 빠름!)
+json_bytes = msgspec.json.encode(user)
+print(json_bytes)  # b'{"name":"홍길동","age":25,"email":"hong@test.com","is_active":true}'
+
+# JSON 역직렬화 + 타입 검증
+user2 = msgspec.json.decode(json_bytes, type=User)
+print(user2)  # User(name='홍길동', age=25, email='hong@test.com', is_active=True)
+```
+
+## 타입 검증
+
+```python
+import msgspec
+
+class User(msgspec.Struct):
+    name: str
+    age: int
+
+# 잘못된 데이터 → 에러!
+try:
+    bad_json = b'{"name": "홍길동", "age": "스물다섯"}'
+    msgspec.json.decode(bad_json, type=User)
+except msgspec.ValidationError as e:
+    print(e)  # Expected `int`, got `str`
+
+# 타입 변환은 안 됨 (Pydantic과 다름)
+# Pydantic: "25" → 25 (자동 변환)
+# msgspec: "25" → 에러! (엄격한 검증)
+```
+
+## 고급 기능
+
+```python
+import msgspec
+from typing import Optional, List
+from datetime import datetime
+
+class Address(msgspec.Struct):
+    city: str
+    street: str
+
+class User(msgspec.Struct):
+    name: str
+    age: int
+    address: Optional[Address] = None  # 중첩 구조
+    tags: List[str] = []               # 리스트
+    created_at: datetime = msgspec.field(default_factory=datetime.now)
+
+# 중첩 JSON 파싱
+json_data = b'''
+{
+    "name": "홍길동",
+    "age": 25,
+    "address": {"city": "서울", "street": "강남대로"},
+    "tags": ["developer", "python"]
+}
+'''
+
+user = msgspec.json.decode(json_data, type=User)
+print(user.address.city)  # 서울
+print(user.tags)  # ['developer', 'python']
+```
+
+## 필드 커스터마이징
+
+```python
+import msgspec
+
+class User(msgspec.Struct, rename="camel"):  # snake_case → camelCase
+    user_name: str
+    user_age: int
+
+# JSON 키가 camelCase로 변환
+json_bytes = msgspec.json.encode(User(user_name="홍길동", user_age=25))
+print(json_bytes)  # b'{"userName":"홍길동","userAge":25}'
+
+
+class ApiResponse(msgspec.Struct):
+    # 필드명과 JSON 키 다르게
+    id: int = msgspec.field(name="userId")
+    name: str = msgspec.field(name="userName")
+
+data = b'{"userId": 1, "userName": "홍길동"}'
+resp = msgspec.json.decode(data, type=ApiResponse)
+print(resp.id)  # 1
+```
+
+---
+
+# 4. 비교: dataclasses vs msgspec vs Pydantic
+
+## 기능 비교
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     기능 비교                            │
+│                                                         │
+│  기능           │ dataclass │ msgspec │ Pydantic       │
+│  ──────────────┼───────────┼─────────┼───────────────  │
+│  클래스 생성    │ ✅        │ ✅      │ ✅             │
+│  타입 검증      │ ❌        │ ✅      │ ✅             │
+│  타입 변환      │ ❌        │ ❌      │ ✅ ("25"→25)   │
+│  JSON 직렬화   │ ❌ (수동) │ ✅      │ ✅             │
+│  성능          │ 매우 빠름 │ 매우 빠름│ 보통 (v2 개선) │
+│  표준 라이브러리│ ✅        │ ❌      │ ❌             │
+│  복잡한 검증    │ ❌        │ 제한적  │ ✅             │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+## 성능 비교
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     성능 비교 (대략)                     │
+│                                                         │
+│  JSON 파싱 속도 (낮을수록 빠름):                        │
+│                                                         │
+│  msgspec:      ██                      (가장 빠름)      │
+│  dataclass:    ████ (직접 구현 시)                      │
+│  Pydantic v2:  ████████                                │
+│  Pydantic v1:  ████████████████████    (가장 느림)     │
+│                                                         │
+│  메모리 사용량 (낮을수록 좋음):                         │
+│                                                         │
+│  msgspec:      ██                                       │
+│  dataclass:    ███                                      │
+│  Pydantic:     ████████                                │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 5. 실제 사용 예시: API 응답 파싱
+
+## 시나리오: 외부 API 응답 처리
+
+```python
+# 외부 API가 이런 JSON을 반환한다고 가정
+api_response = b'''
+{
+    "status": "success",
+    "data": {
+        "users": [
+            {"id": 1, "name": "홍길동", "age": 25},
+            {"id": 2, "name": "김철수", "age": 30}
+        ],
+        "total": 2
+    }
+}
+'''
+```
+
+## dataclasses로 처리 (수동 작업 필요)
+
+```python
+from dataclasses import dataclass
+from typing import List
+import json
+
+@dataclass
+class User:
+    id: int
+    name: str
+    age: int
+
+@dataclass
+class Data:
+    users: List[User]
+    total: int
+
+@dataclass
+class ApiResponse:
+    status: str
+    data: Data
+
+# 파싱 (수동으로 해야 함)
+raw = json.loads(api_response)
+users = [User(**u) for u in raw["data"]["users"]]
+data = Data(users=users, total=raw["data"]["total"])
+response = ApiResponse(status=raw["status"], data=data)
+
+print(response.data.users[0].name)  # 홍길동
+```
+
+## msgspec으로 처리 (자동!)
+
+```python
+import msgspec
+from typing import List
+
+class User(msgspec.Struct):
+    id: int
+    name: str
+    age: int
+
+class Data(msgspec.Struct):
+    users: List[User]
+    total: int
+
+class ApiResponse(msgspec.Struct):
+    status: str
+    data: Data
+
+# 한 줄로 파싱 + 검증!
+response = msgspec.json.decode(api_response, type=ApiResponse)
+
+print(response.data.users[0].name)  # 홍길동
+print(response.data.total)  # 2
+```
+
+## Pydantic으로 처리
+
+```python
+from pydantic import BaseModel
+from typing import List
+
+class User(BaseModel):
+    id: int
+    name: str
+    age: int
+
+class Data(BaseModel):
+    users: List[User]
+    total: int
+
+class ApiResponse(BaseModel):
+    status: str
+    data: Data
+
+# 파싱 + 검증 + 변환
+response = ApiResponse.model_validate_json(api_response)
+
+print(response.data.users[0].name)  # 홍길동
+```
+
+---
+
+# 6. 언제 뭘 써야 하나?
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  dataclasses 선택:                                      │
+│  ├── 표준 라이브러리만 쓰고 싶을 때                     │
+│  ├── 내부 데이터 구조 (외부 입력 아닐 때)               │
+│  ├── 검증이 필요 없을 때                                │
+│  └── 단순한 DTO, 설정 객체                              │
+│                                                         │
+│  msgspec 선택:                                          │
+│  ├── 성능이 매우 중요할 때                              │
+│  ├── 대량의 JSON 처리                                   │
+│  ├── 메모리 효율이 중요할 때                            │
+│  └── 엄격한 타입 검증만 필요할 때 (변환 불필요)         │
+│                                                         │
+│  Pydantic 선택:                                         │
+│  ├── FastAPI 사용할 때 (필수)                           │
+│  ├── 유연한 타입 변환 필요할 때 ("25" → 25)            │
+│  ├── 복잡한 커스텀 검증 로직                            │
+│  └── 풍부한 에러 메시지 필요                            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 7. 런타임 검증의 오버헤드
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  C++ RTTI와 비슷한 개념:                                │
+│  ├── 런타임에 타입 정보 확인 → 오버헤드 존재            │
+│  ├── Pydantic, msgspec 모두 런타임 검증                 │
+│  └── 성능 민감한 곳에서는 고려 필요                     │
+│                                                         │
+│  Pydantic v1 → v2 변화:                                │
+│  ├── v1: 순수 Python → 느림                            │
+│  ├── v2: Rust 코어 → 5~50배 빨라짐                     │
+│  └── 그래도 런타임 오버헤드는 존재                      │
+│                                                         │
+│  최적화 전략:                                           │
+│  ├── 외부 입력 (API 경계): Pydantic 사용               │
+│  ├── 내부 처리: dataclasses (검증 불필요)               │
+│  ├── 대량 JSON: msgspec (최고 성능)                     │
+│  └── 정적 타입만: ty/mypy (런타임 오버헤드 0)          │
+│                                                         │
+│  비유:                                                  │
+│  Pydantic = 공항 보안검색 (외부→내부 진입점)           │
+│             └── 입구에서는 필요하지만                   │
+│             └── 내부 이동할 때마다 하면 느려짐          │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 8. 정리
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  dataclasses:                                           │
+│  └── "보일러플레이트 줄이는 표준 도구"                  │
+│  └── 검증/직렬화는 직접 해야 함                         │
+│  └── 가장 가벼움                                        │
+│                                                         │
+│  msgspec:                                               │
+│  └── "초고속 JSON 파싱 + 검증"                          │
+│  └── Pydantic보다 5~50배 빠름                           │
+│  └── 타입 변환 없이 엄격한 검증                         │
+│                                                         │
+│  Pydantic:                                              │
+│  └── "풍부한 기능의 런타임 검증"                        │
+│  └── 타입 변환, 커스텀 검증, 좋은 에러 메시지           │
+│  └── FastAPI와 찰떡궁합                                 │
+│                                                         │
+│  실무 조합 예시:                                        │
+│  ├── API 입력: Pydantic (검증 + 문서화)                 │
+│  ├── 내부 처리: dataclasses (가벼움)                    │
+│  └── 대량 JSON: msgspec (속도)                          │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 관련 키워드
+
+`dataclasses`, `msgspec`, `Pydantic`, `타입 검증`, `JSON 직렬화`, `런타임 검증`, `정적 타입`, `Python`
