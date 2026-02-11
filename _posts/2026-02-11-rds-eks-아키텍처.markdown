@@ -3,7 +3,7 @@ layout: single
 title: "RDS와 EKS 아키텍처"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "RDS와 EKS 아키텍처의 개념·등장배경·이유·특징을 정리"
+excerpt: "RDS와 EKS 아키텍처은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [RDS와, EKS, 아키텍처]

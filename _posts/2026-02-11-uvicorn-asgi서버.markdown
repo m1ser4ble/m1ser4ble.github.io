@@ -3,7 +3,7 @@ layout: single
 title: "Uvicorn - Python ASGI 서버"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Uvicorn - Python ASGI 서버의 개념·등장배경·이유·특징을 정리"
+excerpt: "Uvicorn - Python ASGI 서버은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [Uvicorn, Python, ASGI, 서버]

@@ -3,7 +3,7 @@ layout: single
 title: "OAuth 2.0과 Keycloak"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "OAuth 2.0과 Keycloak의 개념·등장배경·이유·특징을 정리"
+excerpt: "OAuth 2.0과 Keycloak은/는 이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 OAuth 2.0과 OpenID Connect(OIDC), 그리고 이를 구현한 오픈소스 IAM 솔루션 Ke..."
 toc: true
 toc_sticky: true
 tags: [OAuth 2.0, OpenID Connect, OIDC, Keycloak, SSO, JWT, Access Token, Refresh Token, Authorization Server, IAM, 인증, 인가]

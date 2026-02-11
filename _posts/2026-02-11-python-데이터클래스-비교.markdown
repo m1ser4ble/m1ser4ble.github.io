@@ -3,7 +3,7 @@ layout: single
 title: "Python 데이터 클래스 비교"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Python 데이터 클래스 비교의 개념·등장배경·이유·특징을 정리"
+excerpt: "Python 데이터 클래스 비교은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [Python, 데이터, 클래스, 비교]

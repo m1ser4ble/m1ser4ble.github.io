@@ -3,7 +3,7 @@ layout: single
 title: "S3 vs RDS 데이터 저장 선택 기준"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "S3 vs RDS 데이터 저장 선택 기준의 개념·등장배경·이유·특징을 정리"
+excerpt: "S3 vs RDS 데이터 저장 선택 기준은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [S3, vs, RDS, 데이터, 저장, 선택]

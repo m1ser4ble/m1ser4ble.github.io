@@ -3,7 +3,7 @@ layout: single
 title: "Reactive Programming & Flux 기본 개념"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Reactive Programming & Flux 기본 개념의 개념·등장배경·이유·특징을 정리"
+excerpt: "Reactive Programming & Flux 기본 개념은/는 ``` 리액티브 프로그래밍 = 데이터 스트림 + 변화 전파 + 비동기 처리 └── "데이터가 오면 그때 반응(React)하자!" └── 명령형이..."
 toc: true
 toc_sticky: true
 tags: [Reactive, Programming, Flux, 기본, 개념]

@@ -3,7 +3,7 @@ layout: single
 title: "pnpm 패키지 매니저"
 date: 2026-02-11 11:20:00 +0900
 categories: build
-excerpt: "pnpm 패키지 매니저의 개념·등장배경·이유·특징을 정리"
+excerpt: "pnpm 패키지 매니저은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [pnpm, 패키지, 매니저]

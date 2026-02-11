@@ -3,7 +3,7 @@ layout: single
 title: "Claude Code OOM (Out of Memory) 대응"
 date: 2026-02-11 11:20:00 +0900
 categories: devops
-excerpt: "Claude Code OOM (Out of Memory) 대응의 개념·등장배경·이유·특징을 정리"
+excerpt: "Claude Code OOM (Out of Memory) 대응은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [Claude, Code, OOM, Out, of, Memory]

@@ -3,7 +3,7 @@ layout: single
 title: "Kafka 사용 패턴 - K8s 내부 통신"
 date: 2026-02-11 11:20:00 +0900
 categories: infra
-excerpt: "Kafka 사용 패턴 - K8s 내부 통신의 개념·등장배경·이유·특징을 정리"
+excerpt: "Kafka 사용 패턴 - K8s 내부 통신은/는 핵심 개념을 요약"
 toc: true
 toc_sticky: true
 tags: [Kafka, 사용, 패턴, K8s, 내부]

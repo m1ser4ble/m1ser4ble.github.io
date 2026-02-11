@@ -3,7 +3,7 @@ layout: single
 title: "FastAPI 한눈에 정리 (개념·등장배경·특징까지)"
 date: 2026-02-11 10:38:00 +0900
 categories: backend
-excerpt: "FastAPI 한눈에 정리 (개념·등장배경·특징까지)의 개념·등장배경·이유·특징을 정리"
+excerpt: "FastAPI 한눈에 정리 (개념·등장배경·특징까지)은/는 # TL;DR"
 toc: true
 toc_sticky: true
 tags: [FastAPI, Python, ASGI, Pydantic, Web]

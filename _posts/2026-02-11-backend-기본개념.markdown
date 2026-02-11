@@ -3,7 +3,7 @@ layout: single
 title: "Backend 기본 개념"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Backend 기본 개념의 개념·등장배경·이유·특징을 정리"
+excerpt: "Backend 기본 개념은/는 POJO = Plain Old Java O**bject = 평범한 옛날 자바 객체"
 toc: true
 toc_sticky: true
 tags: [Backend, 기본, 개념]
