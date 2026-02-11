@@ -3,7 +3,7 @@ layout: single
 title: "Kotlin Sealed Class"
 date: 2026-02-11 11:46:00 +0900
 categories: backend
-excerpt: "Sealed Class = 모든 하위 클래스가 컴파일 타임에 확정되는 클래스"
+excerpt: "Kotlin Sealed Class의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [Kotlin, Sealed, Class]

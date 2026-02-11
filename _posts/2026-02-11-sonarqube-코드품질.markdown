@@ -3,10 +3,10 @@ layout: single
 title: "SonarQube - 코드 품질 관리 플랫폼"
 date: 2026-02-11 11:20:00 +0900
 categories: devops
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  SonarQube = 코드 품질 및 보안 분석 플랫폼                  │ │                                                             │ │  "코드 리뷰를 자동화하는 도구"                              │ │                                                             │ │  탄생: 2007년 (프랑스 SonarSource 개발)                     │ │  원래 이름: Sonar → SonarQube로 변경 (2013)                 │ │                                                             │ │  핵심 기능:                                                 │ │  ├── 정적 코드 분석 (Static Analysis)                       │ │  ├── 버그 탐지                                              │ │  ├── 코드 스멜 (Code Smell) 감지                            │ │  ├── 보안 취약점 탐지                                       │ │  ├── 코드 커버리지 시각화                                   │ │  └── 기술 부채 (Technical Debt) 측정                        │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "SonarQube - 코드 품질 관리 플랫폼의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [SonarQube, -, 코드, 품질, 관리, 플랫폼]
+tags: [SonarQube, 코드, 품질, 관리, 플랫폼]
 ---
 
 # TL;DR

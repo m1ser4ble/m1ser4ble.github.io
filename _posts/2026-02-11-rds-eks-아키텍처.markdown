@@ -3,7 +3,7 @@ layout: single
 title: "RDS와 EKS 아키텍처"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  중요한 사실:                                               │ │                                                             │ │  ❌ "EKS에서 제공하는 RDS"                                  │ │  ✅ "AWS에서 제공하는 별개의 서비스"                        │ │                                                             │ │  EKS = Elastic Kubernetes Service (컨테이너 오케스트레이션)│ │  RDS = Relational Database Service (관리형 데이터베이스)   │ │                                                             │ │  → 둘은 완전히 독립적인 AWS 서비스                          │ │  → EKS의 Pod이 RDS에 "접속"하는 클라이언트-서버 구조       │ │  → RDS는 Pod이 아님, EC2 기반의 별도 관리형 인스턴스       │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "RDS와 EKS 아키텍처의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [RDS와, EKS, 아키텍처]

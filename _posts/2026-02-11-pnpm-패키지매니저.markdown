@@ -3,7 +3,7 @@ layout: single
 title: "pnpm 패키지 매니저"
 date: 2026-02-11 11:20:00 +0900
 categories: build
-excerpt: "``` pnpm = Performant npm └── "빠르고 디스크 효율적인" 패키지 매니저 └── npm/yarn의 문제점을 해결하기 위해 등장 ```"
+excerpt: "pnpm 패키지 매니저의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [pnpm, 패키지, 매니저]

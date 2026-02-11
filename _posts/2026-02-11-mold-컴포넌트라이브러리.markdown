@@ -3,7 +3,7 @@ layout: single
 title: "Mold 컴포넌트 라이브러리 (CCK 자체 디자인 시스템)"
 date: 2026-02-11 11:20:00 +0900
 categories: frontend
-excerpt: "``` Mold = 틀, 금형, 주형"
+excerpt: "Mold 컴포넌트 라이브러리 (CCK 자체 디자인 시스템)의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [Mold, 컴포넌트, 라이브러리, (CCK, 자체, 디자인]

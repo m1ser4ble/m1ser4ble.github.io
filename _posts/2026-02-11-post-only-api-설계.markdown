@@ -3,7 +3,7 @@ layout: single
 title: "POST only API 설계 패턴"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "CCK 프로젝트에서는 모든 API 엔드포인트에 **POST 메서드만 사용**하는 정책을 적용하고 있습니다. 이 문서에서는 이러한 설계 결정의 배경, 보안적 이점, 기술적 장점을 상세히 설명합니다."
+excerpt: "POST only API 설계 패턴의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [POST only, API 설계, 보안, CSRF, URL 노출, RPC, RESTful, CCK 가이드라인]

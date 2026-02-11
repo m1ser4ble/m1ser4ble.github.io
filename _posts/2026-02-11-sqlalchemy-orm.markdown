@@ -3,10 +3,10 @@ layout: single
 title: "SQLAlchemy - Python ORM"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  SQLAlchemy = Python에서 가장 널리 쓰이는 ORM/SQL 툴킷      │ │                                                             │ │  탄생: 2006년 (Mike Bayer 개발)                             │ │  철학: "SQL is awesome, don't hide it"                      │ │                                                             │ │  두 가지 API 제공:                                          │ │  ├── Core: 저수준 SQL 추상화 (SQL Expression Language)      │ │  └── ORM: 고수준 객체-관계 매핑                             │ │                                                             │ │  특징:                                                      │ │  ├── 데이터베이스 독립적 (MySQL, PostgreSQL, SQLite 등)     │ │  ├── 유연함 (Core만 쓰거나 ORM만 쓰거나 둘 다)              │ │  ├── 강력한 쿼리 빌더                                       │ │  └── 2.0 버전에서 완전히 새로운 스타일 도입                 │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "SQLAlchemy - Python ORM의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [SQLAlchemy, -, Python, ORM]
+tags: [SQLAlchemy, Python, ORM]
 ---
 
 # TL;DR

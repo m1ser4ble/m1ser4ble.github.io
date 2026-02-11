@@ -3,7 +3,7 @@ layout: single
 title: "AWS Credentials Provider"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  AWS API 호출 시 "나는 누구인가?"를 증명해야 함             │ │                                                             │ │  자격 증명 = Access Key + Secret Key (+ Session Token)     │ │                                                             │ │  CredentialsProvider = 자격 증명을 가져오는 방법을 정의    │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "AWS Credentials Provider의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [AWS, Credentials, Provider]

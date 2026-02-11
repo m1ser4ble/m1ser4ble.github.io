@@ -3,7 +3,7 @@ layout: single
 title: "Claude Code OOM (Out of Memory) 대응"
 date: 2026-02-11 11:20:00 +0900
 categories: devops
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  증상:                                                      │ │  ├── Claude Code 사용 중 SSH 연결 끊김                     │ │  ├── 재접속하면 tmux 세션도 없음                           │ │  ├── 특히 여러 subagent 동시 실행 시 빈번                  │ │  └── Docker 컨테이너도 함께 죽기도 함                      │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "Claude Code OOM (Out of Memory) 대응의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [Claude, Code, OOM, (Out, of, Memory)]

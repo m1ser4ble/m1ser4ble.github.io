@@ -3,7 +3,7 @@ layout: single
 title: "Kotlin @Transactional 어노테이션"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "``` @Transactional = 메서드/클래스에 트랜잭션 경계를 선언하는 어노테이션 └── "이 작업은 하나의 단위로 실행해라" └── Spring Framework 제공 (spring-tx)"
+excerpt: "Kotlin @Transactional 어노테이션의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [Kotlin, @Transactional, 어노테이션]

@@ -3,7 +3,7 @@ layout: single
 title: "YAGNI 원칙과 Strategy Pattern"
 date: 2026-02-11 11:45:00 +0900
 categories: backend
-excerpt: "YAGNI = 지금 필요하지 않은 기능은 만들지 마라"
+excerpt: "YAGNI 원칙과 Strategy Pattern의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [YAGNI, 원칙과, Strategy, Pattern]

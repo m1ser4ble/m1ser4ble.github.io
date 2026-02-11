@@ -3,7 +3,7 @@ layout: single
 title: "Streamlit Server"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "``` Streamlit = Stream + Lit └── "데이터 스트림을 밝히다(lit)" 라는 의미로 추정 └── 공식적인 약자는 아님, 브랜드명"
+excerpt: "Streamlit Server의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [Streamlit, Server]

@@ -3,10 +3,10 @@ layout: single
 title: "Uvicorn - Python ASGI 서버"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  Uvicorn = 초고속 ASGI 웹 서버                              │ │                                                             │ │  이름 유래: UV (Unicorn의 변형) + ASGI                      │ │  탄생: 2017년 (Tom Christie 개발)                           │ │  특징: 비동기, 빠름, 가벼움                                 │ │                                                             │ │  핵심 역할:                                                 │ │  ┌─────────────────────────────────────────────────────┐   │ │  │                                                     │   │ │  │  인터넷 ───────► Uvicorn ───────► FastAPI/Starlette │   │ │  │  (HTTP 요청)     (ASGI 서버)      (Python 앱)       │   │ │  │                                                     │   │ │  └─────────────────────────────────────────────────────┘   │ │                                                             │ │  비유:                                                      │ │  ├── FastAPI = 요리사 (요청을 처리하는 로직)                │ │  └── Uvicorn = 식당 입구 (요청을 받아서 요리사에게 전달)    │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "Uvicorn - Python ASGI 서버의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Uvicorn, -, Python, ASGI, 서버]
+tags: [Uvicorn, Python, ASGI, 서버]
 ---
 
 # TL;DR

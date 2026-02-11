@@ -3,7 +3,7 @@ layout: single
 title: "GDPR (General Data Protection Regulation)"
 date: 2026-02-11 11:20:00 +0900
 categories: security
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  GDPR = General Data Protection Regulation                  │ │       = EU 개인정보보호 일반 규정                           │ │                                                             │ │  - 2018년 5월 25일 시행                                     │ │  - EU/EEA 시민의 개인정보를 다루는 모든 기업에 적용         │ │  - 전 세계에서 가장 강력한 개인정보보호법                   │ │                                                             │ │  핵심 철학:                                                 │ │  ┌─────────────────────────────────────────────────────┐   │ │  │                                                     │   │ │  │  "개인정보는 기업의 것이 아니라 당사자의 것이다"    │   │ │  │                                                     │   │ │  │  → 사용자가 자신의 데이터에 대한 통제권을 가짐      │   │ │  │                                                     │   │ │  └─────────────────────────────────────────────────────┘   │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "GDPR (General Data Protection Regulation)의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [GDPR, (General, Data, Protection, Regulation)]

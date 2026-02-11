@@ -1,10 +1,9 @@
 [general]
 contrib=contrib-title-conventional-commits
+ignore=B6
 
 [contrib-title-conventional-commits]
 # Allowed types: https://www.conventionalcommits.org/en/v1.0.0/
 types=build,chore,ci,docs,feat,fix,perf,refactor,revert,style,test
-# Optional scope allowed
-require-scope=false
 # Allow: type: subject
 # Disallow: "update stuff" / empty subject

@@ -3,10 +3,10 @@ layout: single
 title: "Swagger와 H2 - 개발 환경 도구"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "``` Swagger = API 문서화 + 테스트 도구 (현재 OpenAPI) └── 이름 유래: "swagger" = 뽐내다, 자신있게 걷다 └── API를 "뽐내듯이" 보여준다는 의미"
+excerpt: "Swagger와 H2 - 개발 환경 도구의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
-tags: [Swagger와, H2, -, 개발, 환경, 도구]
+tags: [Swagger와, H2, 개발, 환경, 도구]
 ---
 
 # TL;DR

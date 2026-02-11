@@ -3,7 +3,7 @@ layout: single
 title: "Jenkins vs GitHub Actions"
 date: 2026-02-11 11:20:00 +0900
 categories: devops
-excerpt: "``` ┌─────────────────────────────────────────────────────────────┐ │                                                             │ │  GitHub Actions:                                           │ │  ├── GitHub에서 제공하는 SaaS형 CI/CD                       │ │  ├── GitHub 저장소와 긴밀하게 통합                         │ │  ├── YAML 기반 설정                                        │ │  └── 관리형 서비스 (인프라 관리 불필요)                    │ │                                                             │ │  Jenkins:                                                  │ │  ├── Self-hosted CI/CD 서버                                │ │  ├── 직접 설치/운영 필요                                   │ │  ├── Groovy 기반 파이프라인                                │ │  └── 완전한 통제권                                         │ │                                                             │ └─────────────────────────────────────────────────────────────┘ ```"
+excerpt: "Jenkins vs GitHub Actions의 개념·등장배경·이유·특징을 정리"
 toc: true
 toc_sticky: true
 tags: [Jenkins, vs, GitHub, Actions]
