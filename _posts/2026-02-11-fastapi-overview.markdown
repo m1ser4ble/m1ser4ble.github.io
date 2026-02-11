@@ -1,9 +1,9 @@
 ---
 layout: single
-title: "FastAPI 한눈에 정리"
+title: "FastAPI 한눈에 정리 (좀 더 자세히)"
 date: 2026-02-11 10:38:00 +0900
 categories: backend
-excerpt: "FastAPI가 왜 인기인지, 무엇이 빠르고 편한지 핵심만 요약"
+excerpt: "FastAPI가 왜 인기인지, 어떤 문제를 해결했고 어떻게 쓰는지까지 한 번에 정리"
 toc: true
 toc_sticky: true
 tags: [FastAPI, Python, ASGI, Pydantic, Web]
@@ -11,22 +11,23 @@ tags: [FastAPI, Python, ASGI, Pydantic, Web]
 
 # TL;DR
 - **FastAPI는 API 서버에 최적화된 Python 프레임워크**다.
-- **Starlette(ASGI) + Pydantic** 조합으로 성능/검증/문서화가 한 번에 해결된다.
-- Flask보다 현대적이고, Django보다 가볍다. **API 전용 서버라면 사실상 표준**.
+- **Starlette(ASGI) + Pydantic** 조합으로 성능/검증/문서화가 동시에 해결된다.
+- **비동기 + 타입 힌트 + 자동 문서화**가 기본이라, API 전용 서버에서는 사실상 표준에 가까움.
 
 ---
 
-# 1) FastAPI가 등장한 이유
-기존 Django/Flask는 동기(WGSI) 기반이라 **비동기 처리와 자동 문서화, 타입 검증**이 약했다. FastAPI는 다음을 한 번에 해결했다.
+# 1) FastAPI가 등장한 배경
+2018년 전후의 Python 웹 환경은 다음 문제가 있었다:
 
-- **비동기 지원(ASGI)**
-- **타입 힌트 기반 자동 검증(Pydantic)**
-- **Swagger/OpenAPI 자동 문서화**
-- **개발 속도 향상 (코드량 감소 + IDE 자동완성)**
+- Django/Flask는 **동기(WGSI)** 기반 → 고성능 비동기 처리 한계
+- **API 문서 자동화 부족** → Swagger/OpenAPI 세팅 직접 해야 함
+- **타입 검증 수동** → 코드가 길어지고 버그가 많아짐
+
+FastAPI는 “현대적인 Python 기능(타입 힌트, async/await)을 적극 활용하자”는 목표로 탄생했다.
 
 ---
 
-# 2) 핵심 구성
+# 2) 핵심 구성 요소
 ```
 FastAPI
  ├─ Starlette (ASGI 웹 코어)
@@ -34,9 +35,11 @@ FastAPI
  └─ Uvicorn (ASGI 서버)
 ```
 
-**WSGI vs ASGI 간단 비교**
-- WSGI: 요청 1개 = 스레드 1개 (동기)
-- ASGI: 이벤트 루프로 동시 처리 (비동기)
+### WSGI vs ASGI (핵심 차이)
+- **WSGI**: 요청 1개당 스레드 1개 (동기)
+- **ASGI**: 이벤트 루프로 여러 요청 동시 처리 (비동기)
+
+> 비유: WSGI는 “웨이터가 테이블 하나씩 순서대로”, ASGI는 “한 명이 여러 테이블 동시에 처리”.
 
 ---
 
@@ -58,7 +61,7 @@ uvicorn main:app --reload
 
 ---
 
-# 4) Pydantic으로 타입 검증 자동화
+# 4) Pydantic 기반 타입 검증
 ```python
 from pydantic import BaseModel, EmailStr
 
@@ -67,12 +70,64 @@ class User(BaseModel):
     email: EmailStr
     age: int
 ```
-- 입력 데이터가 틀리면 자동으로 **422 에러**
-- 문자열 "25"도 **자동으로 int 변환**
+
+- 잘못된 타입 입력 시 **자동 422 에러**
+- 문자열 "25"도 **자동 int 변환**
+- EmailStr, HttpUrl 같은 **고급 검증 타입**도 기본 제공
 
 ---
 
-# 5) FastAPI vs Flask vs Django
+# 5) 의존성 주입 (Dependency Injection)
+FastAPI는 인증/DB연결 같은 **공통 로직을 주입**하는 기능을 내장 제공한다.
+
+```python
+from fastapi import Depends
+
+def get_db():
+    db = Database()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.get("/users")
+def get_users(db=Depends(get_db)):
+    return db.query(User).all()
+```
+
+**장점:**
+- 공통 로직 재사용
+- 테스트 쉬움 (Mock 주입 가능)
+- 코드 구조가 명확해짐
+
+---
+
+# 6) 비동기 처리
+```python
+@app.get("/async")
+async def async_endpoint():
+    async with httpx.AsyncClient() as client:
+        res = await client.get("https://api.example.com")
+    return res.json()
+```
+
+FastAPI는 async/await를 **네이티브 지원**한다.
+- I/O 대기 중 다른 요청 처리 가능
+- 고성능 API 서버에 유리
+
+---
+
+# 7) 자동 API 문서화
+FastAPI는 코드만 작성하면 자동으로 문서를 만든다:
+- `/docs` → Swagger UI
+- `/redoc` → ReDoc
+- `/openapi.json` → OpenAPI 스펙
+
+덕분에 **프론트/백엔드 협업이 쉬워짐**.
+
+---
+
+# 8) FastAPI vs Flask vs Django
 | 항목 | FastAPI | Flask | Django |
 |---|---|---|---|
 | 비동기 | ✅ | ❌ | ⚠️ 제한적 |
@@ -85,10 +140,25 @@ class User(BaseModel):
 
 ---
 
-# 6) 실전 팁
-- **API 서버 + ML 서빙** 조합에서 FastAPI는 거의 표준
-- Django는 **어드민/템플릿이 필요한 풀스택**에서 여전히 강함
-- Flask는 레거시 유지보수 용도로 많이 남음
+# 9) 추천 프로젝트 구조
+```
+my_project/
+├── app/
+│   ├── main.py           # FastAPI 앱
+│   ├── routers/          # API 라우터
+│   ├── models/           # Pydantic 모델
+│   ├── crud/             # DB 로직
+│   └── core/             # 설정/보안
+└── tests/
+```
+
+---
+
+# 10) 정리
+FastAPI는 **속도·안정성·문서화** 모두 챙기려는 API 프로젝트에 최적이다.
+- API 서버 → FastAPI 거의 표준
+- 풀스택 웹앱 → Django
+- 간단한 실험 → Flask
 
 ---
 
