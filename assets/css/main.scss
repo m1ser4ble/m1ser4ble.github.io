@@ -1,0 +1,15 @@
+---
+---
+@import "minimal-mistakes";
+
+/* Preserve ASCII box alignment */
+pre, pre code {
+  white-space: pre;
+  overflow-x: auto;
+}
+pre.ascii-box {
+  white-space: pre;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9em;
+}
