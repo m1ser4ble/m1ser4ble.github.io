@@ -7,9 +7,12 @@ pre, pre code {
   white-space: pre;
   overflow-x: auto;
 }
-pre.ascii-box {
+pre.ascii-box, pre.ascii-box * {
   white-space: pre;
   overflow-x: auto;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.9em;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  font-size: 0.85em;
+  line-height: 1.1;
 }
