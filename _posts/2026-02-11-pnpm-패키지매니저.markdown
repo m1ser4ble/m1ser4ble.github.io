@@ -3,7 +3,7 @@ layout: single
 title: "pnpm 패키지 매니저"
 date: 2026-02-11 11:20:00 +0900
 categories: build
-excerpt: "pnpm 패키지 매니저은/는 핵심 개념을 요약"
+excerpt: "pnpm 패키지 매니저은/는 > 작성일: 2026-02-09"
 toc: true
 toc_sticky: true
 tags: [pnpm, 패키지, 매니저]

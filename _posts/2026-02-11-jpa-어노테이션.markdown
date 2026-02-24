@@ -3,7 +3,7 @@ layout: single
 title: "JPA 핵심 어노테이션 완벽 가이드"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "JPA 핵심 어노테이션 완벽 가이드은/는 JPA는 Java 객체를 관계형 데이터베이스에 매핑하기 위한 표준 명세(Specification)입니다."
+excerpt: "JPA 핵심 어노테이션 완벽 가이드은/는 > 작성일: 2026-02-02"
 toc: true
 toc_sticky: true
 tags: [JPA, MappedSuperclass, EntityListeners, Auditing, CreatedDate, LastModifiedDate, Embeddable, Inheritance]

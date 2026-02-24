@@ -3,7 +3,7 @@ layout: single
 title: "Istio와 Service Mesh"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "Istio와 Service Mesh은/는 ``` Service Mesh = 마이크로서비스 간 통신을 관리하는 인프라 계층"
+excerpt: "Istio와 Service Mesh은/는 > 작성일: 2026-01-28"
 toc: true
 toc_sticky: true
 tags: [Istio와, Service, Mesh]

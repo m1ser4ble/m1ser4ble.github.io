@@ -3,7 +3,7 @@ layout: single
 title: "Kotlin @Transactional 어노테이션"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Kotlin @Transactional 어노테이션은/는 ``` @Transactional = 메서드/클래스에 트랜잭션 경계를 선언하는 어노테이션 └── "이 작업은 하나의 단위로 실행해라" └── Spring..."
+excerpt: "Kotlin @Transactional 어노테이션은/는 > 작성일: 2026-01-28"
 toc: true
 toc_sticky: true
 tags: [Kotlin, Transactional, 어노테이션]

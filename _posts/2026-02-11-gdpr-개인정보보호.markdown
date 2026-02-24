@@ -3,7 +3,7 @@ layout: single
 title: "GDPR (General Data Protection Regulation)"
 date: 2026-02-11 11:20:00 +0900
 categories: security
-excerpt: "GDPR (General Data Protection Regulation)은/는 핵심 개념을 요약"
+excerpt: "GDPR (General Data Protection Regulation)은/는 > 작성일: 2026-01-29"
 toc: true
 toc_sticky: true
 tags: [GDPR, General, Data, Protection, Regulation]

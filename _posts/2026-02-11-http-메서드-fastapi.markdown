@@ -3,7 +3,7 @@ layout: single
 title: "HTTP 메서드와 FastAPI 데코레이터"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "HTTP 메서드와 FastAPI 데코레이터은/는 ```python from fastapi import FastAPI"
+excerpt: "HTTP 메서드와 FastAPI 데코레이터은/는 > 작성일: 2026-01-29"
 toc: true
 toc_sticky: true
 tags: [HTTP, 메서드와, FastAPI, 데코레이터]

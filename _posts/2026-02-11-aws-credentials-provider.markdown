@@ -3,7 +3,7 @@ layout: single
 title: "AWS Credentials Provider"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "AWS Credentials Provider은/는 핵심 개념을 요약"
+excerpt: "AWS Credentials Provider은/는 > 작성일: 2026-02-05"
 toc: true
 toc_sticky: true
 tags: [AWS, Credentials, Provider]

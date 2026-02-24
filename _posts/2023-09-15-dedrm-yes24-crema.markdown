@@ -8,6 +8,7 @@ toc_sticky: true
 tags: reversing
 published: false
 comments: true
+excerpt: "Reversing Yes24 epub 관련 실전 팁과 시행착오를 정리"
 ---
 
 

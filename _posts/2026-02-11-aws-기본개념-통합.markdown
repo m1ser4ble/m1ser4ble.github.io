@@ -3,7 +3,7 @@ layout: single
 title: "AWS 기본 개념 통합"
 date: 2026-02-11 11:20:00 +0900
 categories: cloud
-excerpt: "AWS 기본 개념 통합은/는 핵심 개념을 요약"
+excerpt: "AWS 기본 개념 통합은/는 > 작성일: 2026-01-23"
 toc: true
 toc_sticky: true
 tags: [AWS, 기본, 개념, 통합]

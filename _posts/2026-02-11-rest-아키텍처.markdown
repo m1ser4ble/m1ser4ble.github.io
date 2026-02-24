@@ -3,7 +3,7 @@ layout: single
 title: "REST 아키텍처 - 배경부터 핵심까지"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "REST 아키텍처 - 배경부터 핵심까지은/는 핵심 개념을 요약"
+excerpt: "REST 아키텍처 - 배경부터 핵심까지은/는 > 작성일: 2026-01-29"
 toc: true
 toc_sticky: true
 tags: [REST, 아키텍처, 배경부터, 핵심까지]

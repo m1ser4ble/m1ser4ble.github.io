@@ -3,7 +3,7 @@ layout: single
 title: "Kotlin companion object"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Kotlin companion object은/는 ``` companion object = 클래스에 속한 싱글톤 객체 └── Java의 static 멤버를 대체 └── "동반 객체"라고 번역"
+excerpt: "Kotlin companion object은/는 > 작성일: 2026-01-28"
 toc: true
 toc_sticky: true
 tags: [Kotlin, companion, object]

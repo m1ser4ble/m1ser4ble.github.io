@@ -3,7 +3,7 @@ layout: single
 title: "Kotlin Coroutine과 @Async 비교"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Kotlin Coroutine과 @Async 비교은/는 ``` Coroutine = Co(협력) + Routine(루틴) └── 협력적으로 실행되는 루틴 └── "일시 중단 가능한 함수" └── 스레드보다 훨씬..."
+excerpt: "Kotlin Coroutine과 @Async 비교은/는 > 작성일: 2026-01-29"
 toc: true
 toc_sticky: true
 tags: [Kotlin, Coroutine과, Async, 비교]

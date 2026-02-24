@@ -3,7 +3,7 @@ layout: single
 title: "Carbon Design System (IBM)"
 date: 2026-02-11 11:20:00 +0900
 categories: frontend
-excerpt: "Carbon Design System (IBM)은/는 ``` Carbon Design System"
+excerpt: "Carbon Design System (IBM)은/는 > 작성일: 2026-01-30"
 toc: true
 toc_sticky: true
 tags: [Carbon, Design, System, IBM]

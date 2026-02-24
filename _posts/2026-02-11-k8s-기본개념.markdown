@@ -3,7 +3,7 @@ layout: single
 title: "Kubernetes 기본 개념"
 date: 2026-02-11 11:20:00 +0900
 categories: infra
-excerpt: "Kubernetes 기본 개념은/는 ``` K8s = Kubernetes의 약어 K + 8글자(ubernete) + s = K8s"
+excerpt: "Kubernetes 기본 개념은/는 > 작성일: 2026-01-28"
 toc: true
 toc_sticky: true
 tags: [Kubernetes, 기본, 개념]

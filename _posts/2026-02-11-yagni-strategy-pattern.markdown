@@ -3,7 +3,7 @@ layout: single
 title: "YAGNI 원칙과 Strategy Pattern"
 date: 2026-02-11 11:45:00 +0900
 categories: backend
-excerpt: "YAGNI 원칙과 Strategy Pattern은/는 핵심 개념을 요약"
+excerpt: "YAGNI 원칙과 Strategy Pattern은/는 # YAGNI 원칙과 Strategy Pattern"
 toc: true
 toc_sticky: true
 tags: [YAGNI, 원칙과, Strategy, Pattern]

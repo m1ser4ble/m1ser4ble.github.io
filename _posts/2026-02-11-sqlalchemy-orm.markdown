@@ -3,7 +3,7 @@ layout: single
 title: "SQLAlchemy - Python ORM"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "SQLAlchemy - Python ORM은/는 핵심 개념을 요약"
+excerpt: "SQLAlchemy - Python ORM은/는 > 작성일: 2026-01-29"
 toc: true
 toc_sticky: true
 tags: [SQLAlchemy, Python, ORM]

@@ -3,7 +3,7 @@ layout: single
 title: "FastAPI 프레임워크"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "FastAPI 프레임워크은/는 ``` FastAPI = Fast + API └── "빠른 API 개발" └── 실행 속도도 빠름 (Node.js, Go 수준) └── 개발 속도도 빠름 (타입 힌트 기반 자동화)"
+excerpt: "FastAPI 프레임워크은/는 > 작성일: 2026-01-28"
 toc: true
 toc_sticky: true
 tags: [FastAPI, 프레임워크]

@@ -3,7 +3,7 @@ layout: single
 title: "SonarQube - 코드 품질 관리 플랫폼"
 date: 2026-02-11 11:20:00 +0900
 categories: devops
-excerpt: "SonarQube - 코드 품질 관리 플랫폼은/는 핵심 개념을 요약"
+excerpt: "SonarQube - 코드 품질 관리 플랫폼은/는 > 작성일: 2026-01-30"
 toc: true
 toc_sticky: true
 tags: [SonarQube, 코드, 품질, 관리, 플랫폼]

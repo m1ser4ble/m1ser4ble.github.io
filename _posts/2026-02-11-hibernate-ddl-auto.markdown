@@ -3,7 +3,7 @@ layout: single
 title: "Hibernate ddl-auto"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Hibernate ddl-auto은/는 ``` DDL = Data Definition Language └── CREATE, ALTER, DROP 등 테이블 구조를 정의하는 SQL"
+excerpt: "Hibernate ddl-auto은/는 > 작성일: 2026-01-30"
 toc: true
 toc_sticky: true
 tags: [Hibernate, ddl-auto]

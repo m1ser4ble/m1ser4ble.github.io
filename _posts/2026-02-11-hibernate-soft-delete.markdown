@@ -3,7 +3,7 @@ layout: single
 title: "Hibernate와 Soft Delete"
 date: 2026-02-11 11:20:00 +0900
 categories: backend
-excerpt: "Hibernate와 Soft Delete은/는 이 문서에서는 Java/Kotlin 진영의 대표적인 ORM 프레임워크인 Hibernate의 탄생 배경과 핵심 개념, 그리고 데이터 삭제 전략인 Soft Delete..."
+excerpt: "Hibernate와 Soft Delete은/는 > 작성일: 2026-02-02"
 toc: true
 toc_sticky: true
 tags: [Hibernate, ORM, JPA, Soft Delete, Hard Delete, SQLDelete, SQLRestriction, SoftDelete, 논리적 삭제, Gavin King]

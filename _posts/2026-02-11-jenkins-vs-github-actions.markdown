@@ -3,7 +3,7 @@ layout: single
 title: "Jenkins vs GitHub Actions"
 date: 2026-02-11 11:20:00 +0900
 categories: devops
-excerpt: "Jenkins vs GitHub Actions은/는 핵심 개념을 요약"
+excerpt: "Jenkins vs GitHub Actions은/는 > 작성일: 2026-02-09"
 toc: true
 toc_sticky: true
 tags: [Jenkins, vs, GitHub, Actions]

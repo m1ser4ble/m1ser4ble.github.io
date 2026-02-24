@@ -3,7 +3,7 @@ layout: single
 title: "Kotlin Sealed Class"
 date: 2026-02-11 11:46:00 +0900
 categories: backend
-excerpt: "Kotlin Sealed Class은/는 핵심 개념을 요약"
+excerpt: "Kotlin Sealed Class은/는 # Kotlin Sealed Class"
 toc: true
 toc_sticky: true
 tags: [Kotlin, Sealed, Class]
