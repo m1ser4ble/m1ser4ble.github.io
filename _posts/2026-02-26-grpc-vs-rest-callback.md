@@ -6,8 +6,7 @@ categories: backend
 excerpt: "gRPC와 REST Callback은 동기 고성능 통신과 비동기 이벤트 알림을 각각 해결해 마이크로서비스 통신을 명확히 구분한다."
 toc: true
 toc_sticky: true
-tags: [grpc, rest, webhook, http2, protobuf, microservices]
----
+tags: [grpc, rest, webhook, http2, protobuf, microservices]---
 
 **TL;DR**
 

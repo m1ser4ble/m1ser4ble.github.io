@@ -6,8 +6,7 @@ categories: ai
 excerpt: "Claude Cowork은 격리된 VM에서 파일과 웹 도구를 실행해 실제 작업을 수행하는 에이전트형 데스크톱 AI다."
 toc: true
 toc_sticky: true
-tags: [claude, cowork, agent, vm, automation, productivity, mcp]
----
+tags: [claude, cowork, agent, vm, automation, productivity, mcp]---
 
 **TL;DR**
 

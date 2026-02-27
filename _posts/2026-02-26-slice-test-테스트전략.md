@@ -1,13 +1,12 @@
 ---
 layout: single
-title: "Slice Test와 테스트 전략 - Spring Boot에서 "필요한 부분만" 테스트하기"
+title: "Slice Test와 테스트 전략 - Spring Boot에서 필요한 부분만 테스트하기"
 date: 2026-02-26 23:00:00 +0900
 categories: backend
 excerpt: "Slice Test는 필요한 계층만 로드해 빠르게 검증하면서도 실제 구성을 유지하는 Spring Boot 테스트 전략이다."
 toc: true
 toc_sticky: true
-tags: [spring, testing, slicetest, webmvctest, datajpatest, junit]
----
+tags: [spring, testing, slicetest, webmvctest, datajpatest, junit]---
 
 **TL;DR**
 
