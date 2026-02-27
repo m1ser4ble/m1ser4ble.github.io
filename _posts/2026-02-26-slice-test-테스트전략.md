@@ -6,7 +6,8 @@ categories: backend
 excerpt: "Slice Test는 필요한 계층만 로드해 빠르게 검증하면서도 실제 구성을 유지하는 Spring Boot 테스트 전략이다."
 toc: true
 toc_sticky: true
-tags: [spring, testing, slicetest, webmvctest, datajpatest, junit]---
+tags: [spring, testing, slicetest, webmvctest, datajpatest, junit]
+---
 
 **TL;DR**
 

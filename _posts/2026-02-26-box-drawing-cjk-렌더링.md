@@ -6,7 +6,8 @@ categories: frontend
 excerpt: "Box-Drawing Characters와 CJK 혼합 텍스트는 폰트 폴백의 폭 불일치로 웹에서 정렬이 깨지며, duospaced 폰트로 2:1 폭을 보장해 해결한다."
 toc: true
 toc_sticky: true
-tags: [boxdrawing, cjk, eastasianwidth, monospace, duospaced, unicode, wcwidth, d2coding, typography]---
+tags: [boxdrawing, cjk, eastasianwidth, monospace, duospaced, unicode, wcwidth, d2coding, typography]
+---
 
 **TL;DR**
 - Box-Drawing 문자는 유니코드이며, CJK 폴백 폰트의 폭 비율이 달라지면 웹에서 정렬이 깨진다.
