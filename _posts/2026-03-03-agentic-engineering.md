@@ -5,7 +5,9 @@ date: 2026-03-03 23:00:00 +0900
 categories: devops
 tags: [backend, spring, architecture]
 excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
-source: "/home/dwkim/dwkim/docs/ai/agentic-engineering.md"---
+source: "/home/dwkim/dwkim/docs/ai/agentic-engineering.md"
+
+---
 
 **TL;DR**
 - Agentic Engineering
