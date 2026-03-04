@@ -1,12 +1,11 @@
 ---
-layout: post
+layout: single
 title: "VirtualService와 트래픽 라우팅"
 date: 2026-03-03 23:00:00 +0900
-categories: ["Cloud", "Kubernetes", "Istio", "Traffic Management"]
-tags: ["VirtualService", "DestinationRule", "Gateway", "Istio", "Service Mesh", "Envoy", "Traffic Routing", "Canary Deployment", "A/B Testing", "Traffic Mirroring", "Fault Injection", "Blue-Green"]
-excerpt: "VirtualService와 트래픽 라우팅 문서를 Jekyll 포스트 형식으로 정리했습니다."
-source: "/home/dwkim/dwkim/docs/cloud/virtualservice-트래픽라우팅.md"
----
+categories: infra
+tags: [infra, network, web, proxy]
+excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+source: "/home/dwkim/dwkim/docs/cloud/virtualservice-트래픽라우팅.md"---
 
 **TL;DR**
 - VirtualService

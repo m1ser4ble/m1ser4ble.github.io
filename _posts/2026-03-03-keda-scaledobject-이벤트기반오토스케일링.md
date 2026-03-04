@@ -1,12 +1,11 @@
 ---
-layout: post
+layout: single
 title: "KEDA ScaledObject — 이벤트 기반 오토스케일링"
 date: 2026-03-03 23:00:00 +0900
-categories: ["Cloud", "Kubernetes", "Autoscaling"]
-tags: ["KEDA", "ScaledObject", "ScaledJob", "HPA", "Event-Driven Autoscaling", "Scale-to-Zero", "TriggerAuthentication", "ClusterTriggerAuthentication", "Kafka Scaler", "RabbitMQ Scaler", "AWS SQS Scaler", "Prometheus Scaler"]
-excerpt: "KEDA ScaledObject — 이벤트 기반 오토스케일링 문서를 Jekyll 포스트 형식으로 정리했습니다."
-source: "/home/dwkim/dwkim/docs/cloud/keda-scaledobject-이벤트기반오토스케일링.md"
----
+categories: infra
+tags: [infra, network, web, proxy]
+excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+source: "/home/dwkim/dwkim/docs/cloud/keda-scaledobject-이벤트기반오토스케일링.md"---
 
 **TL;DR**
 - KEDA

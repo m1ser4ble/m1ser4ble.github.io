@@ -1,12 +1,11 @@
 ---
-layout: post
+layout: single
 title: "GPU Farm과 ELB: AI 추론 인프라 아키텍처"
 date: 2026-03-03 23:00:00 +0900
-categories: ["Cloud", "AWS", "GPU", "AI Infrastructure", "Load Balancing"]
-tags: ["GPU Farm", "ELB", "ALB", "NLB", "GLB", "GPU Cluster", "CUDA", "GPGPU", "NVIDIA", "V100", "A100", "H100"]
-excerpt: "GPU Farm과 ELB: AI 추론 인프라 아키텍처 문서를 Jekyll 포스트 형식으로 정리했습니다."
-source: "/home/dwkim/dwkim/docs/cloud/gpu-farm-elb-AI추론인프라.md"
----
+categories: infra
+tags: [infra, network, web, proxy]
+excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+source: "/home/dwkim/dwkim/docs/cloud/gpu-farm-elb-AI추론인프라.md"---
 
 **TL;DR**
 - GPU Farm

@@ -1,12 +1,11 @@
 ---
-layout: post
+layout: single
 title: "Reverse Proxy (리버스 프록시)"
 date: 2026-03-03 23:00:00 +0900
-categories: ["Infra", "Network", "Web Server"]
-tags: ["Reverse Proxy", "Forward Proxy", "Load Balancing", "SSL Termination", "Nginx", "HAProxy", "Envoy", "Traefik", "Caddy", "CDN", "API Gateway", "Service Mesh"]
-excerpt: "Reverse Proxy (리버스 프록시) 문서를 Jekyll 포스트 형식으로 정리했습니다."
-source: "/home/dwkim/dwkim/docs/infra/reverse-proxy-리버스프록시.md"
----
+categories: infra
+tags: [infra, network, web, proxy]
+excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+source: "/home/dwkim/dwkim/docs/infra/reverse-proxy-리버스프록시.md"---
 
 **TL;DR**
 - Reverse Proxy

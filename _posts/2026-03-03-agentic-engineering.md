@@ -1,12 +1,11 @@
 ---
-layout: post
+layout: single
 title: "Agentic Engineering"
 date: 2026-03-03 23:00:00 +0900
-categories: ["AI", "Agent", "Software Engineering"]
-tags: ["Agentic Engineering", "Context Engineering", "Harness Engineering", "Prompt Engineering", "Vibe Coding", "ReAct", "Agent Loop", "Multi-Agent", "Orchestration", "MCP (Model Context Protocol)", "Tool Use", "Guardrails"]
-excerpt: "Agentic Engineering 문서를 Jekyll 포스트 형식으로 정리했습니다."
-source: "/home/dwkim/dwkim/docs/ai/agentic-engineering.md"
----
+categories: devops
+tags: [backend, spring, architecture]
+excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+source: "/home/dwkim/dwkim/docs/ai/agentic-engineering.md"---
 
 **TL;DR**
 - Agentic Engineering
