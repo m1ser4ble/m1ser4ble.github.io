@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Hibernate ddl-auto은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [Hibernate, JPA, ddl auto, update, validate]
+tags: [hibernate, jpa, ddlauto, update, validate]
 ---
 
 ## TL;DR

@@ -6,7 +6,7 @@ categories: backend
 excerpt: "OAuth 2.0과 Keycloak은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [OAuth 2 0, OpenID Connect, OIDC, Keycloak, SSO]
+tags: [oauth20, openidconnect, oidc, keycloak, sso]
 ---
 
 ## TL;DR

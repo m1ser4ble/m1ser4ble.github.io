@@ -6,7 +6,7 @@ categories: devops
 excerpt: "SonarQube - 코드 품질 관리 플랫폼은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [SonarQube, SonarCloud, SonarLint, 정적 분석, Static Analysis]
+tags: [sonarqube, sonarcloud, sonarlint, staticanalysis]
 ---
 
 ## TL;DR

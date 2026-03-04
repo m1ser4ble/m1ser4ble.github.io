@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Kotlin Coroutine과 @Async 비교은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [Coroutine, launch, async, suspend, Continuation]
+tags: [coroutine, launch, async, suspend, continuation]
 ---
 
 ## TL;DR

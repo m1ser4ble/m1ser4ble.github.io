@@ -6,7 +6,7 @@ categories: devops
 excerpt: "Claude Code OOM (Out of Memory) 대응은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [OOM Killer, Out of Memory, Swap, SSH 끊김, tmux 세션]
+tags: [oomkiller, outofmemory, swap, ssh, tmux]
 ---
 
 ## TL;DR

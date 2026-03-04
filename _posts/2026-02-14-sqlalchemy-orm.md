@@ -6,7 +6,7 @@ categories: backend
 excerpt: "SQLAlchemy - Python ORM은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [SQLAlchemy, ORM, Object Relational Mapping, Core, Session]
+tags: [sqlalchemy, orm, objectrelationalmapping, core, session]
 ---
 
 ## TL;DR

@@ -7,6 +7,7 @@ tags: [infra, network, web, proxy]
 excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
 source: "/home/dwkim/dwkim/docs/infra/reverse-proxy-리버스프록시.md"
 
+
 ---
 
 **TL;DR**

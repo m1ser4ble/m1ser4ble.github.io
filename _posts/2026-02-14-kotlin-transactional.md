@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Kotlin @Transactional 어노테이션은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [Transactional, Spring, Kotlin, AOP, 프록시]
+tags: [transactional, spring, kotlin, aop]
 ---
 
 ## TL;DR

@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Reactive Programming & Flux 기본 개념은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [Flux, Mono, Reactor, Reactive Streams, Backpressure]
+tags: [flux, mono, reactor, reactivestreams, backpressure]
 ---
 
 ## TL;DR

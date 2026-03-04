@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Streamlit Server은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [Streamlit, Python, 데이터 앱, 대시보드, Session State]
+tags: [streamlit, python, sessionstate]
 ---
 
 ## TL;DR

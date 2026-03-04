@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Kotlin companion object은(는) 핵심 개념과 배경, 이유를 정리해 적용 기준을 제공한다."
 toc: true
 toc_sticky: true
-tags: [companion object, Kotlin, static, 싱글톤, 팩토리 패턴]
+tags: [companionobject, kotlin, static]
 ---
 
 ## TL;DR
