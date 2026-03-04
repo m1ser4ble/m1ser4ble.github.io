@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "lettuce redis 클라이언트"
-date: 2026-03-05 23:00:00 +0900
+date: 2026-03-05 08:08:14 +0900
 categories: backend
 excerpt: "lettuce redis 클라이언트는 핵심 개념과 적용 포인트를 정리해 실무 판단 기준을 제공한다."
 toc: true
