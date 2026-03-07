@@ -1,0 +1,48 @@
+---
+layout: single
+title:  "Cow in Rust"
+date:   2022-06-06 11:56:13 +0900
+categories: jekyll update
+toc: true
+toc_sticky: true
+
+---
+
+# Cow
+
+모두가 아는 Copy On Write.
+값을 쓸 때 copy 가 발생시키겠다는 것으로 메모리/연산적으로 효율적인 이점이 있음.
+약자때문에 이에 대한 언급이 있을 때 마다 Moo 를 연발하는 사람을 볼 수 있음.
+
+
+# Cow in Rust
+
+Rust 에서는 std::borrow::Cow 로 다음과 같이 정의되어 있음.
+```
+pub enum Cow<'a, B> where    B: 'a + ToOwned + ?Sized,  {
+    Borrowed(&'a B),
+    Owned(<B as ToOwned>::Owned),
+}
+```
+
+enum 으로 Borrrowed , Owned 상태로 나뉘며 각각 enum 객체로 ,
+- reference B ,
+- B type 의 ToOwned trait 의 Owned 타입
+을 품고있다.
+
+Rust doc 페이지에 가서 예시를 훑어보면 이 의미를 더 쉽게 파악할 수 있다.
+우리가 주로 사용하는 str 타입에 대해서 확인을 해보자.
+
+> impl ToOwned for str
+> type Owned = String
+
+즉, <str as ToOwned>::Owned 는 String 으로 정의가 되어있기 때문에
+우리가 Cow.to_mut() 을 사용하게 되면 내부적으로 Borrowed(&str) ->  Owned(String) 상태 전환이 일어나면서
+copy 가 발생하는 것이다.
+
+## 장점
+
+Reddit 에 Cow 와 관련된 내용이 올라온 적이 있다. 왜 Rust 에서 Cow 를 default 로 하지 않는가에 대한 불만이었다.
+반응들을 보면 마치 단점이 없는 것으로 보임. 이에 대한 조사를 해보자.
+
+## 단점

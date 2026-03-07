@@ -7,6 +7,16 @@ Jekyll 기반 GitHub Pages 기술 블로그. minimal-mistakes 테마(neon 스킨
 - **URL**: https://m1ser4ble.github.io/
 - **주요 주제**: 리버싱, Rust, Python, Bazel, 시스템 프로그래밍
 
+## 기본 동작 모드
+
+이 디렉토리에서 Claude를 시작하면 **학습 기록 모드**로 동작한다:
+
+1. 사용자의 질문에 답변
+2. 답변 내용을 블로그 설명글 스타일로 정리
+3. `_posts/`에 자동 저장 (관련 글 있으면 추가, 없으면 새 글 생성)
+
+작성 스타일: `.claude/skills/doc.md` 참조
+
 ## 디렉토리 구조
 
 ```

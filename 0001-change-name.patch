@@ -1,0 +1,35 @@
+From 69ee533e031f3c5e82aa7434b9c70c97924ed982 Mon Sep 17 00:00:00 2001
+From: Dongwan Kim <kdw6485@gmail.com>
+Date: Mon, 24 Oct 2022 23:52:24 +0900
+Subject: [PATCH] change name
+
+---
+ {_layout => _layouts}/archive-categories.html | 0
+ {_layout => _layouts}/archive-tags.html       | 0
+ {_layout => _layouts}/archive-years.html      | 0
+ {_layout => _layouts}/archive.html            | 0
+ 4 files changed, 0 insertions(+), 0 deletions(-)
+ rename {_layout => _layouts}/archive-categories.html (100%)
+ rename {_layout => _layouts}/archive-tags.html (100%)
+ rename {_layout => _layouts}/archive-years.html (100%)
+ rename {_layout => _layouts}/archive.html (100%)
+
+diff --git a/_layout/archive-categories.html b/_layouts/archive-categories.html
+similarity index 100%
+rename from _layout/archive-categories.html
+rename to _layouts/archive-categories.html
+diff --git a/_layout/archive-tags.html b/_layouts/archive-tags.html
+similarity index 100%
+rename from _layout/archive-tags.html
+rename to _layouts/archive-tags.html
+diff --git a/_layout/archive-years.html b/_layouts/archive-years.html
+similarity index 100%
+rename from _layout/archive-years.html
+rename to _layouts/archive-years.html
+diff --git a/_layout/archive.html b/_layouts/archive.html
+similarity index 100%
+rename from _layout/archive.html
+rename to _layouts/archive.html
+-- 
+2.37.0 (Apple Git-136)
+

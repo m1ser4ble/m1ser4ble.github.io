@@ -1,0 +1,120 @@
+From e79ee7cd2407199f6d4caea2d234f97a2bfd76fb Mon Sep 17 00:00:00 2001
+From: Dongwan Kim <kdw6485@gmail.com>
+Date: Wed, 15 Jun 2022 19:51:21 +0900
+Subject: [PATCH] wip on bevy
+
+---
+ _posts/2022-05-30-bevy.markdown | 45 +++++++++++++++++++++++++++++++
+ _posts/2022-06-06-cow.markdown  | 48 +++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
+ create mode 100644 _posts/2022-05-30-bevy.markdown
+ create mode 100644 _posts/2022-06-06-cow.markdown
+
+diff --git a/_posts/2022-05-30-bevy.markdown b/_posts/2022-05-30-bevy.markdown
+new file mode 100644
+index 0000000..33c63e3
+--- /dev/null
++++ b/_posts/2022-05-30-bevy.markdown
+@@ -0,0 +1,45 @@
++---
++layout: single
++title:  "Introduction to ECS in Bevy"
++date:   2022-05-29 15:30:09 +0900
++categories: jekyll update
++toc: true
++toc_sticky: true
++
++---
++
++# ECS
++
++# State
++
++## system
++
++state 가 달라도 여전히 동작해야하는 동일한 system 들이 있을 것이다.
++예를 들면, 내가 채팅을 치고 있는 동안에도 여전히 캐릭터는 움직여야한다.
++( 채팅모드와 컨트롤 모드로 나눈 상태 )
++두 상태에서 동작하는 system(...Changed<Component>>) 은 어떻게 동작할까..?
++채팅모드에서 컨트롤 모드로 변경한다면
++컨트롤 모드는 채팅모드로 진입하기 전( 이전의 컨트롤모드 ) 의 Component 가
++다시 컨트롤모드가 되었을 때의 Component 와 같은지를 확인해서 Change를 판단하는 것으로 보임.
++그러면 내가 의도했던 것이랑 다소 다름.
++뿐만 아니라, 같은 system 을 각각의 state 에 등록해야하기 때문에 코드가 지저분해보이고,
++state 에 비례해서 코드가 증가하게 될 것임.
++이런 문제점 때문에 분명 모든 state 에 대해 적용되는 system 을 등록하는 방법이 있을 것이고 이를 찾아봐야할 것 같음.
++이 문제에 대해 내가 생각한 솔루션은 다음과 같다.
++stateX1 stateX2 에서 하나의 system 이 적용되게 하려면, 전체 app 에 add_system 을 사용해서 적용한다.
++```
++app().add_system(system_on_X)
++...
++
++fn system_on_X(mut cmd : Commadns, query : Query<&X>,..){ ... }
++```
++system_on_X는 X component 가 존재해야만 호출된다.
++StateA-> EnteringStateX-> StateX1<-> StateX2-> ExitingStateX
++의 관계를 가지는 state 들을 모두 생성해두고 enteringStateX 에서 다음과 같은 system 이 최소 한번 호출되도록 한다.
++```
++fn enterX(mut cmd : Commands,  ..){ cmd.spawn().insert(X); }
++```
++마찬가지로 ExitingStateX 에서 아래의 system 이 최소 한번 호출되도록 하면 된다.
++```
++fn exitX(mut cmd: Commands, ..){ cmd.despawn(X;) }
++```
+diff --git a/_posts/2022-06-06-cow.markdown b/_posts/2022-06-06-cow.markdown
+new file mode 100644
+index 0000000..1cffbdf
+--- /dev/null
++++ b/_posts/2022-06-06-cow.markdown
+@@ -0,0 +1,48 @@
++---
++layout: single
++title:  "Cow in Rust"
++date:   2022-06-06 11:56:13 +0900
++categories: jekyll update
++toc: true
++toc_sticky: true
++
++---
++
++# Cow
++
++모두가 아는 Copy On Write.
++값을 쓸 때 copy 가 발생시키겠다는 것으로 메모리/연산적으로 효율적인 이점이 있음.
++약자때문에 이에 대한 언급이 있을 때 마다 Moo 를 연발하는 사람을 볼 수 있음.
++
++
++# Cow in Rust
++
++Rust 에서는 std::borrow::Cow 로 다음과 같이 정의되어 있음.
++```
++pub enum Cow<'a, B> where    B: 'a + ToOwned + ?Sized,  {
++    Borrowed(&'a B),
++    Owned(<B as ToOwned>::Owned),
++}
++```
++
++enum 으로 Borrrowed , Owned 상태로 나뉘며 각각 enum 객체로 ,
++- reference B ,
++- B type 의 ToOwned trait 의 Owned 타입
++을 품고있다.
++
++Rust doc 페이지에 가서 예시를 훑어보면 이 의미를 더 쉽게 파악할 수 있다.
++우리가 주로 사용하는 str 타입에 대해서 확인을 해보자.
++
++> impl ToOwned for str
++> type Owned = String
++
++즉, <str as ToOwned>::Owned 는 String 으로 정의가 되어있기 때문에
++우리가 Cow.to_mut() 을 사용하게 되면 내부적으로 Borrowed(&str) ->  Owned(String) 상태 전환이 일어나면서
++copy 가 발생하는 것이다.
++
++## 장점
++
++Reddit 에 Cow 와 관련된 내용이 올라온 적이 있다. 왜 Rust 에서 Cow 를 default 로 하지 않는가에 대한 불만이었다.
++반응들을 보면 마치 단점이 없는 것으로 보임. 이에 대한 조사를 해보자.
++
++## 단점
+-- 
+2.37.0 (Apple Git-136)
+

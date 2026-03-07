@@ -1,0 +1,45 @@
+---
+layout: single
+title:  "Introduction to ECS in Bevy"
+date:   2022-05-29 15:30:09 +0900
+categories: jekyll update
+toc: true
+toc_sticky: true
+
+---
+
+# ECS
+
+# State
+
+## system
+
+state 가 달라도 여전히 동작해야하는 동일한 system 들이 있을 것이다.
+예를 들면, 내가 채팅을 치고 있는 동안에도 여전히 캐릭터는 움직여야한다.
+( 채팅모드와 컨트롤 모드로 나눈 상태 )
+두 상태에서 동작하는 system(...Changed<Component>>) 은 어떻게 동작할까..?
+채팅모드에서 컨트롤 모드로 변경한다면
+컨트롤 모드는 채팅모드로 진입하기 전( 이전의 컨트롤모드 ) 의 Component 가
+다시 컨트롤모드가 되었을 때의 Component 와 같은지를 확인해서 Change를 판단하는 것으로 보임.
+그러면 내가 의도했던 것이랑 다소 다름.
+뿐만 아니라, 같은 system 을 각각의 state 에 등록해야하기 때문에 코드가 지저분해보이고,
+state 에 비례해서 코드가 증가하게 될 것임.
+이런 문제점 때문에 분명 모든 state 에 대해 적용되는 system 을 등록하는 방법이 있을 것이고 이를 찾아봐야할 것 같음.
+이 문제에 대해 내가 생각한 솔루션은 다음과 같다.
+stateX1 stateX2 에서 하나의 system 이 적용되게 하려면, 전체 app 에 add_system 을 사용해서 적용한다.
+```
+app().add_system(system_on_X)
+...
+
+fn system_on_X(mut cmd : Commadns, query : Query<&X>,..){ ... }
+```
+system_on_X는 X component 가 존재해야만 호출된다.
+StateA-> EnteringStateX-> StateX1<-> StateX2-> ExitingStateX
+의 관계를 가지는 state 들을 모두 생성해두고 enteringStateX 에서 다음과 같은 system 이 최소 한번 호출되도록 한다.
+```
+fn enterX(mut cmd : Commands,  ..){ cmd.spawn().insert(X); }
+```
+마찬가지로 ExitingStateX 에서 아래의 system 이 최소 한번 호출되도록 하면 된다.
+```
+fn exitX(mut cmd: Commands, ..){ cmd.despawn(X;) }
+```
