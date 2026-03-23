@@ -1,30 +1,30 @@
 ---
 layout: single
 title: "Circuit Breaker & Resilience 패턴 완전 가이드"
-date: 2026-03-19 22:59:00 +0900
+date: 2026-03-24 00:02:25 +0900
 categories: backend
-excerpt: "Circuit Breaker와 Resilience 패턴은 분산 시스템에서 연쇄 장애를 차단하고 부분 실패를 격리해 서비스 가용성과 복구 탄력성을 높이는 설계 전략이다."
+excerpt: "연쇄 장애 (Cascading Failure) 시나리오"
 toc: true
 toc_sticky: true
-tags: [circuitbreaker, resilience, microservices, retry, timeout, fallback]
+tags: [backend, circuit, breaker, resilience, 패턴]
 source: "/home/dwkim/dwkim/docs/backend/circuit-breaker-resilience-패턴.md"
 ---
 TL;DR
-- Circuit Breaker의 핵심 상태 전이(CLOSED/OPEN/HALF-OPEN)와 장애 격리 목적을 빠르게 정리한다.
-- 분산 시스템에서 왜 연쇄 장애와 스레드 고갈이 발생하는지 배경을 사례 중심으로 설명한다.
-- Retry·Timeout·Bulkhead·Fallback을 조합한 실전 Resilience 설계 포인트를 한 번에 파악한다.
+- Circuit Breaker & Resilience 패턴 완전 가이드의 핵심 개념을 빠르게 파악할 수 있다.
+- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
+- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
 
 ## 1. 개념
-Circuit Breaker & Resilience 패턴은 장애 서비스 호출을 자동으로 차단하고 복구 가능 시점에 제한적으로 재시도해 장애 전파를 막는 분산 시스템 안정화 패턴이다.
+Circuit Breaker & Resilience 패턴 완전 가이드의 핵심 정의와 문제 공간을 간단히 정리한다.
 
 ## 2. 배경
-마이크로서비스 환경에서는 네트워크 지연과 부분 장애가 상시 발생하며, 단일 다운스트림 장애가 스레드 풀 고갈을 거쳐 전체 시스템 장애로 확산되기 쉽다.
+이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
 
 ## 3. 이유
-실패를 전제로 설계하지 않으면 작은 장애가 대규모 서비스 중단으로 번지기 때문에, 장애 격리와 점진 복구를 위한 보호 계층이 필요하다.
+왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
 
 ## 4. 특징
-상태 기반 트래픽 차단, 지표 기반 임계치 판단, Fallback을 통한 Graceful Degradation, 그리고 Retry/Timeout/Bulkhead/Rate Limiter와의 조합이 핵심 특징이다.
+핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
 
 ## 5. 상세 내용
 
@@ -1907,6 +1907,27 @@ groups:
 | Ambient Mesh Performance | Istio Blog | Sidecar vs Ambient 비교 |
 | Grafana Dashboard #21307 | Grafana Labs | Resilience4j 모니터링 |
 
+## 블로그 / 기술 포스트 (추가)
+
+| 제목 | 저자/출처 | URL |
+|------|----------|-----|
+| Performance Under Load | Netflix TechBlog (2018) | https://netflixtechblog.medium.com/performance-under-load-3e6fa9a60581 |
+| Prioritized Load Shedding at Netflix | Netflix TechBlog | https://netflixtechblog.com/prioritized-load-shedding-in-the-overloaded-state-of-a-netflix-microservice-4b532e835f37 |
+| Using Load Shedding to Survive Brownouts | AWS Architecture Blog | https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/ |
+
+## 장애 포스트모텀
+
+| 장애 | 연도 | 공식 포스트모텀 URL |
+|------|------|---------------------|
+| Amazon DynamoDB Retry Storm | 2015 | https://aws.amazon.com/message/5467D2/ |
+| Cloudflare WAF Outage | 2019 | https://blog.cloudflare.com/cloudflare-outage/ |
+| Google Cloud Networking Incident | 2019 | https://status.cloud.google.com/incident/cloud-networking/19009 |
+| Facebook/Meta BGP Outage | 2021 | https://engineering.fb.com/2021/10/05/networking-traffic/outage-details/ |
+| AWS US-EAST-1 Outage | 2021 | https://aws.amazon.com/message/12721/ |
+| GitHub MySQL Cluster Incident | 2018 | https://github.blog/2018-10-30-oct21-post-incident-analysis/ |
+| Slack Transit Gateway Outage | 2021 | https://slack.engineering/slacks-outage-on-january-4th-2021/ |
+| 카카오 판교 DC 화재 | 2022 | https://www.kakaocorp.com/page/detail/9812 |
+
 ## 학술 논문 / RFC
 
 | 논문 | 저자 | 연도 | 비고 |
@@ -1915,6 +1936,10 @@ groups:
 | Harvest, Yield, and Scalable Tolerant Systems | Fox, Brewer | 1999 | CAP Theorem 전신 |
 | IEEE 802.3 CSMA/CD | IEEE | 1983 | Exponential Backoff 공식 채택 |
 | Life beyond Distributed Transactions | Pat Helland | 2007 | 분산 트랜잭션 한계 |
+| Gray Failure: The Achilles' Heel of Cloud-Scale Systems | Huang et al. (MS Research) | 2017 | 차등 관찰 가능성 문제 |
+| Making Reliable Distributed Systems in the Presence of Software Errors | Joe Armstrong | 2003 | Erlang "Let It Crash" 철학, Supervision Tree |
+| The Tail at Scale | Jeff Dean, Luiz André Barroso | 2013 | Fan-out 지연 분포, Hedging 패턴 |
+| Congestion Avoidance and Control | Van Jacobson | 1988 | TCP Congestion Control, AIMD, Slow Start |
 
 ## 관련 프로젝트 내 문서
 
@@ -1941,3 +1966,4052 @@ groups:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+---
+
+# 13. 학술적/이론적 기반 심화
+
+## 13.1 Joe Armstrong의 "Let It Crash" 철학
+
+Joe Armstrong의 2003년 박사논문 *"Making Reliable Distributed Systems in the Presence of Software Errors"* 는 Erlang/OTP의 핵심 철학인 **"Let It Crash"** 를 정립했다. 이 철학은 **오류를 방지하려 하지 말고, 오류가 발생했을 때 빠르게 감지하고 복구하라**는 것이다. Circuit Breaker 패턴과 깊은 연관이 있다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Erlang Supervision Tree vs Circuit Breaker              │
+│                                                                 │
+│  [Erlang Supervision Tree]                                      │
+│                                                                 │
+│           ┌─── Supervisor (top) ───┐                            │
+│           │                        │                            │
+│     Supervisor A            Supervisor B                        │
+│      │      │                │      │                           │
+│   Worker1 Worker2        Worker3 Worker4                        │
+│                                                                 │
+│  Worker3 crash → Supervisor B가 재시작                          │
+│  Supervisor B 반복 실패 → Supervisor (top)이 B 전체 재시작      │
+│  → 장애가 격리되고, 자동 복구됨                                 │
+│                                                                 │
+│  [Circuit Breaker]                                              │
+│                                                                 │
+│  Service A ──► CB ──► Service B                                 │
+│                │                                                │
+│                ├── CLOSED: 정상 통과                             │
+│                ├── OPEN: 빠른 실패 (장애 격리)                  │
+│                └── HALF-OPEN: 복구 시도                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| 비교 항목 | Erlang Supervision Tree | Circuit Breaker |
+|-----------|------------------------|-----------------|
+| **철학** | "Let It Crash" — 실패를 허용하고 복구 | "Fail Fast" — 실패를 감지하고 차단 |
+| **장애 감지** | Process crash (link/monitor) | 오류율/지연 임계값 초과 |
+| **장애 격리** | Supervision 계층 구조 | CB 인스턴스별 격리 |
+| **복구 전략** | Supervisor가 자동 재시작 | Half-Open → 점진적 복구 확인 |
+| **복구 범위** | 프로세스/노드 단위 | 서비스/엔드포인트 호출 단위 |
+| **Escalation** | 상위 Supervisor로 전파 | 없음 (Bulkhead으로 보완) |
+| **적용 레벨** | 프로세스 내부 | 서비스 간 통신 |
+| **공통점** | 장애를 정상 흐름의 일부로 설계에 포함 | 장애를 정상 흐름의 일부로 설계에 포함 |
+
+**핵심 통찰:** Erlang의 "Let It Crash"는 **프로세스 내부**의 오류 격리/복구이고, Circuit Breaker는 **서비스 간** 오류 격리/복구이다. 두 패턴 모두 **"오류는 반드시 발생한다"** 는 전제 위에 설계된다.
+
+## 13.2 제어이론(Control Systems Theory)과 Circuit Breaker
+
+Circuit Breaker의 상태 전이 메커니즘은 제어이론의 **Negative Feedback Loop**와 정확히 대응된다. 시스템의 출력(오류율)을 측정하고, 목표값(임계값)과 비교하여, 제어 신호(상태 전이)를 발생시킨다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Negative Feedback Loop ↔ Circuit Breaker 매핑           │
+│                                                                 │
+│  [제어이론 Feedback Loop]                                       │
+│                                                                 │
+│  Set Point ──► (+) ──► Controller ──► Actuator ──► Process     │
+│                 ↑ (-)                                ↓          │
+│                 └────────── Sensor ◄─────────────────┘          │
+│                                                                 │
+│  [Circuit Breaker 매핑]                                         │
+│                                                                 │
+│  오류율 임계값 ──► 비교 ──► CB 상태전이 ──► 트래픽 제어 ──► 서비스│
+│      (50%)         ↑ (-)     로직                        ↓     │
+│                    └────── Sliding Window ◄───────────────┘     │
+│                            (오류율 측정)                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| 제어이론 구성요소 | Circuit Breaker 대응 | 설명 |
+|-------------------|---------------------|------|
+| **Set Point** (목표값) | `failureRateThreshold` (오류율 임계값) | 시스템이 유지해야 할 목표 오류율 |
+| **Process Variable** (현재값) | 현재 Sliding Window 내 오류율 | 실시간 측정되는 실제 오류율 |
+| **Error Signal** (오차) | 현재 오류율 - 임계값 | 임계값 초과 시 양수 → 제어 필요 |
+| **Controller** (제어기) | CB 상태전이 로직 | CLOSED→OPEN→HALF-OPEN 결정 |
+| **Actuator** (작동기) | 트래픽 허용/차단 | OPEN 시 요청 차단, CLOSED 시 통과 |
+| **Sensor** (센서) | Sliding Window (Ring Buffer) | 호출 결과를 수집하여 오류율 계산 |
+| **Plant** (제어 대상) | 대상 서비스(downstream) | 보호 대상 원격 서비스 |
+
+### Flapping/Oscillation 문제 = 불충분한 Phase Margin
+
+Circuit Breaker가 OPEN↔CLOSED를 빠르게 반복하는 **Flapping** 현상은 제어이론에서 **불충분한 Phase Margin**으로 인한 **Oscillation**과 동일한 문제이다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Flapping (진동) 문제와 해결                              │
+│                                                                 │
+│  [Flapping 발생]                                                │
+│                                                                 │
+│  오류율 ───╲  ╱──╲  ╱──╲  ╱──╲  ╱──                            │
+│  임계값 ────╳────╳────╳────╳──── (빠른 교차)                    │
+│  CB상태  OPEN CLOSED OPEN CLOSED OPEN ...                       │
+│                                                                 │
+│  원인: waitDurationInOpenState가 너무 짧거나,                   │
+│        permittedNumberOfCallsInHalfOpenState가 너무 적음        │
+│                                                                 │
+│  [안정화된 상태]                                                 │
+│                                                                 │
+│  오류율 ───╲                    ╱───                             │
+│  임계값 ────╲──────────────────╱──── (충분한 회복 시간)          │
+│  CB상태  OPEN  (wait 30s)  HALF-OPEN → CLOSED                   │
+│                                                                 │
+│  해결: 충분한 Damping (waitDuration ↑, Half-Open 호출수 ↑)      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### PID Controller의 D항과 Half-Open 상태
+
+PID Controller에서 **Derivative(D) 항**은 오차의 변화율을 감시하여 과잉 제어를 방지한다. Circuit Breaker의 **Half-Open 상태**는 이와 유사한 역할을 한다:
+
+| PID 요소 | CB 대응 | 역할 |
+|----------|---------|------|
+| **P (Proportional)** | 오류율이 임계값 초과 → OPEN | 즉각 반응 |
+| **I (Integral)** | Sliding Window 누적 오류율 | 과거 누적 고려 |
+| **D (Derivative)** | Half-Open에서 점진적 복구 확인 | 급격한 변화 방지, 안정적 복원 |
+
+## 13.3 대기열 이론 심화: Erlang C Formula와 Bulkhead 크기 결정
+
+**Little's Law** (`L = λ × W`)는 안정 상태에서만 유효하다. 실제 시스템에서 **트래픽 변동성**(버스트)을 고려하려면 **Erlang C Formula** (A.K. Erlang, 1917, M/M/c 모델)를 사용해야 한다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Erlang C Formula로 Bulkhead 크기 결정                   │
+│                                                                 │
+│  M/M/c 모델 (Markov arrival / Markov service / c servers)      │
+│                                                                 │
+│  입력:                                                          │
+│  ├── λ = 도착률 (req/s)                                        │
+│  ├── μ = 서비스율 (1/평균응답시간)                              │
+│  ├── c = 서버(슬롯) 수                                         │
+│  └── A = λ/μ (offered traffic, Erlang 단위)                    │
+│                                                                 │
+│  Erlang C 확률 (대기 확률):                                     │
+│                                                                 │
+│              (A^c / c!) × (c / (c - A))                        │
+│  P_w(c) = ──────────────────────────────────                   │
+│            Σ(k=0..c-1) A^k/k! + (A^c/c!) × (c/(c-A))        │
+│                                                                 │
+│  예시: λ=100 req/s, 평균응답=200ms → A=100×0.2=20 Erlang       │
+│                                                                 │
+│  │  c (슬롯수)  │ P_w (대기확률)  │ 판정              │        │
+│  │──────────────│────────────────│───────────────────│        │
+│  │  20          │ ~100% (불안정!) │ c = A 이면 불안정 │        │
+│  │  25          │ ~36%           │ 너무 높음          │        │
+│  │  30          │ ~8%            │ 수용 가능          │        │
+│  │  35          │ ~1.5%          │ 권장               │        │
+│  │  40          │ ~0.2%          │ 보수적 (안전)      │        │
+│                                                                 │
+│  결론: maxConcurrentCalls = 35 (p99 대기 확률 < 2%)            │
+│  Little's Law로는 20이지만, 실제로는 35가 적절               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Little's Law의 한계:**
+
+| 항목 | Little's Law | Erlang C |
+|------|-------------|----------|
+| **가정** | 안정 상태 (Steady State) | 포아송 도착 + 지수 서비스 시간 |
+| **변동성 고려** | 없음 (평균만) | 확률적 변동 포함 |
+| **결과** | 최소 필요 슬롯 수 | 목표 대기 확률 달성 슬롯 수 |
+| **실무 적용** | 빠른 추정 | 정밀 산정 |
+| **한계** | 버스트 트래픽 미고려 | M/M/c 가정 (실제와 다를 수 있음) |
+
+**M/M/1 불안정 조건:** `λ ≥ μ` (도착률이 서비스율 이상이면 대기열이 무한 증가). 이것이 바로 **Bulkhead 없이 느린 서비스를 호출할 때 스레드 풀이 고갈되는 근본 원인**이다.
+
+## 13.4 TCP Congestion Control과 Resilience 패턴
+
+Van Jacobson의 1988년 논문 *"Congestion Avoidance and Control"* 은 TCP Congestion Control의 기초를 놓았다. 놀랍게도 분산 시스템 Resilience 패턴과 정확히 대응된다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          TCP Congestion Control ↔ Resilience 패턴 매핑           │
+│                                                                 │
+│  [TCP]                         [Resilience]                     │
+│                                                                 │
+│  Slow Start                    CB Half-Open (점진적 복구)       │
+│  ┌──────────────┐              ┌──────────────┐                │
+│  │ cwnd: 1→2→4  │              │ 허용: 3→5→10 │                │
+│  │ 지수 증가    │              │ 점진적 증가  │                │
+│  └──────────────┘              └──────────────┘                │
+│                                                                 │
+│  Congestion Avoidance          CB CLOSED (정상)                 │
+│  ┌──────────────┐              ┌──────────────┐                │
+│  │ cwnd 선형 ↑  │              │ 전체 트래픽  │                │
+│  │ 안정 전송    │              │ 허용         │                │
+│  └──────────────┘              └──────────────┘                │
+│                                                                 │
+│  Timeout/3-dup ACK             CB → OPEN 전이                   │
+│  ┌──────────────┐              ┌──────────────┐                │
+│  │ cwnd 급감    │              │ 트래픽 차단  │                │
+│  │ (1 or 1/2)  │              │ (Fail Fast)  │                │
+│  └──────────────┘              └──────────────┘                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| TCP Congestion Control | Resilience 패턴 | 공통 원리 |
+|------------------------|-----------------|----------|
+| **AIMD** (Additive Increase, Multiplicative Decrease) | CB CLOSED(증가)/OPEN(급감) | 점진적 증가, 급격한 감소 |
+| **Slow Start** | Half-Open 상태 (제한된 요청 허용) | 복구 시 점진적 트래픽 증가 |
+| **RTO** (Retransmission Timeout) | `waitDurationInOpenState` | 재시도까지 대기 시간 |
+| **cwnd** (Congestion Window) | `permittedNumberOfCallsInHalfOpenState` | 허용 동시 요청 수 |
+| **Exponential Backoff** | Retry Exponential Backoff | 지수적 대기 시간 증가 |
+| **Jitter** (TCP randomized RTO) | Retry Jitter | 동시 재시도 회피 |
+| **ECN** (Explicit Congestion Notification) | Health Check / Probe | 혼잡 상태 명시적 알림 |
+
+## 13.5 Gray Failure 논문 (Microsoft Research, 2017)
+
+*"Gray Failure: The Achilles' Heel of Cloud-Scale Systems"* (Huang et al.)는 시스템이 **완전히 정상도, 완전히 장애도 아닌 "회색 영역"** 에 빠지는 현상을 분석했다. 이것은 **차등 관찰 가능성(Differential Observability)** 문제이다: 관찰자에 따라 시스템 상태가 다르게 보인다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Gray Failure — Circuit Breaker의 맹점                    │
+│                                                                 │
+│  [Binary Failure — CB가 잘 감지]                                │
+│                                                                 │
+│  오류율  ┃                    ████████████                      │
+│  100%   ┃                    ████████████                      │
+│         ┃                    ████████████                      │
+│   50%   ┃─ ─ ─ ─ ─ ─ ─ ─ ─ ████████████ ─ ─ ─ 임계값        │
+│         ┃                    ████████████                      │
+│    0%   ┃████████████████████            ████████████           │
+│         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 시간     │
+│         CB: CLOSED           OPEN        CLOSED                │
+│         → 명확한 전이, CB가 정확히 동작                         │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  [Gray Failure — CB가 감지 못함]                                │
+│                                                                 │
+│  오류율  ┃          (오류율은 낮음)                              │
+│   50%   ┃─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ 임계값        │
+│         ┃                                                      │
+│   10%   ┃          ████████████████████████                    │
+│    0%   ┃██████████                        ████████             │
+│         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 시간     │
+│                                                                 │
+│  응답시간 ┃         ████                                        │
+│  5000ms  ┃        █████                                        │
+│  2000ms  ┃      ████████                                       │
+│   200ms  ┃█████          ████████                               │
+│          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 시간    │
+│                                                                 │
+│  CB: CLOSED ──────────────────────────── (OPEN 전이 안 됨!)    │
+│  → 오류율은 임계값 미만이지만, 응답시간이 10x 증가!            │
+│  → 사용자 경험은 심각하게 저하됨                                │
+│                                                                 │
+│  해결: slowCallRateThreshold + slowCallDurationThreshold 설정   │
+│        Multi-dimensional health check (오류율 + 지연 + p99)     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**CB의 Gray Failure 대응 전략:**
+
+| 전략 | 구현 | 효과 |
+|------|------|------|
+| `slowCallRateThreshold` | 느린 호출 비율 임계값 설정 | 지연 증가 감지 |
+| `slowCallDurationThreshold` | 느린 호출 기준 시간 설정 | 지연의 정의 |
+| Multi-signal detection | 오류율 + 지연 + p99 복합 판단 | 차등 관찰 극복 |
+| Custom health check | 애플리케이션 수준 의미론적 검사 | 비즈니스 레벨 Gray Failure 감지 |
+
+## 13.6 TLA+를 이용한 Circuit Breaker 형식 검증
+
+**TLA+** (Temporal Logic of Actions)를 사용하면 Circuit Breaker의 상태 전이가 **Safety Property** (나쁜 일이 발생하지 않음)와 **Liveness Property** (좋은 일이 결국 발생함)를 만족하는지 형식적으로 검증할 수 있다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          TLA+ Circuit Breaker 형식 명세                           │
+│                                                                 │
+│  ---- MODULE CircuitBreaker ----                                │
+│  EXTENDS Naturals, Sequences                                    │
+│                                                                 │
+│  VARIABLES                                                      │
+│    state,        \* {CLOSED, OPEN, HALF_OPEN}                  │
+│    failureCount, \* 0..WindowSize                               │
+│    successCount, \* 0..HalfOpenPermitted                        │
+│    timer         \* 0..WaitDuration                             │
+│                                                                 │
+│  TypeInvariant ==                                               │
+│    /\ state \in {"CLOSED", "OPEN", "HALF_OPEN"}                │
+│    /\ failureCount \in 0..WindowSize                            │
+│    /\ successCount >= 0                                         │
+│    /\ timer >= 0                                                │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  Actions:                                                       │
+│                                                                 │
+│  CallSucceeds ==                                                │
+│    \/ (state = "CLOSED" /\ state' = "CLOSED"                   │
+│        /\ failureCount' = Max(0, failureCount - 1))            │
+│    \/ (state = "HALF_OPEN" /\ successCount' = successCount + 1 │
+│        /\ IF successCount + 1 >= Threshold                     │
+│           THEN state' = "CLOSED" /\ failureCount' = 0          │
+│           ELSE state' = "HALF_OPEN")                            │
+│                                                                 │
+│  CallFails ==                                                   │
+│    \/ (state = "CLOSED" /\ failureCount' = failureCount + 1    │
+│        /\ IF failureCount + 1 >= FailureThreshold              │
+│           THEN state' = "OPEN" /\ timer' = WaitDuration        │
+│           ELSE state' = "CLOSED")                               │
+│    \/ (state = "HALF_OPEN" /\ state' = "OPEN"                  │
+│        /\ timer' = WaitDuration)                                │
+│                                                                 │
+│  TimerExpires ==                                                │
+│    state = "OPEN" /\ timer = 0                                  │
+│    /\ state' = "HALF_OPEN"                                      │
+│    /\ successCount' = 0                                         │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  Safety Properties:                                             │
+│  ├── NoDirectOpenToClosed:                                      │
+│  │   □(state = "OPEN" ⇒ ○(state ≠ "CLOSED"))                  │
+│  │   "OPEN에서 CLOSED로 직접 전이 불가 (반드시 HALF_OPEN 경유)" │
+│  ├── BoundedFailure:                                            │
+│  │   □(failureCount ≤ WindowSize)                               │
+│  │   "실패 카운트는 Window 크기를 초과하지 않음"                │
+│  └── NoCallInOpen:                                              │
+│      □(state = "OPEN" ⇒ 요청 차단)                             │
+│      "OPEN 상태에서는 호출이 통과되지 않음"                     │
+│                                                                 │
+│  Liveness Properties:                                           │
+│  ├── EventualRecovery:                                          │
+│  │   □(state = "OPEN" ⇒ ◇(state = "HALF_OPEN"))               │
+│  │   "OPEN 상태는 결국 HALF_OPEN으로 전이됨"                   │
+│  └── EventualClose:                                             │
+│      □(state = "HALF_OPEN" ∧ 서비스 정상                       │
+│        ⇒ ◇(state = "CLOSED"))                                  │
+│      "서비스가 복구되면 결국 CLOSED로 돌아옴"                   │
+│                                                                 │
+│  ====                                                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 14. 최신 Resilience 패턴 심화
+
+## 14.1 Hedging Pattern
+
+Google의 Jeff Dean과 Luiz André Barroso가 2013년 발표한 *"The Tail at Scale"* 논문은 대규모 Fan-out 시스템에서 Tail Latency가 극적으로 증폭되는 현상을 분석하고, **Hedging** 패턴을 해결책으로 제시했다.
+
+### Fan-out 확률론
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Fan-out에서의 Tail Latency 증폭                         │
+│                                                                 │
+│  단일 서버에서 p99 지연 = 10ms일 때:                             │
+│                                                                 │
+│  Fan-out = 1:   P(최소 1개 느림) = 1%                           │
+│  Fan-out = 10:  P(최소 1개 느림) = 1-(0.99)^10  ≈ 9.6%         │
+│  Fan-out = 50:  P(최소 1개 느림) = 1-(0.99)^50  ≈ 39.5%        │
+│  Fan-out = 100: P(최소 1개 느림) = 1-(0.99)^100 ≈ 63.4%        │
+│                                                                 │
+│  확률   ┃                                            ████      │
+│  100%   ┃                                       █████████      │
+│         ┃                                  ██████████████      │
+│  63.4%  ┃─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─████████████████ ─      │
+│         ┃                          █████                        │
+│  39.5%  ┃─ ─ ─ ─ ─ ─ ─ ─ ─ ██████ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─      │
+│         ┃                ████                                   │
+│   9.6%  ┃─ ─ ─ ─ ─ ████ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─      │
+│    1%   ┃████████                                               │
+│         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ Fan-out  │
+│              1   10       50                 100                │
+│                                                                 │
+│  핵심: 전체 응답시간 = max(모든 Fan-out 응답) = 가장 느린 것   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Google BigTable 벤치마크
+
+Google의 실측 결과 (Dean & Barroso, 2013):
+
+| 지표 | Hedging 미적용 | Hedging 적용 (95th %ile 후 재전송) | 개선 |
+|------|---------------|-----------------------------------|------|
+| **p50** | 10ms | 10ms | 동일 |
+| **p99** | 50ms | 23ms | 54% 개선 |
+| **p99.9** | 1,800ms | 74ms | **96% 개선** |
+| **추가 요청 비용** | - | ~2% | 매우 낮음 |
+
+### Polly v8 Hedging 모드
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Polly v8 Hedging 3가지 모드                             │
+│                                                                 │
+│  [1. Latency Hedging]                                           │
+│  요청 ──► Primary ─── (P95 초과 시) ──► Hedge 1 ──► Hedge 2   │
+│           │                              │             │        │
+│           └──────── 가장 먼저 응답한 것 사용 ──────────┘        │
+│  특징: 일정 시간 후 추가 요청 전송, 추가비용 최소              │
+│                                                                 │
+│  [2. Parallel Hedging]                                          │
+│  요청 ──┬─► Primary ───────┐                                   │
+│         ├─► Hedge 1 ───────┤─► 가장 먼저 응답한 것 사용        │
+│         └─► Hedge 2 ───────┘                                   │
+│  특징: 동시 전송, 비용 N배이지만 지연 최소화                   │
+│                                                                 │
+│  [3. Fallback Hedging]                                          │
+│  요청 ──► Primary ─── (실패 시) ──► Fallback 1 ──► Fallback 2 │
+│  특징: 순차적 대안 시도 (전통적 Fallback과 유사)               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Retry vs Hedging 비교
+
+| 비교 항목 | Retry | Hedging |
+|-----------|-------|---------|
+| **트리거** | 요청 실패 후 | 지연 임계값 초과 시 (실패 아니어도) |
+| **동시 요청** | 순차적 (이전 실패 후) | 병렬 (이전 요청 진행 중에도) |
+| **목표** | 일시적 오류 극복 | Tail Latency 감소 |
+| **응답 사용** | 마지막 성공 응답 | 가장 빠른 응답 |
+| **추가 비용** | 실패 시에만 | 항상 소량 (2~5%) |
+| **적합 상황** | 간헐적 오류 | Fan-out, Tail Latency 민감 |
+| **부적합 상황** | 과부하 시 (Retry Storm) | 멱등성 없는 쓰기 작업 |
+
+## 14.2 Adaptive Concurrency Limits
+
+Netflix가 2018년 공개한 **concurrency-limits** 라이브러리는 TCP Congestion Control의 아이디어를 직접 애플리케이션 레이어에 적용한다. **Little's Law를 런타임에 실시간 피드백 루프로 실현**한 것이다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Adaptive Concurrency Limits — 동적 용량 결정             │
+│                                                                 │
+│  [정적 Bulkhead 문제]                                           │
+│                                                                 │
+│  설정: maxConcurrentCalls = 50                                  │
+│                                                                 │
+│  비수기: 실제 필요 10 → 40 슬롯 낭비                           │
+│  피크:  실제 필요 80 → 30 요청 불필요하게 거부                 │
+│                                                                 │
+│  [Adaptive Concurrency]                                         │
+│                                                                 │
+│  limit ──┬──► 측정: RTT (응답시간)                              │
+│          │    ├── RTT_noload (최소 응답시간)                    │
+│          │    └── RTT_actual (현재 응답시간)                    │
+│          │                                                      │
+│          ├──► 계산: new_limit = f(RTT_noload, RTT_actual)      │
+│          │                                                      │
+│          └──► 적용: Semaphore 크기 동적 조정                   │
+│                                                                 │
+│  비수기: limit 자동 감소 → 리소스 절약                         │
+│  피크:  limit 자동 증가 → 처리량 극대화                        │
+│  과부하: limit 급격히 감소 → 보호                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 알고리즘 비교
+
+| 알고리즘 | TCP 기반 | 동작 방식 | 장점 | 단점 |
+|----------|---------|----------|------|------|
+| **VegasLimit** | TCP Vegas | RTT 증가 감지 → limit 감소 | 큐잉 지연에 민감, 사전 감지 | 안정 RTT 필요 |
+| **Gradient2Limit** | - | gradient = RTT_noload / RTT_actual, limit × gradient | 노이즈에 강함, Smoothing | Cold Start 느림 |
+| **AIMDLimit** | TCP Reno AIMD | 성공 시 +α, 실패/지연 시 ×β (0.5~0.9) | 단순하고 예측 가능 | 변동 큼, 최적 수렴 느림 |
+
+### Bulkhead 정적 vs 동적 비교
+
+| 비교 항목 | 정적 Bulkhead | Adaptive Concurrency Limits |
+|-----------|-------------|---------------------------|
+| **설정** | 수동 (maxConcurrentCalls 고정) | 자동 (RTT 기반 조정) |
+| **변동 대응** | 없음 (고정 값) | 실시간 적응 |
+| **과잉 프로비저닝** | 높음 (피크 기준 설정) | 낮음 (실시간 조정) |
+| **설정 난이도** | 낮음 (숫자 하나) | 중간 (알고리즘 선택 필요) |
+| **예측 가능성** | 높음 (항상 동일) | 중간 (동적 변동) |
+| **적합 상황** | 트래픽 패턴 안정적 | 트래픽 변동 큰 서비스 |
+| **라이브러리** | Resilience4j Bulkhead | Netflix concurrency-limits |
+
+## 14.3 Load Shedding
+
+**Load Shedding**은 서버가 자체 용량을 초과하는 요청을 의도적으로 거부하여 **Goodput**(유용한 처리량)을 유지하는 패턴이다. Circuit Breaker와의 핵심 차이: CB는 **클라이언트**가 장애 서비스를 보호하지만, Load Shedding은 **서버 자신**이 자신을 보호한다.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Load Shedding vs Circuit Breaker                        │
+│                                                                 │
+│  [Circuit Breaker — 클라이언트 보호]                             │
+│                                                                 │
+│  Client ──► CB ──✕──► Overloaded Server                        │
+│              │                                                  │
+│              └── "서버가 아프니까 내가 안 보낸다"                │
+│                                                                 │
+│  [Load Shedding — 서버 자기 보호]                               │
+│                                                                 │
+│  Client ──► Server ──► Load Shedder ──✕──► Processing          │
+│                         │                                       │
+│                         └── "내가 감당 못하니 거부한다"          │
+│                                                                 │
+│  [둘의 조합 — Defense in Depth]                                  │
+│                                                                 │
+│  Client ──► CB ──► Server ──► Load Shedder ──► Processing      │
+│              │                  │                                │
+│              │                  └── 서버 자체 보호 (1차 방어)    │
+│              └── 클라이언트가 실패 인지 (2차 방어)               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Priority-based Load Shedding (Netflix 우선순위 계층)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Netflix Priority-based Load Shedding                    │
+│                                                                 │
+│  우선순위 계층 (높음 → 낮음):                                    │
+│                                                                 │
+│  ┌─────────────────────────────────┐                            │
+│  │ P0: CRITICAL                    │ 결제, 인증, 핵심 스트리밍  │
+│  │ → 절대 거부하지 않음            │                            │
+│  ├─────────────────────────────────┤                            │
+│  │ P1: DEGRADED                    │ 추천, 개인화, 검색         │
+│  │ → 과부하 시 품질 저하 허용      │                            │
+│  ├─────────────────────────────────┤                            │
+│  │ P2: BEST_EFFORT                 │ A/B 테스트, 분석, 로깅     │
+│  │ → 과부하 시 먼저 거부           │                            │
+│  ├─────────────────────────────────┤                            │
+│  │ P3: BULK                        │ 배치, 프리페치, 웜업       │
+│  │ → 부하 징후 시 즉시 거부        │                            │
+│  └─────────────────────────────────┘                            │
+│                                                                 │
+│  과부하 시 동작:                                                │
+│  1단계: P3 (BULK) 전체 거부                                     │
+│  2단계: P2 (BEST_EFFORT) 전체 거부                              │
+│  3단계: P1 (DEGRADED) 품질 저하                                 │
+│  4단계: P0 (CRITICAL)만 처리 — 최후의 보루                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Goodput vs Throughput
+
+| 지표 | 정의 | 과부하 시 |
+|------|------|----------|
+| **Throughput** | 단위 시간당 처리한 총 요청 수 | 증가 후 급감 (리소스 경쟁) |
+| **Goodput** | 단위 시간당 성공적으로 완료된 유용한 요청 수 | Load Shedding으로 유지 가능 |
+
+Load Shedding 없이 과부하가 발생하면, 모든 요청이 느려지며 Timeout으로 실패하여 **Goodput이 0에 수렴**할 수 있다.
+
+### Google Borg → K8s PriorityClass 계승
+
+Google 내부 Borg 시스템의 우선순위 개념은 Kubernetes `PriorityClass`로 계승되었다:
+
+| Borg Priority | K8s PriorityClass | 설명 |
+|---------------|-------------------|------|
+| Free (0) | `system-node-critical` 외 기본 | 리소스 부족 시 가장 먼저 Eviction |
+| Best-Effort (1) | BestEffort QoS | 보장 리소스 없음 |
+| Production (9) | Burstable/Guaranteed QoS | 프로덕션 워크로드 |
+| Monitoring (10) | `system-cluster-critical` | 모니터링/로깅 |
+| Infrastructure (11) | `system-node-critical` | 인프라 필수 구성요소 |
+
+---
+
+# 15. 실제 대규모 장애 사례 연구
+
+## 15.1 Amazon DynamoDB (2015) — Retry Storm
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Amazon DynamoDB Retry Storm (2015)                      │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  DynamoDB의 metadata service에 일시적 지연 발생                 │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] Metadata Service 지연 발생                                 │
+│       │                                                         │
+│  [2] 수천 개의 Storage Node가 동시 Retry                        │
+│       │                                                         │
+│  [3] Retry 트래픽이 Metadata Service를 완전 마비시킴            │
+│       │  ┌───────────────────────────────────┐                  │
+│       │  │  정상 트래픽:    ████ (100 req/s) │                  │
+│       │  │  + Retry 트래픽: ████████████████  │                  │
+│       │  │  = 총 트래픽:    ████████████████████ (10,000 req/s) │
+│       │  │  → Metadata Service 용량 초과!    │                  │
+│       │  └───────────────────────────────────┘                  │
+│       │                                                         │
+│  [4] Metadata 불가 → 신규 테이블 생성/수정 전부 불가            │
+│       │                                                         │
+│  [5] 복구 시도도 Metadata Service 필요 → 복구 자체가 불가       │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Exponential Backoff + Jitter (Retry Storm 방지)            │
+│  ├── Circuit Breaker (과도한 Retry 차단)                        │
+│  └── Load Shedding (Metadata Service 자기 보호)                 │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── Retry는 반드시 Exponential Backoff + Jitter 필수           │
+│  ├── "모든 클라이언트가 동시에 Retry" = Thundering Herd         │
+│  └── 복구 경로도 장애 대상과 같은 의존성이면 복구 불가          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.2 Cloudflare (2019) — WAF 정규식 Catastrophic Backtracking
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Cloudflare WAF Outage (2019-07-02)                      │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  WAF(Web Application Firewall) 정규식 규칙 업데이트 배포        │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] 정규식에 catastrophic backtracking 패턴 포함               │
+│      (?:(?:\"|'|\]|\}|\\|\d|(?:nan|infinity|true|false|...     │
+│       │                                                         │
+│  [2] 모든 Edge 서버 CPU 100% 고정                              │
+│      ┌─────────────────────────────┐                            │
+│      │ CPU ████████████████████ 100% │                          │
+│      │ 하나의 HTTP 요청 처리에      │                           │
+│      │ 정규식 엔진이 무한 루프 진입 │                           │
+│      └─────────────────────────────┘                            │
+│       │                                                         │
+│  [3] 전세계 Cloudflare Edge 82%에서 트래픽 처리 불가            │
+│       │                                                         │
+│  [4] 27분간 전세계 고객 사이트 접근 불가                        │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Timeout (정규식 실행 시간 제한)                            │
+│  ├── Bulkhead (WAF 처리를 메인 프록시에서 격리)                │
+│  ├── Canary Deploy (점진적 배포로 영향 범위 최소화)            │
+│  └── Circuit Breaker (CPU 임계값 초과 시 WAF 우회)             │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── 정규식은 O(2^n) 될 수 있음 — 반드시 실행 시간 제한        │
+│  ├── 글로벌 동시 배포 = 최대 Blast Radius                      │
+│  └── 안전장치(CPU 제한, WAF bypass) 없이 배포하면 안 됨        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.3 Google Cloud (2019) — Network Config 오류
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Google Cloud Networking Incident (2019-06-02)            │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  네트워크 구성 변경 중 오류로 대규모 네트워크 혼잡 발생         │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] 네트워크 구성 변경이 의도치 않게 광범위하게 적용           │
+│       │                                                         │
+│  [2] 대역폭 급감 → 네트워크 혼잡 (Congestion)                  │
+│       │                                                         │
+│  [3] 제어 플레인(Control Plane)도 같은 네트워크 사용            │
+│      ┌─────────────────────────────────────┐                    │
+│      │  Data Plane:    ████ (혼잡!)        │                    │
+│      │  Control Plane: ████ (같이 혼잡!)   │                    │
+│      │  → 수정 명령도 전달 불가!           │                    │
+│      └─────────────────────────────────────┘                    │
+│       │                                                         │
+│  [4] 복구 도구도 같은 네트워크 의존 → 복구 도구 마비           │
+│       │                                                         │
+│  [5] 4시간+ 장애, GCE/GKE/Cloud SQL 등 다수 서비스 영향        │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Bulkhead (Control Plane / Data Plane 네트워크 분리)       │
+│  ├── Out-of-band 관리 채널 (독립적 복구 경로)                  │
+│  └── Blast Radius 제한 (점진적 구성 변경)                      │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── 제어 플레인과 데이터 플레인은 반드시 격리                  │
+│  ├── 복구 도구가 장애 대상에 의존하면 복구 불가                │
+│  └── 구성 변경은 Canary → 점진적 확대 필수                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.4 Facebook/Meta (2021) — BGP 자가철회
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Facebook/Meta 대규모 장애 (2021-10-04)                  │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  유지보수 중 BGP 경로 광고(advertisement) 철회 명령 오발행      │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] BGP 설정 변경으로 모든 Facebook IP 대역 광고 철회          │
+│       │                                                         │
+│  [2] 전세계 ISP 라우팅 테이블에서 Facebook 경로 소멸            │
+│      ┌─────────────────────────────────────┐                    │
+│      │  ISP 라우팅 테이블:                 │                    │
+│      │  facebook.com → 157.240.0.0/16      │                    │
+│      │  (BGP withdraw) → 경로 없음!        │                    │
+│      └─────────────────────────────────────┘                    │
+│       │                                                         │
+│  [3] DNS 서버도 Facebook IP 대역 → DNS 도달 불가               │
+│       │                                                         │
+│  [4] 내부 도구도 같은 인프라 의존 → 원격 복구 불가             │
+│       │                                                         │
+│  [5] 물리적으로 데이터센터 접근하여 수동 복구                   │
+│       │                                                         │
+│  [6] 6시간 완전 중단 (Facebook, Instagram, WhatsApp 전체)       │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Out-of-band 관리 (독립 네트워크 경로)                     │
+│  ├── Blast Radius 제한 (점진적 BGP 변경)                       │
+│  ├── 자동 롤백 (이상 감지 시 즉시 복원)                        │
+│  └── Bulkhead (DNS/관리도구를 별도 네트워크로 격리)            │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── 네트워크 인프라 변경은 최고 수준의 안전장치 필요           │
+│  ├── "자기 자신을 접근하는 데 자기 자신이 필요" = SPOF          │
+│  └── 물리적 접근 복구 계획(Break Glass) 반드시 준비            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.5 AWS US-EAST-1 (2021) — Latent Backoff 버그
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          AWS US-EAST-1 장애 (2021-12-07)                         │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  내부 네트워크 자동화 시스템의 트래픽 증가가 연쇄 장애 유발     │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] 내부 네트워크 디바이스에 과도한 연결 요청                  │
+│       │                                                         │
+│  [2] 네트워크 디바이스 과부하 → 지연 증가                       │
+│       │                                                         │
+│  [3] 클라이언트의 Retry 로직에 Backoff 버그 존재               │
+│      ┌─────────────────────────────────────┐                    │
+│      │  정상 Backoff: 1s → 2s → 4s → 8s   │                    │
+│      │  버그 Backoff: 1s → 1s → 1s → 1s   │ ← Latent Bug!     │
+│      │  → Backoff이 실제로 동작하지 않음   │                    │
+│      └─────────────────────────────────────┘                    │
+│       │                                                         │
+│  [4] Retry Storm 자가강화                                       │
+│      부하 ↑ → 실패 ↑ → Retry ↑ → 부하 ↑↑ (양의 피드백)        │
+│       │                                                         │
+│  [5] Lambda, API Gateway, CloudWatch 등 다수 서비스 영향        │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Exponential Backoff + Jitter (버그 없는 구현 필수)         │
+│  ├── Circuit Breaker (무한 Retry 차단)                          │
+│  ├── Load Shedding (네트워크 디바이스 자기 보호)               │
+│  └── Chaos Engineering (Latent Bug 사전 발견)                   │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── Backoff 로직은 반드시 테스트 (Latent Bug 주의!)            │
+│  ├── Retry는 "일반 경로"에서만 동작 확인하면 부족              │
+│  └── 장애 시에만 활성화되는 코드 경로 = 가장 위험             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.6 GitHub (2018) — 43초 네트워크 파티션
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          GitHub MySQL Cluster Incident (2018-10-21)              │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  US East Coast 데이터센터 간 43초 네트워크 파티션 발생           │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] 43초간 네트워크 파티션 (물리적 연결 순단)                  │
+│       │                                                         │
+│  [2] MySQL Orchestrator가 자동 Failover 실행                    │
+│      ┌─────────────────────────────────────┐                    │
+│      │  Primary (DC1) ──✕── Replica (DC2)  │                    │
+│      │                                      │                   │
+│      │  Orchestrator: "Primary 죽었다!"     │                   │
+│      │  → Replica를 새 Primary로 승격       │                   │
+│      └─────────────────────────────────────┘                    │
+│       │                                                         │
+│  [3] 네트워크 복구 → 양쪽 DC 모두 Primary (Split Brain!)       │
+│      ┌──────────────┐    ┌──────────────┐                      │
+│      │ DC1: Primary  │    │ DC2: Primary  │                     │
+│      │ (원래 Primary)│    │ (승격된 것)   │                     │
+│      │ 쓰기 진행 중  │    │ 쓰기 진행 중  │                     │
+│      └──────────────┘    └──────────────┘                      │
+│       │                                                         │
+│  [4] 데이터 불일치 → 24시간+ 데이터 정합성 복구 작업            │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Fencing Token (Split Brain 방지)                           │
+│  ├── Bulkhead (DC간 격리와 일관성 전략)                        │
+│  ├── Consensus (Raft/Paxos 기반 리더 선출)                     │
+│  └── Manual Failover (자동 Failover 위험 인지)                 │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── 43초면 충분히 Split Brain 발생 가능                        │
+│  ├── 자동 Failover는 양날의 검 (빠르지만 위험)                │
+│  └── 데이터 일관성 복구는 서비스 복구보다 훨씬 오래 걸림      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.7 Slack (2021) — Transit Gateway 포화
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Slack Transit Gateway Outage (2021-01-04)               │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  새해 첫 출근일, 급격한 트래픽 증가로 Transit Gateway 포화      │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] 새해 첫 출근 → 동시 접속 급증 (예상의 2~3배)              │
+│       │                                                         │
+│  [2] AWS Transit Gateway 대역폭 한계 도달                       │
+│       │                                                         │
+│  [3] Autoscaler가 더 많은 인스턴스 추가                         │
+│      ┌─────────────────────────────────────┐                    │
+│      │  Autoscaler: "트래픽 많다 → 스케일업!"│                  │
+│      │  → 새 인스턴스가 Transit Gateway에    │                  │
+│      │    추가 연결 생성 → 대역폭 더 소모!  │                  │
+│      │  → 역효과: 상황 악화!                │                  │
+│      └─────────────────────────────────────┘                    │
+│       │                                                         │
+│  [4] Transit Gateway 완전 포화 → 모니터링 트래픽도 차단        │
+│       │                                                         │
+│  [5] 모니터링 블라인드 → 장애 원인 파악 지연                    │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Rate Limiter (Transit Gateway 보호)                        │
+│  ├── Bulkhead (관리/모니터링 트래픽 대역폭 예약)               │
+│  ├── Load Shedding (Autoscaler 과잉 반응 억제)                 │
+│  └── Capacity Planning (이벤트 기반 사전 스케일링)             │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── Autoscaler가 장애를 악화시킬 수 있음 (양의 피드백)        │
+│  ├── 모니터링 경로는 데이터 경로와 반드시 분리                  │
+│  └── 네트워크 대역폭도 Bulkhead 대상 (예약 필수)              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.8 카카오 (2022) — 판교 DC 화재
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          카카오 판교 DC 화재 (2022-10-15)                        │
+│                                                                 │
+│  무엇이 발생했는가:                                             │
+│  SK C&C 판교 데이터센터 지하 전기실 화재                        │
+│                                                                 │
+│  연쇄 장애 메커니즘:                                            │
+│                                                                 │
+│  [1] 판교 DC 지하 전기실 리튬 배터리 화재                       │
+│       │                                                         │
+│  [2] 화재 진압을 위해 전체 DC 전원 차단                         │
+│       │                                                         │
+│  [3] Failover 시스템도 같은 DC에 위치                           │
+│      ┌─────────────────────────────────────┐                    │
+│      │  판교 DC:                            │                   │
+│      │  ├── 카카오톡 서버       (화재!)     │                   │
+│      │  ├── 카카오맵 서버       (화재!)     │                   │
+│      │  ├── 카카오페이 서버     (화재!)     │                   │
+│      │  ├── Failover 시스템     (화재!)     │ ← SPOF!          │
+│      │  └── DR 제어 시스템      (화재!)     │ ← SPOF!          │
+│      └─────────────────────────────────────┘                    │
+│       │                                                         │
+│  [4] DR(Disaster Recovery) 제어 시스템도 마비 → 자동 절체 불가  │
+│       │                                                         │
+│  [5] 5일간 부분/전체 장애 (카카오톡, 카카오맵, 카카오페이 등)  │
+│                                                                 │
+│  관련 Resilience 패턴:                                          │
+│  ├── Multi-Region (지리적으로 분산된 Active-Active)             │
+│  ├── Bulkhead (DC 수준 격리)                                   │
+│  ├── Failover 독립성 (Failover 시스템은 별도 위치)             │
+│  └── Out-of-band 관리 (독립적 DR 제어 채널)                    │
+│                                                                 │
+│  교훈:                                                          │
+│  ├── "Failover 시스템 자체가 SPOF" = 가장 치명적인 설계 결함   │
+│  ├── 단일 DC에 모든 서비스 집중 = 물리적 Bulkhead 부재         │
+│  └── DR 훈련(GameDay)을 정기적으로 실시해야 실제 작동 확인 가능│
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 15.9 장애 사례 교차 분석
+
+| 사례 | 근본 원인 유형 | Retry Storm | 복구도구 마비 | Blast Radius | 장애 시간 |
+|------|---------------|-------------|-------------|-------------|----------|
+| **DynamoDB 2015** | 내부 Retry 폭주 | ★★★ | ★★☆ | 리전 내 | 수 시간 |
+| **Cloudflare 2019** | 정규식 CPU 폭발 | - | ★☆☆ | 전세계 82% | 27분 |
+| **Google Cloud 2019** | 네트워크 구성 오류 | ★☆☆ | ★★★ | 리전 | 4시간+ |
+| **Facebook 2021** | BGP 구성 오류 | - | ★★★ | 전세계 100% | 6시간 |
+| **AWS 2021** | Latent Backoff 버그 | ★★★ | ★★☆ | US-EAST-1 | 수 시간 |
+| **GitHub 2018** | 네트워크 파티션 | - | ★☆☆ | 글로벌 (데이터) | 24시간+ |
+| **Slack 2021** | Transit GW 포화 | - | ★★☆ | 전체 서비스 | 수 시간 |
+| **카카오 2022** | 물리적 DC 장애 | - | ★★★ | 전체 서비스 | 5일 |
+
+**교차 분석에서 도출된 핵심 패턴:**
+
+| 반복되는 패턴 | 발생 사례 | 방지 전략 |
+|-------------|----------|----------|
+| **복구 도구가 장애 대상에 의존** | Google, Facebook, 카카오 | Out-of-band 관리, 독립 복구 경로 |
+| **Retry Storm / 양의 피드백** | DynamoDB, AWS | Exponential Backoff + Jitter + CB |
+| **글로벌 동시 배포** | Cloudflare | Canary → 점진적 확대 |
+| **자동화의 역효과** | Slack (Autoscaler), GitHub (Orchestrator) | 안전장치 내장, Manual override |
+| **단일 DC = SPOF** | 카카오 | Multi-Region Active-Active |
+
+---
+
+# 16. Chaos Engineering 도구 생태계
+
+## 16.1 Chaos Engineering의 진화
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Chaos Engineering 진화 타임라인                          │
+│                                                                 │
+│  2010   Netflix Chaos Monkey 내부 개발                          │
+│         │  "랜덤하게 프로덕션 인스턴스를 종료"                  │
+│         │                                                       │
+│  2011   Chaos Monkey 오픈소스 공개                              │
+│         │                                                       │
+│  2012   Simian Army 확장                                        │
+│         │  ├── Chaos Monkey: 인스턴스 종료                     │
+│         │  ├── Latency Monkey: 네트워크 지연 주입              │
+│         │  ├── Chaos Gorilla: 전체 AZ 장애 시뮬레이션          │
+│         │  ├── Chaos Kong: 전체 Region 장애 시뮬레이션         │
+│         │  ├── Janitor Monkey: 미사용 리소스 정리              │
+│         │  └── Conformity Monkey: 베스트 프랙티스 준수 검사    │
+│         │                                                       │
+│  2014   Failure Injection Testing (FIT) — Netflix               │
+│         │  → 세밀한 장애 주입, Blast Radius 제어               │
+│         │                                                       │
+│  2015   Jesse Robbins, "GameDay" 개념 대중화                    │
+│         │                                                       │
+│  2017   "Chaos Engineering" 서적 출간 (Casey Rosenthal 외)      │
+│         │  principlesofchaos.org 공식 원칙 발표                 │
+│         │                                                       │
+│  2018   Gremlin 상용 서비스 출시                                │
+│         │  LitmusChaos 프로젝트 시작                            │
+│         │                                                       │
+│  2019   Chaos Mesh 공개 (PingCAP/CNCF)                          │
+│         │                                                       │
+│  2020   AWS Fault Injection Simulator (FIS) 발표                │
+│         │  LitmusChaos → CNCF Sandbox                           │
+│         │                                                       │
+│  2021   Chaos Mesh → CNCF Incubating                            │
+│         │  Azure Chaos Studio 발표                               │
+│         │                                                       │
+│  현재   Chaos Engineering이 SRE 표준 프랙티스로 정착            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 16.2 Chaos Engineering 5대 원칙
+
+(출처: principlesofchaos.org)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Chaos Engineering 5대 원칙                               │
+│                                                                 │
+│  [1] Steady State 가설 수립                                     │
+│      "정상 상태"를 정량적으로 정의 (예: p99 < 200ms, 오류 < 1%)│
+│      → 실험 전후로 이 지표가 유지되는지 확인                    │
+│                                                                 │
+│  [2] 실세계 이벤트를 반영                                       │
+│      서버 종료, 네트워크 파티션, 디스크 꽉 참, 시계 드리프트    │
+│      → "실제로 발생 가능한" 장애를 주입                         │
+│                                                                 │
+│  [3] 프로덕션에서 실험                                          │
+│      스테이징 환경은 프로덕션과 다름 — 가능하면 프로덕션에서    │
+│      → Blast Radius를 제한하여 안전하게                         │
+│                                                                 │
+│  [4] 자동화하여 지속적으로 실행                                 │
+│      수동 실험은 확장 불가 — CI/CD 파이프라인에 통합            │
+│      → 회귀 방지: 어제 견뎠던 장애를 오늘도 견디는지 확인      │
+│                                                                 │
+│  [5] Blast Radius 최소화                                        │
+│      실험이 실제 장애가 되지 않도록 범위 제한                   │
+│      → 소수 사용자/트래픽부터 시작, 이상 감지 시 즉시 중단     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 16.3 Steady-State Hypothesis
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Steady-State Hypothesis 예시                             │
+│                                                                 │
+│  가설: "Payment Service 인스턴스 1개가 종료되어도              │
+│         p99 응답시간 < 500ms, 오류율 < 0.1% 유지"               │
+│                                                                 │
+│  실험 흐름:                                                     │
+│                                                                 │
+│  [1] Steady State 확인                                          │
+│      ├── p99 응답시간: 180ms ✅ (< 500ms)                      │
+│      ├── 오류율: 0.02% ✅ (< 0.1%)                             │
+│      └── TPS: 500 req/s ✅ (안정)                              │
+│                                                                 │
+│  [2] 장애 주입                                                  │
+│      └── Payment Service Pod 1개 강제 종료 (kubectl delete pod) │
+│                                                                 │
+│  [3] Steady State 재확인 (2분 후)                               │
+│      ├── p99 응답시간: 220ms ✅ (< 500ms, 약간 증가)          │
+│      ├── 오류율: 0.05% ✅ (< 0.1%, 약간 증가)                 │
+│      └── TPS: 495 req/s ✅ (거의 유지)                         │
+│                                                                 │
+│  [4] 판정                                                       │
+│      └── ✅ 가설 성립 — 시스템이 단일 인스턴스 장애에 복원됨    │
+│                                                                 │
+│  만약 p99 > 500ms 또는 오류율 > 0.1% 이면:                     │
+│  └── ✗ 가설 기각 — Resilience 개선 필요 (CB, Retry, HPA 등)   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 16.4 도구 비교
+
+| 비교 항목 | Chaos Mesh | LitmusChaos | Gremlin | AWS FIS |
+|-----------|-----------|-------------|---------|---------|
+| **유형** | 오픈소스 (CNCF Incubating) | 오픈소스 (CNCF Incubating) | 상용 (SaaS) | 클라우드 서비스 (AWS) |
+| **플랫폼** | Kubernetes 전용 | Kubernetes + VM | K8s, VM, 컨테이너, 서버리스 | AWS 서비스 전체 |
+| **장애 유형** | Pod, Network, IO, Stress, Time, DNS, JVM, HTTP | Pod, Node, Network, IO, Stress, 커스텀 | 프로세스, 네트워크, 리소스, 상태, 커스텀 | EC2, ECS, EKS, RDS, Network, S3 |
+| **UI/Dashboard** | 웹 대시보드 | 웹 포탈 (ChaosCenter) | 웹 콘솔 | AWS 콘솔 |
+| **자동 중단** | 있음 (Duration 기반) | 있음 (Probe 기반) | 있음 (Halt 조건) | 있음 (Stop 조건) |
+| **CI/CD 통합** | GitHub Actions, Argo | GitHub Actions, GitLab CI | API 기반 | CloudFormation, API |
+| **비용** | 무료 | 무료 | 유료 (팀당 과금) | 사용량 기반 과금 |
+| **설치 난이도** | 낮음 (Helm) | 중간 (Operator) | 낮음 (에이전트) | 없음 (관리형) |
+| **성숙도** | 높음 | 중간 | 높음 | 높음 |
+| **적합 환경** | K8s 네이티브 | K8s + 하이브리드 | 멀티 환경 | AWS 전용 |
+
+## 16.5 GameDay 운영 방법론
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          GameDay 운영 6단계                                      │
+│                                                                 │
+│  [1단계] 계획 (1~2주 전)                                        │
+│  ├── 실험 목표 정의 (Steady-State Hypothesis)                  │
+│  ├── 범위 결정 (어떤 서비스, 어떤 장애)                        │
+│  ├── Blast Radius 제한 (영향 받는 사용자 비율)                 │
+│  ├── 롤백 계획 수립                                            │
+│  └── 참여 팀 조율 (SRE, 개발팀, 경영진 승인)                  │
+│                                                                 │
+│  [2단계] 준비 (실험 당일 전)                                    │
+│  ├── 모니터링 대시보드 준비 (Grafana, PagerDuty)               │
+│  ├── 장애 주입 도구 설정 (Chaos Mesh, Gremlin 등)              │
+│  ├── 커뮤니케이션 채널 준비 (전용 Slack 채널)                  │
+│  └── 참여자 역할 배정 (진행자, 관찰자, 기록자)                │
+│                                                                 │
+│  [3단계] Steady State 확인 (실험 직전)                          │
+│  ├── 기준 메트릭 기록 (TPS, p99, 오류율, CPU, 메모리)          │
+│  ├── 알람 상태 확인 (기존 알람 없는지)                         │
+│  └── "시작합니다" 공지                                         │
+│                                                                 │
+│  [4단계] 실험 실행                                              │
+│  ├── 장애 주입 실행                                            │
+│  ├── 실시간 모니터링 (대시보드 관찰)                           │
+│  ├── 이상 감지 시 즉시 중단 가능 상태 유지                     │
+│  └── 타임라인 기록 (t+0, t+30s, t+60s... 상태 변화)           │
+│                                                                 │
+│  [5단계] 관찰 및 복구                                           │
+│  ├── 장애 주입 종료                                            │
+│  ├── 시스템 자동 복구 관찰 (복구 시간 측정)                    │
+│  ├── Steady State 재확인                                       │
+│  └── 이상 있으면 수동 복구                                     │
+│                                                                 │
+│  [6단계] 분석 및 개선 (실험 후 1~2일)                           │
+│  ├── 결과 문서화 (가설 성립/기각)                              │
+│  ├── 발견된 약점 분류 (Critical/High/Medium/Low)               │
+│  ├── 개선 Action Item 생성 (JIRA 티켓)                         │
+│  └── 다음 GameDay 계획 (개선 후 재검증)                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 17. Cloud-Native Resilience 통합
+
+## 17.1 Kubernetes Probes + Circuit Breaker 상호작용
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          K8s Probes + CB 상호작용 주의사항                        │
+│                                                                 │
+│  [문제: registerHealthIndicator=true의 위험]                    │
+│                                                                 │
+│  Spring Boot Actuator Health:                                   │
+│  ├── /actuator/health ← K8s Liveness Probe 연결               │
+│  ├── CircuitBreaker Health Indicator 등록됨                     │
+│  └── CB OPEN → Health Status DOWN                               │
+│                                                                 │
+│  연쇄 문제:                                                     │
+│  CB OPEN                                                        │
+│  → /actuator/health = DOWN                                      │
+│  → K8s Liveness Probe 실패                                     │
+│  → K8s가 Pod 재시작 (!)                                        │
+│  → 재시작된 Pod도 같은 서비스 호출 → CB OPEN → 재시작 반복     │
+│  → Restart Loop!                                                │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  [권장 설정]                                                     │
+│                                                                 │
+│  # application.yml                                              │
+│  resilience4j:                                                  │
+│    circuitbreaker:                                              │
+│      instances:                                                 │
+│        paymentService:                                          │
+│          registerHealthIndicator: false  # ← 핵심!             │
+│                                                                 │
+│  이유: CB OPEN은 "이 Pod가 아프다"가 아니라                     │
+│        "downstream 서비스가 아프다"이다.                        │
+│        Pod를 재시작해도 downstream은 안 고쳐진다!              │
+│                                                                 │
+│  대안: Readiness Probe에만 연결하거나,                          │
+│        커스텀 Health Indicator로 로컬 상태만 반영              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.2 PodDisruptionBudget + Bulkhead 계층 관계
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          PDB + Bulkhead 계층적 보호                               │
+│                                                                 │
+│  [애플리케이션 레벨 — Bulkhead]                                  │
+│  ┌──────────────────────────────────────┐                       │
+│  │ Pod 내부:                            │                       │
+│  │ ├── Semaphore Bulkhead (서비스별)   │                       │
+│  │ │   ├── paymentPool: max=50         │                       │
+│  │ │   └── inventoryPool: max=30       │                       │
+│  │ └── 기능별 리소스 격리               │                       │
+│  └──────────────────────────────────────┘                       │
+│                                                                 │
+│  [K8s 레벨 — PodDisruptionBudget]                               │
+│  ┌──────────────────────────────────────┐                       │
+│  │ Deployment 수준:                     │                       │
+│  │ ├── minAvailable: 2                  │ (또는 maxUnavailable) │
+│  │ ├── Node drain 시에도 최소 2 Pod 유지│                       │
+│  │ └── Rolling Update 시 가용성 보장    │                       │
+│  └──────────────────────────────────────┘                       │
+│                                                                 │
+│  [인프라 레벨 — Node/AZ 분산]                                   │
+│  ┌──────────────────────────────────────┐                       │
+│  │ 클러스터 수준:                       │                       │
+│  │ ├── Pod Topology Spread Constraints  │                       │
+│  │ │   → AZ별 균등 배치                 │                       │
+│  │ ├── Node Affinity / Anti-Affinity    │                       │
+│  │ │   → 같은 서비스 Pod 분산           │                       │
+│  │ └── AZ 하나 장애 → 다른 AZ에서 처리 │                       │
+│  └──────────────────────────────────────┘                       │
+│                                                                 │
+│  계층 관계:                                                     │
+│  인프라 Bulkhead (AZ 분산)                                      │
+│    └── K8s Bulkhead (PDB, Pod 수 보장)                          │
+│         └── App Bulkhead (Semaphore, 기능별 격리)               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.3 HPA + Rate Limiter 보완 관계
+
+| 상황 | HPA (Horizontal Pod Autoscaler) | Rate Limiter | 보완 효과 |
+|------|-------------------------------|-------------|----------|
+| 트래픽 점진적 증가 | Pod 추가 (스케일 아웃) | 불필요 (HPA가 처리) | HPA 단독 충분 |
+| 트래픽 급증 (spike) | 스케일업 지연 (수분) | 즉시 초과 요청 거부 | Rate Limiter가 HPA 스케일업 시간 벌어줌 |
+| 악의적 트래픽 (DDoS) | 무한 스케일업 (비용 폭발) | 요청 수 제한 | Rate Limiter가 비용 보호 |
+| 과부하 상태 | Pod 추가해도 DB 병목 | 서비스 보호 | Rate Limiter가 DB 보호 |
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          HPA + Rate Limiter 협력                                 │
+│                                                                 │
+│  트래픽 ────► Rate Limiter ────► Service ────► HPA 감시        │
+│               │                    │              │             │
+│               │ 초과 거부          │ 처리          │ CPU > 70%  │
+│               │ (즉시 보호)        │              ▼             │
+│               │                    │         Pod 추가           │
+│               │                    │         (1~3분 소요)       │
+│               │                    │              │             │
+│               │                    ◄──────────────┘             │
+│               │                    더 많은 Pod으로              │
+│               │                    처리 가능 용량 ↑             │
+│               │                                                │
+│               └── Rate Limit을 동적으로 조정 가능              │
+│                   (Pod 수 증가 → limit 상향)                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.4 Pod Topology Spread = 인프라 레벨 Bulkhead
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Pod Topology Spread Constraints                         │
+│                                                                 │
+│  # K8s Deployment YAML                                          │
+│  topologySpreadConstraints:                                     │
+│  - maxSkew: 1                                                   │
+│    topologyKey: topology.kubernetes.io/zone                     │
+│    whenUnsatisfiable: DoNotSchedule                             │
+│    labelSelector:                                               │
+│      matchLabels:                                               │
+│        app: payment-service                                     │
+│                                                                 │
+│  결과:                                                          │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│  │   AZ-a       │ │   AZ-b       │ │   AZ-c       │           │
+│  │ payment (2)  │ │ payment (2)  │ │ payment (2)  │           │
+│  │ order   (1)  │ │ order   (1)  │ │ order   (1)  │           │
+│  └──────────────┘ └──────────────┘ └──────────────┘           │
+│   AZ-a 장애 시:    AZ-b (정상)      AZ-c (정상)               │
+│   → 전체 6 Pod 중 4 Pod 생존 = 67% 용량 유지                  │
+│                                                                 │
+│  이것이 인프라 레벨 Bulkhead:                                   │
+│  "물리적 격벽으로 장애 영향 범위를 AZ 단위로 격리"             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.5 OpenTelemetry 연동
+
+### Micrometer → OTel Bridge
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Resilience4j → OpenTelemetry 연동                       │
+│                                                                 │
+│  [Metrics]                                                      │
+│  Resilience4j ──► Micrometer ──► OTel Metrics Bridge ──► OTLP  │
+│                                                                 │
+│  # application.yml                                              │
+│  management:                                                    │
+│    otlp:                                                        │
+│      metrics:                                                   │
+│        export:                                                  │
+│          url: http://otel-collector:4318/v1/metrics             │
+│                                                                 │
+│  주요 메트릭:                                                   │
+│  ├── resilience4j_circuitbreaker_state (0/1/2)                 │
+│  ├── resilience4j_circuitbreaker_failure_rate                  │
+│  ├── resilience4j_circuitbreaker_calls_seconds (histogram)     │
+│  └── resilience4j_circuitbreaker_not_permitted_calls_total     │
+│                                                                 │
+│  [Traces — CB 상태 변화를 Span Event로]                         │
+│                                                                 │
+│  // Kotlin/Java 코드                                            │
+│  circuitBreaker.eventPublisher                                  │
+│      .onStateTransition { event ->                              │
+│          val span = Span.current()                              │
+│          span.addEvent("circuit-breaker-state-change",          │
+│              Attributes.of(                                     │
+│                  stringKey("cb.name"), event.circuitBreakerName,│
+│                  stringKey("cb.from"), event.stateTransition    │
+│                      .fromState.name,                           │
+│                  stringKey("cb.to"), event.stateTransition      │
+│                      .toState.name                              │
+│              ))                                                 │
+│      }                                                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Metrics-Traces-Logs 삼각 연동
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Observability 삼각 연동                                  │
+│                                                                 │
+│              ┌───────────┐                                      │
+│              │  Metrics   │                                      │
+│              │ (Prometheus│                                      │
+│              │  /Grafana) │                                      │
+│              └─────┬─────┘                                      │
+│                    │ Exemplar (traceId 포함)                    │
+│                    │                                            │
+│  ┌─────────┐      │      ┌─────────┐                           │
+│  │  Logs    │◄─────┼─────►│ Traces  │                           │
+│  │ (Loki/  │  traceId    │ (Tempo/ │                           │
+│  │  ELK)   │  연결       │  Jaeger)│                           │
+│  └─────────┘             └─────────┘                           │
+│                                                                 │
+│  흐름 예시:                                                     │
+│  1. Grafana 대시보드에서 CB failure_rate 급증 감지 (Metrics)    │
+│  2. Exemplar 링크 클릭 → 해당 시점의 Trace 확인 (Traces)       │
+│  3. Trace의 spanId로 상세 로그 검색 (Logs)                     │
+│  4. 로그에서 근본 원인 확인 (예: DB connection timeout)         │
+│                                                                 │
+│  CB 상태별 연동:                                                │
+│  ├── CB OPEN 전이 → Alert (Metrics) + Span Event (Traces)     │
+│  │                   + WARN 로그 (Logs)                        │
+│  ├── CB HALF-OPEN  → Span Event + INFO 로그                   │
+│  └── CB CLOSED 복구 → Alert Resolved + Span Event + INFO 로그 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.6 Testing: WireMock, Toxiproxy, CI/CD Chaos 통합
+
+| 도구 | 용도 | 테스트 레벨 | 시뮬레이션 대상 |
+|------|------|-----------|---------------|
+| **WireMock** | HTTP API 목(mock) + 지연/오류 주입 | 단위/통합 테스트 | HTTP 응답 코드, 지연, 타임아웃 |
+| **Toxiproxy** | TCP 레벨 네트워크 장애 주입 | 통합/E2E 테스트 | 지연, 대역폭 제한, 연결 끊김, 패킷 손실 |
+| **Chaos Mesh** | K8s Pod/Network/IO 장애 주입 | E2E/프로덕션 | Pod kill, 네트워크 파티션, IO 지연 |
+| **Testcontainers** | 테스트용 컨테이너 관리 | 통합 테스트 | 실제 DB, Redis, Kafka 등 |
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          CI/CD 파이프라인 Chaos 통합                              │
+│                                                                 │
+│  ┌──────┐   ┌──────┐   ┌──────────┐   ┌──────────┐   ┌─────┐ │
+│  │Build │──►│Unit  │──►│Integration│──►│Chaos     │──►│Deploy│ │
+│  │      │   │Test  │   │Test      │   │Test      │   │     │ │
+│  └──────┘   └──────┘   └──────────┘   └──────────┘   └─────┘ │
+│                          WireMock       Toxiproxy              │
+│                          Testcontainers Chaos Mesh             │
+│                                                                 │
+│  Integration Test (WireMock):                                   │
+│  ├── Downstream 500 응답 주입 → CB OPEN 전이 확인              │
+│  ├── 지연 주입 → Timeout + slowCall 동작 확인                  │
+│  └── 정상 복구 → CB CLOSED 복귀 확인                           │
+│                                                                 │
+│  Chaos Test (Toxiproxy/Chaos Mesh):                             │
+│  ├── 네트워크 파티션 → Fallback 동작 확인                      │
+│  ├── 네트워크 지연 주입 → Bulkhead 격리 확인                   │
+│  └── Pod 종료 → 서비스 가용성 유지 확인                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.7 Dynamic Config: Spring Cloud Config + Feature Flags
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          동적 구성 관리                                           │
+│                                                                 │
+│  [Spring Cloud Config + Refresh]                                │
+│                                                                 │
+│  Config Server ──► Git Repo (resilience4j 설정)                │
+│       │                                                         │
+│       ▼                                                         │
+│  Service Pod ──► @RefreshScope + /actuator/refresh              │
+│       │                                                         │
+│       └── CB 설정 변경이 재배포 없이 반영                       │
+│           (failureRateThreshold, waitDuration 등)               │
+│                                                                 │
+│  [Feature Flags + CB 연동]                                      │
+│                                                                 │
+│  Feature Flag ──► "new-payment-provider" = true                │
+│       │                                                         │
+│       ▼                                                         │
+│  if (featureFlag.isEnabled("new-payment-provider")) {          │
+│      // 새 결제 제공자 (자체 CB 인스턴스)                       │
+│      newPaymentCB.executeSupplier { newProvider.pay() }        │
+│  } else {                                                       │
+│      // 기존 결제 제공자                                        │
+│      legacyPaymentCB.executeSupplier { legacyProvider.pay() }  │
+│  }                                                              │
+│                                                                 │
+│  [etcd / Consul Watch — K8s 환경]                               │
+│                                                                 │
+│  etcd ──► ConfigMap 변경 감지 ──► Pod 환경변수 갱신            │
+│           (watch 메커니즘)        또는 Volume 재마운트          │
+│                                                                 │
+│  장점: 장애 발생 시 실시간으로 CB 설정 조정 가능               │
+│  예: waitDurationInOpenState: 30s → 60s (복구 시간 확보)       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.8 Multi-Region Resilience
+
+### DNS Failover vs Application CB
+
+| 비교 | DNS Failover | Application CB |
+|------|-------------|---------------|
+| **감지 속도** | 느림 (DNS TTL, 30s~300s) | 빠름 (밀리초~초) |
+| **세밀도** | 서비스 전체 단위 | 엔드포인트/메서드 단위 |
+| **Failover 대상** | 다른 Region 서비스 | Fallback 로직, 캐시, 기본값 |
+| **비용** | 높음 (Multi-Region 인프라) | 낮음 (코드 레벨) |
+| **적합 상황** | Region 전체 장애 | 서비스/엔드포인트 장애 |
+
+### Cell-based Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Cell-based Architecture — 궁극의 Bulkhead               │
+│                                                                 │
+│  [기존 Multi-Region]                                            │
+│  Region A (Active) ◄─── DNS ───► Region B (Standby)           │
+│  전체 트래픽 처리        장애 시 전환                           │
+│  문제: Region 전환 = 전체 영향, 부분 장애 대응 불가            │
+│                                                                 │
+│  [Cell-based Architecture]                                      │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐      │
+│  │ Cell 1 │ │ Cell 2 │ │ Cell 3 │ │ Cell 4 │ │ Cell 5 │      │
+│  │ 사용자  │ │ 사용자  │ │ 사용자  │ │ 사용자  │ │ 사용자  │      │
+│  │ A~F    │ │ G~L    │ │ M~R    │ │ S~X    │ │ Y~Z    │      │
+│  │ 독립DB │ │ 독립DB │ │ 독립DB │ │ 독립DB │ │ 독립DB │      │
+│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘      │
+│                                                                 │
+│  Cell 3 장애 → 사용자 M~R만 영향                               │
+│  → Cell 3 사용자를 다른 Cell로 재매핑                          │
+│  → 전체의 20%만 영향, 80%는 무관                               │
+│                                                                 │
+│  핵심: 각 Cell은 완전히 독립된 "미니 시스템"                   │
+│  → Blast Radius = 1/N (N = Cell 수)                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 17.9 Global Rate Limiting: Bucket4j + Redis
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          분산 Rate Limiting — Bucket4j + Redis                   │
+│                                                                 │
+│  [문제: 인스턴스별 Rate Limiter]                                │
+│                                                                 │
+│  Pod 1: limit=100 ──┐                                          │
+│  Pod 2: limit=100 ──┤── 총 허용 = 100 × N (인스턴스 수 비례)  │
+│  Pod 3: limit=100 ──┘    → 스케일 아웃 시 전체 limit 증가!    │
+│                                                                 │
+│  [해결: Redis 기반 분산 Rate Limiter]                           │
+│                                                                 │
+│  Pod 1 ──┐                                                     │
+│  Pod 2 ──┤──► Redis (공유 Token Bucket)                        │
+│  Pod 3 ──┘    └── 전체 limit = 100 (인스턴스 수 무관)          │
+│                                                                 │
+│  // Bucket4j + Redis (Lettuce) 예시                             │
+│  val proxyManager = Bucket4jRedis                               │
+│      .casBasedBuilder(lettuceBasedProxyManager)                 │
+│      .build()                                                   │
+│                                                                 │
+│  val bucket = proxyManager.builder()                            │
+│      .addLimit(                                                 │
+│          BandwidthBuilder.builder()                             │
+│              .capacity(100)                                     │
+│              .refillGreedy(100, Duration.ofSeconds(1))          │
+│              .build()                                           │
+│      )                                                          │
+│      .build(key)                                                │
+│                                                                 │
+│  주의사항:                                                      │
+│  ├── Redis 자체가 SPOF → Redis Cluster/Sentinel 필수           │
+│  ├── 네트워크 지연 추가 (~1ms) → 허용 가능한 수준             │
+│  └── Redis 장애 시 Fallback: 로컬 Rate Limiter로 전환         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 18. Jitter 변종 및 Sliding Window 심화
+
+## 18.1 Jitter 변종 수학적 공식
+
+### Full Jitter
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Full Jitter                                             │
+│                                                                 │
+│  공식: sleep = random(0, min(cap, base × 2^attempt))           │
+│                                                                 │
+│  특징:                                                          │
+│  ├── 대기 시간이 0부터 최대값까지 균일 분포                    │
+│  ├── 가장 공격적인 분산 → 서버 부하 가장 고르게 분포           │
+│  └── 단점: 운 나쁘면 0에 가까운 대기 → 즉시 재시도 가능       │
+│                                                                 │
+│  Python 구현:                                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  import random                                          │    │
+│  │                                                          │    │
+│  │  def full_jitter(base_ms, cap_ms, attempt):             │    │
+│  │      exp_backoff = min(cap_ms, base_ms * (2 ** attempt))│    │
+│  │      return random.uniform(0, exp_backoff)              │    │
+│  │                                                          │    │
+│  │  # 예: base=100ms, cap=10000ms                          │    │
+│  │  # attempt 0: random(0, 100)    → 0~100ms              │    │
+│  │  # attempt 1: random(0, 200)    → 0~200ms              │    │
+│  │  # attempt 2: random(0, 400)    → 0~400ms              │    │
+│  │  # attempt 5: random(0, 3200)   → 0~3200ms             │    │
+│  │  # attempt 7: random(0, 10000)  → 0~10000ms (cap)      │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Equal Jitter
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Equal Jitter                                            │
+│                                                                 │
+│  공식: temp = min(cap, base × 2^attempt)                       │
+│        sleep = temp/2 + random(0, temp/2)                      │
+│                                                                 │
+│  특징:                                                          │
+│  ├── 최소 대기 시간 = 지수 백오프의 절반 보장                  │
+│  ├── 나머지 절반을 랜덤으로 → 적절한 분산 + 최소 대기 보장    │
+│  └── Full Jitter보다 보수적, 안정적                            │
+│                                                                 │
+│  Python 구현:                                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  import random                                          │    │
+│  │                                                          │    │
+│  │  def equal_jitter(base_ms, cap_ms, attempt):            │    │
+│  │      temp = min(cap_ms, base_ms * (2 ** attempt))       │    │
+│  │      return temp / 2 + random.uniform(0, temp / 2)      │    │
+│  │                                                          │    │
+│  │  # 예: base=100ms, cap=10000ms                          │    │
+│  │  # attempt 0: 50 + random(0, 50)   → 50~100ms          │    │
+│  │  # attempt 1: 100 + random(0, 100) → 100~200ms         │    │
+│  │  # attempt 2: 200 + random(0, 200) → 200~400ms         │    │
+│  │  # attempt 5: 1600 + random(0, 1600) → 1600~3200ms     │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Decorrelated Jitter
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Decorrelated Jitter                                     │
+│                                                                 │
+│  공식: sleep = min(cap, random(base, prev_sleep × 3))          │
+│                                                                 │
+│  특징:                                                          │
+│  ├── 이전 대기 시간에 기반 (상태 유지)                          │
+│  ├── 지수적 증가가 아닌 확률적 증가                             │
+│  ├── 시도 간 상관관계 없음 (decorrelated)                      │
+│  └── AWS 권장 (가장 균일한 서버 부하 분포)                     │
+│                                                                 │
+│  Python 구현:                                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  import random                                          │    │
+│  │                                                          │    │
+│  │  def decorrelated_jitter(base_ms, cap_ms, prev_sleep_ms):│   │
+│  │      sleep = random.uniform(base_ms, prev_sleep_ms * 3) │    │
+│  │      return min(cap_ms, sleep)                          │    │
+│  │                                                          │    │
+│  │  # 사용 예:                                              │    │
+│  │  sleep_ms = base_ms  # 초기값                           │    │
+│  │  for attempt in range(max_retries):                     │    │
+│  │      try:                                               │    │
+│  │          return call_service()                          │    │
+│  │      except TransientError:                             │    │
+│  │          sleep_ms = decorrelated_jitter(                │    │
+│  │              base_ms, cap_ms, sleep_ms)                 │    │
+│  │          time.sleep(sleep_ms / 1000)                    │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### AWS 시뮬레이션 비교 (100 클라이언트 동시 Retry)
+
+| 지표 | No Jitter | Full Jitter | Equal Jitter | Decorrelated Jitter |
+|------|----------|-------------|--------------|---------------------|
+| **서버 피크 부하** | 100 req/s (전부 동시) | ~15 req/s | ~25 req/s | ~12 req/s |
+| **평균 완료 시간** | 가장 느림 (경쟁) | 빠름 | 중간 | 가장 빠름 |
+| **완료 시간 분산** | 매우 큼 | 중간 | 작음 | 중간 |
+| **최소 대기 보장** | 있음 (고정값) | 없음 (0 가능) | 있음 (절반) | 있음 (base 이상) |
+
+### 선택 기준 가이드
+
+| 상황 | 권장 Jitter | 이유 |
+|------|-----------|------|
+| 서버 부하 분산이 최우선 | **Full Jitter** | 가장 고른 분포 |
+| 최소 대기 시간 보장 필요 | **Equal Jitter** | 절반은 보장 |
+| 상태 기반 적응형 대기 필요 | **Decorrelated Jitter** | 이전 대기에 기반한 자연스러운 조정 |
+| AWS 서비스 호출 | **Decorrelated Jitter** | AWS 공식 권장 |
+| 잘 모르겠을 때 | **Full Jitter** | 단순하고 효과적 |
+
+## 18.2 Sliding Window 내부 구현 심화
+
+### COUNT_BASED: Ring Buffer
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          COUNT_BASED Ring Buffer 내부 구현                        │
+│                                                                 │
+│  slidingWindowSize = 10                                         │
+│                                                                 │
+│  Ring Buffer (고정 크기 배열):                                   │
+│  ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐                    │
+│  │ S │ F │ S │ S │ F │ S │ S │ S │ F │ S │                    │
+│  └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘                    │
+│    0   1   2   3   4   5   6   7   8   9                       │
+│                                          ↑                      │
+│                                        head (다음 기록 위치)   │
+│                                                                 │
+│  누적 카운터 (O(1) Subtract-on-Evict):                         │
+│  ├── totalCalls = 10                                           │
+│  ├── failedCalls = 3                                           │
+│  ├── failureRate = 3/10 = 30%                                  │
+│  └── slowCalls = 1                                             │
+│                                                                 │
+│  새 호출 결과 기록 (SUCCESS):                                   │
+│  1. head 위치의 기존 값 확인: buffer[0] = SUCCESS              │
+│  2. 기존 값 카운터에서 빼기: (SUCCESS이므로 변화 없음)         │
+│  3. 새 값 기록: buffer[0] = SUCCESS                            │
+│  4. 새 값 카운터에 더하기: (SUCCESS이므로 변화 없음)           │
+│  5. head = (head + 1) % size                                   │
+│                                                                 │
+│  핵심: 매 기록마다 O(1) — 전체 Window 재계산 불필요!           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### TIME_BASED: Partial Aggregation Buckets
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          TIME_BASED Sliding Window 내부 구현                     │
+│                                                                 │
+│  slidingWindowSize = 10 (초)                                    │
+│                                                                 │
+│  시간 기반 부분 집계 (1초 단위 Bucket):                         │
+│                                                                 │
+│  현재: 12:00:15                                                 │
+│  ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐│
+│  │:06  │:07  │:08  │:09  │:10  │:11  │:12  │:13  │:14  │:15  ││
+│  │ 5/50│ 3/45│ 8/60│ 2/40│ 6/55│ 4/48│ 7/52│ 1/38│ 5/44│ 3/42││
+│  │fail │fail │fail │fail │fail │fail │fail │fail │fail │fail ││
+│  │/tot │/tot │/tot │/tot │/tot │/tot │/tot │/tot │/tot │/tot ││
+│  └─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘│
+│                                                                 │
+│  집계: totalFailed = 5+3+8+2+6+4+7+1+5+3 = 44                 │
+│        totalCalls = 50+45+60+40+55+48+52+38+44+42 = 474       │
+│        failureRate = 44/474 = 9.28%                             │
+│                                                                 │
+│  :16이 되면:                                                    │
+│  1. :06 Bucket 제거 (Subtract): failed-=5, total-=50           │
+│  2. :16 Bucket 추가: 새 집계 시작                              │
+│  → O(1) 연산 (Subtract-on-Evict)                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 메모리 사용량 비교
+
+| 항목 | COUNT_BASED | TIME_BASED |
+|------|------------|-----------|
+| **메모리** | `windowSize × (결과 1byte)` | `windowSize × (Bucket 집계 ~40bytes)` |
+| **예시 (size=100)** | ~100 bytes | ~4,000 bytes |
+| **예시 (size=1000)** | ~1,000 bytes | ~40,000 bytes |
+| **갱신 비용** | O(1) 항상 | O(1) 평균 (Bucket 만료 시) |
+| **정밀도** | 정확히 N개 호출 | 초 단위 근사 |
+
+### 트래픽 패턴별 윈도우 선택 기준
+
+| 트래픽 패턴 | 권장 윈도우 | 이유 |
+|------------|-----------|------|
+| **고정 TPS** (일정한 트래픽) | COUNT_BASED | 호출 수 일정 → 시간/개수 차이 없음, 메모리 효율적 |
+| **변동 TPS** (피크/비수기 차이 큼) | TIME_BASED | 비수기에 COUNT_BASED는 오래된 데이터 포함 가능 |
+| **간헐적 호출** (배치, 스케줄러) | COUNT_BASED | TIME_BASED는 호출 없는 시간에 Window가 비어 무의미 |
+| **높은 TPS** (수천 req/s) | TIME_BASED | COUNT_BASED는 Window가 매우 빠르게 회전 → 순간 오류 놓칠 수 있음 |
+| **잘 모르겠을 때** | COUNT_BASED (기본값) | 단순하고 메모리 효율적, 대부분의 상황에 적합 |
+
+---
+
+# 19. Error Budget과 Circuit Breaker 연동
+
+## 19.1 Google SRE Error Budget 기본 공식
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Error Budget 기본 개념                                   │
+│                                                                 │
+│  SLO (Service Level Objective) = 99.9% 가용성                   │
+│                                                                 │
+│  Error Budget = 1 - SLO = 1 - 0.999 = 0.1%                    │
+│                                                                 │
+│  30일 기준:                                                     │
+│  Error Budget = 30일 × 24시간 × 60분 × 0.001                  │
+│               = 43.2분                                          │
+│                                                                 │
+│  의미: "30일 동안 43.2분의 장애는 허용된다"                     │
+│                                                                 │
+│  ┌──────────────────────────────────────────────┐              │
+│  │  SLO      │ Error Budget (30일) │ 허용 장애   │              │
+│  │───────────┼────────────────────┼────────────│              │
+│  │  99%      │ 432분 (7.2시간)     │ 넉넉함     │              │
+│  │  99.9%    │ 43.2분             │ 보통       │              │
+│  │  99.95%   │ 21.6분             │ 빡빡함     │              │
+│  │  99.99%   │ 4.32분             │ 매우 빡빡  │              │
+│  │  99.999%  │ 0.432분 (26초)     │ 극도로 빡빡│              │
+│  └──────────────────────────────────────────────┘              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 19.2 Burn Rate와 Multiwindow Multi-Burn-Rate Alert
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Burn Rate 개념                                          │
+│                                                                 │
+│  Burn Rate = 실제 오류 소비 속도 / 정상 소비 속도               │
+│                                                                 │
+│  예: SLO 99.9% (30일), Error Budget = 43.2분                   │
+│                                                                 │
+│  Burn Rate 1x = 43.2분/30일 = 정상 속도 (30일에 딱 소진)      │
+│  Burn Rate 2x = 15일에 소진                                    │
+│  Burn Rate 10x = 3일에 소진                                    │
+│  Burn Rate 36x = 20시간에 소진 → 긴급!                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Multiwindow Multi-Burn-Rate Alert 표
+
+| Alert 수준 | Burn Rate | Long Window | Short Window | 의미 |
+|-----------|----------|-------------|-------------|------|
+| **P1 (Critical)** | 14.4x | 1시간 | 5분 | 2일 내 Budget 소진, 즉시 대응 |
+| **P2 (High)** | 6x | 6시간 | 30분 | 5일 내 Budget 소진, 빠른 대응 |
+| **P3 (Medium)** | 3x | 1일 | 2시간 | 10일 내 Budget 소진, 당일 대응 |
+| **P4 (Low)** | 1x | 3일 | 6시간 | 30일 내 Budget 소진, 계획 대응 |
+
+Long Window와 Short Window 모두에서 Burn Rate가 초과해야 Alert 발생 → 오탐(false positive) 방지.
+
+## 19.3 Error Budget 상태 × CB 설정 조정 매트릭스
+
+| Error Budget 잔여량 | CB failureRateThreshold | CB waitDuration | CB slowCallThreshold | Retry maxAttempts | 정책 |
+|---------------------|------------------------|-----------------|---------------------|-------------------|------|
+| **> 75% (여유)** | 50% (기본) | 30s | 80% | 3 | 일반 운영 |
+| **50~75% (주의)** | 40% (약간 엄격) | 45s | 70% | 2 | 보수적 전환 |
+| **25~50% (경고)** | 30% (엄격) | 60s | 60% | 1 | 방어적 운영 |
+| **< 25% (위험)** | 20% (매우 엄격) | 120s | 50% | 0 (Retry 비활성) | Feature Freeze + 안정화 집중 |
+| **소진됨 (0%)** | 10% | 300s | 30% | 0 | 변경 금지, 복구만 |
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Error Budget 기반 CB 동적 조정 흐름                     │
+│                                                                 │
+│  Prometheus ──► Error Budget 잔여량 계산                        │
+│       │                                                         │
+│       ▼                                                         │
+│  Budget > 75% ──► 기본 CB 설정 유지                            │
+│  Budget 50~75% ──► CB threshold 강화 (40%)                     │
+│  Budget 25~50% ──► CB threshold 강화 (30%) + Retry 축소        │
+│  Budget < 25% ──► CB 매우 엄격 (20%) + Retry 비활성            │
+│       │            + Feature Flag로 신규 기능 비활성             │
+│       ▼                                                         │
+│  Spring Cloud Config ──► 재배포 없이 설정 반영                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 19.4 CB 메트릭과 SLO 연동 Prometheus 쿼리
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Prometheus 쿼리 예시                                    │
+│                                                                 │
+│  [1] 서비스별 Error Budget 잔여량 (30일 Rolling)]               │
+│                                                                 │
+│  # 30일간 실제 오류율                                           │
+│  actual_error_rate = (                                          │
+│    sum(rate(http_requests_total{status=~"5.."}[30d]))          │
+│    /                                                            │
+│    sum(rate(http_requests_total[30d]))                          │
+│  )                                                              │
+│                                                                 │
+│  # Error Budget 잔여량 (%)                                     │
+│  error_budget_remaining = (                                     │
+│    1 - (actual_error_rate / (1 - 0.999))                       │
+│  ) * 100                                                        │
+│                                                                 │
+│  [2] Burn Rate 계산                                             │
+│                                                                 │
+│  # 1시간 Burn Rate                                              │
+│  burn_rate_1h = (                                               │
+│    sum(rate(http_requests_total{status=~"5.."}[1h]))           │
+│    /                                                            │
+│    sum(rate(http_requests_total[1h]))                           │
+│  ) / (1 - 0.999)                                                │
+│                                                                 │
+│  [3] CB 상태와 Error Budget 연동 대시보드                       │
+│                                                                 │
+│  # CB가 OPEN인 서비스의 Error Budget 영향                      │
+│  sum by (service) (                                             │
+│    resilience4j_circuitbreaker_state{state="open"} == 1        │
+│  )                                                              │
+│  *                                                              │
+│  on(service) group_left()                                       │
+│  (error_budget_remaining)                                       │
+│                                                                 │
+│  [4] CB 차단율과 SLO 위반 상관관계                              │
+│                                                                 │
+│  # CB가 차단한 요청 비율                                       │
+│  cb_rejection_rate = (                                          │
+│    sum(rate(resilience4j_circuitbreaker_not_permitted_calls     │
+│      _total[5m]))                                               │
+│    /                                                            │
+│    sum(rate(resilience4j_circuitbreaker_calls_seconds_count    │
+│      [5m]))                                                     │
+│  )                                                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 19.5 비용 분석: Resilience 패턴 도입 비용 vs 장애 비용
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Resilience 투자 대비 수익 (ROI) 분석                    │
+│                                                                 │
+│  [장애 비용 산정]                                                │
+│                                                                 │
+│  직접 비용:                                                     │
+│  ├── 매출 손실 = 시간당 매출 × 장애 시간                       │
+│  ├── SLA 위약금 = 계약 기반 (보통 월 매출의 10~30%)            │
+│  └── 복구 인건비 = 엔지니어 수 × 시급 × 복구 시간             │
+│                                                                 │
+│  간접 비용:                                                     │
+│  ├── 고객 이탈 = 장애 경험 고객의 5~15% 이탈 (산업 평균)      │
+│  ├── 브랜드 신뢰 하락 (정량화 어려움)                          │
+│  └── 개발 생산성 저하 (장애 대응 + 포스트모텀 시간)            │
+│                                                                 │
+│  예시: 시간당 매출 1억원 서비스                                  │
+│  ├── 연간 2회 × 2시간 장애 = 4시간 × 1억 = 4억원 직접 손실    │
+│  ├── SLA 위약금: 1억원                                         │
+│  ├── 고객 이탈: 2억원 (추정)                                   │
+│  └── 총 장애 비용: ~7억원/년                                   │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  [Resilience 패턴 도입 비용]                                    │
+│                                                                 │
+│  개발 비용:                                                     │
+│  ├── CB + Retry + Timeout: 2주 (1명) = 400만원                 │
+│  ├── Bulkhead + Rate Limiter: 1주 = 200만원                    │
+│  ├── 모니터링 대시보드: 1주 = 200만원                          │
+│  └── Chaos Engineering 구축: 2주 = 400만원                     │
+│                                                                 │
+│  운영 비용 (연간):                                              │
+│  ├── 모니터링 인프라: 500만원                                  │
+│  ├── GameDay 운영 (분기별): 200만원                            │
+│  └── 설정 튜닝/유지보수: 300만원                               │
+│                                                                 │
+│  총 도입 비용: ~2,200만원 (첫해), ~1,000만원 (이후 연간)       │
+│                                                                 │
+│  ROI = (7억 - 0.22억) / 0.22억 = 약 30배                      │
+│  (장애 비용을 50%만 줄여도 ROI 15배)                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 19.6 단계별 도입 로드맵
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Resilience 패턴 단계별 도입 로드맵                      │
+│                                                                 │
+│  Phase 1: 기초 (2주)                                            │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  ├── Timeout 설정 (모든 외부 호출)                       │    │
+│  │  ├── Retry + Exponential Backoff + Jitter               │    │
+│  │  ├── 기본 Health Check                                   │    │
+│  │  └── 메트릭 수집 시작 (Micrometer + Prometheus)          │    │
+│  │                                                          │    │
+│  │  성과: 기본적인 일시적 오류 복구 능력 확보               │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Phase 2: 핵심 (2주)                                            │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  ├── Circuit Breaker (핵심 서비스 호출)                  │    │
+│  │  ├── Fallback (Graceful Degradation)                     │    │
+│  │  ├── Grafana 대시보드 구축                               │    │
+│  │  └── METRICS_ONLY 모드로 관찰 기간 운영                 │    │
+│  │                                                          │    │
+│  │  성과: 연쇄 장애 차단 능력 확보, 가시성 확보            │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Phase 3: 격리 (2주)                                            │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  ├── Bulkhead (서비스별 격리)                            │    │
+│  │  ├── Rate Limiter (외부 API 호출 제한)                   │    │
+│  │  ├── WireMock 기반 통합 테스트                           │    │
+│  │  └── Alert 규칙 설정                                     │    │
+│  │                                                          │    │
+│  │  성과: 리소스 격리 + 과부하 방지                         │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Phase 4: 검증 (2주)                                            │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  ├── Chaos Engineering 도입 (Toxiproxy / Chaos Mesh)    │    │
+│  │  ├── 첫 번째 GameDay 실시                                │    │
+│  │  ├── SLO/Error Budget 정의                               │    │
+│  │  └── Error Budget 기반 Alert 설정                        │    │
+│  │                                                          │    │
+│  │  성과: 장애 내성 검증 + SLO 기반 운영 시작              │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Phase 5: 최적화 (지속적)                                       │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │  ├── Adaptive Concurrency Limits 도입                    │    │
+│  │  ├── Load Shedding (Priority-based)                      │    │
+│  │  ├── Hedging Pattern (Fan-out 서비스)                    │    │
+│  │  ├── Error Budget 기반 CB 동적 조정                      │    │
+│  │  ├── 정기 GameDay (분기별)                               │    │
+│  │  └── Multi-Region Failover                               │    │
+│  │                                                          │    │
+│  │  성과: 자동화된 최적화 + 지속적 개선                     │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 19.7 YAGNI + Resilience 균형 의사결정 프레임워크
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          YAGNI와 Resilience의 균형                               │
+│                                                                 │
+│  YAGNI (You Aren't Gonna Need It):                              │
+│  "필요할 때까지 만들지 마라"                                    │
+│                                                                 │
+│  Resilience Engineering:                                        │
+│  "장애는 반드시 발생한다. 미리 대비하라"                        │
+│                                                                 │
+│  → 모순처럼 보이지만, 둘 다 맞다.                               │
+│  → 핵심은 "어디까지가 과잉이고, 어디부터가 필수인가?"          │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  의사결정 프레임워크:                                            │
+│                                                                 │
+│  Q1: 이 서비스가 죽으면 매출에 직접 영향이 있는가?             │
+│  ├── YES → Timeout + Retry + CB + Fallback (Phase 1~2 즉시)   │
+│  └── NO  → Timeout + Retry만 (Phase 1)                        │
+│                                                                 │
+│  Q2: Fan-out이 10개 이상인가?                                  │
+│  ├── YES → Hedging + Bulkhead (Phase 3~5 병행)                │
+│  └── NO  → Bulkhead는 선택사항                                │
+│                                                                 │
+│  Q3: 트래픽이 예측 불가능하게 변동하는가?                      │
+│  ├── YES → Adaptive Concurrency + Load Shedding               │
+│  └── NO  → 정적 Bulkhead + 고정 Rate Limit으로 충분           │
+│                                                                 │
+│  Q4: SLA에 가용성 조항이 있는가?                               │
+│  ├── YES → SLO/Error Budget 정의 + Chaos Engineering 필수     │
+│  └── NO  → 비즈니스 임팩트 기반 판단                          │
+│                                                                 │
+│  Q5: Multi-Region이 필요한가?                                  │
+│  ├── YES → Cell-based Architecture 검토                       │
+│  └── NO  → 단일 Region + Multi-AZ로 충분                     │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  [절대 YAGNI가 아닌 것들 — 항상 필수]                           │
+│  ├── 모든 외부 호출에 Timeout 설정                             │
+│  ├── Retry에 Exponential Backoff + Jitter                      │
+│  ├── 모니터링 (메트릭 + 로그 + 트레이스)                       │
+│  └── Health Check                                               │
+│                                                                 │
+│  [YAGNI일 수 있는 것들 — 필요할 때 추가]                       │
+│  ├── Adaptive Concurrency Limits (트래픽 안정적이면 불필요)    │
+│  ├── Hedging (Fan-out 없으면 불필요)                           │
+│  ├── Multi-Region (단일 Region으로 SLO 달성 가능하면)          │
+│  ├── Cell-based Architecture (수십만 사용자 이하면 과잉)       │
+│  └── Chaos Engineering (서비스 1~2개 수준이면 과잉)            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 20. 다중 언어 생태계 Resilience 라이브러리
+
+Java/Spring 생태계 밖에서도 Resilience 패턴은 필수이다. Python, Node.js, Rust 생태계 각각의 주요 라이브러리와 설계 철학, 사용법을 비교한다.
+
+## 20.1 Python 생태계
+
+### pybreaker — Python Circuit Breaker
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          pybreaker (Daniel Fernandes Martins, v1.4.1)            │
+│          이름 유래: "py" + "breaker" (Python용 CB)              │
+│                                                                 │
+│  [핵심 설계]                                                    │
+│  ├── CircuitBreaker 클래스 단일 진입점                          │
+│  ├── fail_max: 실패 임계값 (기본 5)                             │
+│  ├── reset_timeout: OPEN→HALF_OPEN 전환 대기 시간 (기본 60초) │
+│  ├── success_threshold: HALF_OPEN→CLOSED 전환 성공 횟수        │
+│  ├── exclude: 실패로 간주하지 않을 예외 목록                   │
+│  └── Listener 패턴으로 상태 변경 이벤트 구독                   │
+│                                                                 │
+│  [분산 상태 — Redis Storage]                                    │
+│  ├── CircuitRedisStorage로 다중 인스턴스 간 CB 상태 공유       │
+│  ├── Redis Hash에 fail_counter, state, opened_at 저장          │
+│  └── 마이크로서비스 환경에서 인스턴스 간 일관성 보장           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```python
+import pybreaker
+import redis
+
+# 기본 사용법
+breaker = pybreaker.CircuitBreaker(
+    fail_max=5,
+    reset_timeout=30,
+    exclude=[ValueError],  # ValueError는 실패로 간주하지 않음
+)
+
+@breaker
+def call_external_service():
+    return requests.get("https://api.example.com/data", timeout=5)
+
+# Listener 패턴 — 상태 변경 모니터링
+class MetricsListener(pybreaker.CircuitBreakerListener):
+    def state_change(self, cb, old_state, new_state):
+        print(f"CB '{cb.name}': {old_state.name} → {new_state.name}")
+
+    def failure(self, cb, exc):
+        metrics.increment("cb.failure", tags={"breaker": cb.name})
+
+breaker = pybreaker.CircuitBreaker(
+    fail_max=5,
+    reset_timeout=30,
+    listeners=[MetricsListener()],
+)
+
+# Redis 분산 상태 (마이크로서비스 환경)
+redis_conn = redis.StrictRedis(host="redis", port=6379)
+storage = pybreaker.CircuitRedisStorage(
+    pybreaker.STATE_CLOSED,
+    redis_conn,
+    namespace="payment-service",
+)
+breaker = pybreaker.CircuitBreaker(
+    fail_max=5,
+    reset_timeout=30,
+    state_storage=storage,
+)
+```
+
+### tenacity — 끈질긴 Retry 라이브러리
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          tenacity (Julien Danjou, v9.1.4)                        │
+│          이름 유래: "끈질김" — 포기하지 않고 재시도             │
+│          retrying 라이브러리의 fork (유지보수 중단 대체)         │
+│                                                                 │
+│  [핵심 설계 — 조합 가능한 Strategy 객체]                        │
+│  ├── stop: 언제 멈출 것인가?                                   │
+│  │   ├── stop_after_attempt(N)                                  │
+│  │   ├── stop_after_delay(seconds)                              │
+│  │   └── stop_after_attempt(5) | stop_after_delay(30)  (OR)    │
+│  ├── wait: 얼마나 기다릴 것인가?                               │
+│  │   ├── wait_fixed(seconds)                                    │
+│  │   ├── wait_exponential(multiplier, min, max)                 │
+│  │   ├── wait_random(min, max)                                  │
+│  │   └── wait_exponential_jitter(initial, max, jitter)          │
+│  ├── retry: 어떤 조건에서 재시도할 것인가?                     │
+│  │   ├── retry_if_exception_type(IOError)                       │
+│  │   ├── retry_if_result(lambda r: r is None)                   │
+│  │   └── retry_if_exception_type(A) | retry_if_result(B) (OR)  │
+│  └── asyncio/Trio 네이티브 지원                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```python
+from tenacity import (
+    retry, stop_after_attempt, stop_after_delay,
+    wait_exponential_jitter, retry_if_exception_type,
+    before_log, after_log,
+)
+import logging
+
+logger = logging.getLogger(__name__)
+
+# 조합 가능한 Strategy
+@retry(
+    stop=stop_after_attempt(5) | stop_after_delay(30),
+    wait=wait_exponential_jitter(initial=1, max=60, jitter=2),
+    retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+    before=before_log(logger, logging.WARNING),
+    after=after_log(logger, logging.WARNING),
+    reraise=True,
+)
+def fetch_data(url: str) -> dict:
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    return response.json()
+
+# asyncio 지원
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential_jitter(initial=0.5, max=10),
+)
+async def async_fetch(session, url):
+    async with session.get(url) as resp:
+        return await resp.json()
+```
+
+### stamina — 안전 최우선 Retry
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          stamina (Hynek Schlawack, v25.2.0)                      │
+│          이름 유래: "지구력" — 끝까지 버티기                    │
+│          tenacity의 opinionated wrapper                          │
+│                                                                 │
+│  [핵심 철학]                                                    │
+│  ├── 안전한 기본값 최우선 — 잘못 쓰기 어렵게 설계              │
+│  ├── Prometheus counter 내장 (stamina.retry_count)              │
+│  ├── structlog 통합 지원                                       │
+│  ├── set_active(False) → 테스트 시 재시도 전체 비활성화        │
+│  └── API 표면적 최소화 — 모범 사례만 노출                      │
+│                                                                 │
+│  비교: tenacity vs stamina                                      │
+│  ┌──────────────┬──────────────────┬──────────────────┐         │
+│  │ 항목         │ tenacity         │ stamina          │         │
+│  ├──────────────┼──────────────────┼──────────────────┤         │
+│  │ API 크기     │ 많은 옵션        │ 최소한           │         │
+│  │ 기본 전략    │ 없음 (직접 구성) │ exp backoff      │         │
+│  │ 모니터링     │ 콜백 직접 구현   │ Prometheus 내장  │         │
+│  │ 테스트       │ mock 필요        │ set_active(False)│         │
+│  │ 유연성       │ 매우 높음        │ 제한적 (의도적)  │         │
+│  └──────────────┴──────────────────┴──────────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```python
+import stamina
+
+# 간결한 API — 안전한 기본값 자동 적용
+@stamina.retry(on=ConnectionError, attempts=5)
+def call_api():
+    return httpx.get("https://api.example.com/data")
+
+# 테스트 시 전체 재시도 비활성화
+stamina.set_active(False)  # 모든 @stamina.retry가 즉시 실행
+
+# Prometheus 메트릭 자동 수집
+# stamina_retries_total{callable="call_api", retry_num="1"} counter
+```
+
+### HTTP 클라이언트 내장 Retry
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Python HTTP 클라이언트 Retry 지원                       │
+│                                                                 │
+│  [httpx — AsyncHTTPTransport]                                   │
+│  transport = httpx.AsyncHTTPTransport(retries=3)                │
+│  async with httpx.AsyncClient(transport=transport) as client:   │
+│      response = await client.get("https://api.example.com")     │
+│  → 연결 실패에만 재시도 (HTTP 오류 코드에는 재시도 안 함)      │
+│                                                                 │
+│  [aiohttp]                                                      │
+│  기본 retry 없음 — 서드파티 라이브러리 필요                    │
+│  aiohttp-retry 패키지 사용:                                    │
+│  retry_options = ExponentialRetry(attempts=3)                    │
+│  retry_client = RetryClient(retry_options=retry_options)         │
+│                                                                 │
+│  [urllib3 — requests 내부]                                       │
+│  Retry(total=3, backoff_factor=0.3,                              │
+│        status_forcelist=[500, 502, 503, 504])                    │
+│  → requests.Session()의 HTTPAdapter에 mount                    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 20.2 Node.js 생태계
+
+### opossum — EventEmitter 기반 Circuit Breaker
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          opossum (Lance Ball / Red Hat, v8.1.3)                   │
+│          이름 유래: "주머니쥐 (Opossum)"                        │
+│          — 위협받으면 죽은 척하는 동물 (CB가 OPEN이면 거부)     │
+│                                                                 │
+│  [핵심 설계]                                                    │
+│  ├── EventEmitter 기반 — Node.js 관용적 API                    │
+│  ├── errorThresholdPercentage: 실패율 임계값 (기본 50%)        │
+│  ├── volumeThreshold: 최소 요청 수 (기본 5)                    │
+│  ├── rollingCountTimeout: 통계 윈도우 (기본 10000ms)           │
+│  ├── timeout: 요청 타임아웃 (기본 10000ms)                     │
+│  ├── AbortController 통합 — 타임아웃 시 요청 자동 취소         │
+│  ├── capacity: Bulkhead (동시 실행 제한)                       │
+│  └── fallback 함수 등록                                        │
+│                                                                 │
+│  [이벤트 목록]                                                  │
+│  ├── fire     — 함수 호출 시                                   │
+│  ├── success  — 성공 시                                         │
+│  ├── failure  — 실패 시                                         │
+│  ├── timeout  — 타임아웃 시                                    │
+│  ├── reject   — CB OPEN으로 거부 시                             │
+│  ├── open     — CLOSED → OPEN 전환                              │
+│  ├── close    — HALF_OPEN → CLOSED 전환                        │
+│  ├── halfOpen — OPEN → HALF_OPEN 전환                           │
+│  └── fallback — Fallback 실행 시                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```javascript
+import CircuitBreaker from 'opossum';
+
+// 기본 사용법
+const breaker = new CircuitBreaker(
+  async (url) => {
+    const controller = new AbortController();
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  },
+  {
+    timeout: 5000,                    // 5초 타임아웃
+    errorThresholdPercentage: 50,     // 50% 실패율에서 OPEN
+    volumeThreshold: 10,              // 최소 10개 요청 후 판단
+    rollingCountTimeout: 30000,       // 30초 윈도우
+    rollingCountBuckets: 10,          // 10개 버킷
+    resetTimeout: 15000,              // 15초 후 HALF_OPEN
+    capacity: 20,                     // Bulkhead: 동시 20개 제한
+  }
+);
+
+// Fallback 등록
+breaker.fallback((url) => ({
+  data: [],
+  source: 'cache',
+  message: 'Service temporarily unavailable',
+}));
+
+// 이벤트 기반 모니터링
+breaker.on('open', () => console.warn('CB OPEN — 요청 차단 시작'));
+breaker.on('halfOpen', () => console.info('CB HALF_OPEN — 시험 요청 허용'));
+breaker.on('close', () => console.info('CB CLOSED — 정상 복귀'));
+breaker.on('reject', () => metrics.increment('cb.rejected'));
+
+// 실행
+const data = await breaker.fire('https://api.example.com/users');
+
+// Prometheus 메트릭 (opossum-prometheus 패키지)
+import { PrometheusMetrics } from 'opossum-prometheus';
+const prometheus = new PrometheusMetrics({ circuits: [breaker] });
+```
+
+### cockatiel — Polly에서 영감받은 Policy 기반 Resilience
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          cockatiel (Connor Wills / MS VSCode팀, MIT)             │
+│          이름 유래: "작은 앵무새 (Cockatiel)"                   │
+│          — Polly(앵무새)에서 영감, .NET Polly의 Node.js 버전    │
+│                                                                 │
+│  [핵심 설계]                                                    │
+│  ├── IPolicy 인터페이스 — 모든 패턴의 공통 계약               │
+│  ├── wrap() 조합 — 여러 Policy를 하나로 합성                  │
+│  ├── Zero dependencies — 번들 크기 최소화                      │
+│  ├── SamplingBreaker — 통계 기반 CB                            │
+│  ├── ConsecutiveBreaker — 연속 실패 기반 CB                    │
+│  └── TypeScript 우선 설계                                       │
+│                                                                 │
+│  [Policy 종류]                                                  │
+│  ├── RetryPolicy — 재시도                                      │
+│  ├── CircuitBreakerPolicy — 차단기                              │
+│  │   ├── SamplingBreaker (비율 기반)                            │
+│  │   └── ConsecutiveBreaker (연속 실패 기반)                   │
+│  ├── TimeoutPolicy — 시간 제한                                  │
+│  ├── BulkheadPolicy — 동시 실행 제한                            │
+│  └── FallbackPolicy — 대체 동작                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```typescript
+import {
+  CircuitBreakerPolicy, SamplingBreaker, ConsecutiveBreaker,
+  retry, handleAll, wrap, timeout, bulkhead, fallback, TimeoutStrategy,
+} from 'cockatiel';
+
+// SamplingBreaker — 통계 기반 CB
+const circuitBreaker = new CircuitBreakerPolicy(
+  handleAll,
+  new SamplingBreaker({
+    threshold: 0.5,          // 50% 실패율
+    duration: 30_000,        // 30초 윈도우
+    minimumRps: 5,           // 최소 5 req/s
+  })
+);
+
+// Policy 조합 (wrap)
+const retryPolicy = retry(handleAll, {
+  maxAttempts: 3,
+  backoff: { type: 'exponential', initialDelay: 500 },
+});
+const timeoutPolicy = timeout(5_000, TimeoutStrategy.Aggressive);
+const bulkheadPolicy = bulkhead(10, 20); // 동시 10개, 큐 20개
+
+// 조합: Retry → CircuitBreaker → Timeout → Bulkhead (외→내)
+const resilientPolicy = wrap(
+  retryPolicy, circuitBreaker, timeoutPolicy, bulkheadPolicy
+);
+
+const result = await resilientPolicy.execute(() =>
+  fetch('https://api.example.com/data').then(r => r.json())
+);
+```
+
+### p-retry — 미니멀 Retry
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          p-retry (Sindre Sorhus, v7.1.1)                         │
+│          이름 유래: "p" (Promise) + "retry"                     │
+│                                                                 │
+│  [핵심 설계]                                                    │
+│  ├── ESM 전용 (CommonJS 미지원)                                │
+│  ├── AbortError — 특정 실패에서 재시도 즉시 중단               │
+│  ├── shouldRetry 콜백 — 조건부 재시도                          │
+│  ├── unref 옵션 — 이벤트 루프 보호 (타이머가 프로세스 종료     │
+│  │   를 막지 않도록)                                           │
+│  └── p-timeout과 함께 사용 권장                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```javascript
+import pRetry, { AbortError } from 'p-retry';
+
+const result = await pRetry(
+  async () => {
+    const response = await fetch('https://api.example.com/data');
+    if (response.status === 404) {
+      throw new AbortError('Resource not found — 재시도 무의미');
+    }
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  },
+  {
+    retries: 5,
+    shouldRetry: (error) => error.message !== 'RATE_LIMITED',
+    onFailedAttempt: (error) => {
+      console.log(
+        `Attempt ${error.attemptNumber} failed. ` +
+        `${error.retriesLeft} retries left.`
+      );
+    },
+    unref: true,  // 타이머가 Node.js 프로세스 종료를 막지 않음
+  }
+);
+```
+
+## 20.3 Rust 생태계
+
+### tower — Service 추상화 계층
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          tower (tower-rs, v0.5.3)                                │
+│          이름 유래: "탑" — Layer를 쌓아 올리는 구조             │
+│                                                                 │
+│  [핵심 설계 — Service Trait]                                    │
+│                                                                 │
+│  trait Service<Request> {                                        │
+│      type Response;                                              │
+│      type Error;                                                 │
+│      type Future: Future<Output = Result<Response, Error>>;      │
+│                                                                 │
+│      fn poll_ready(&mut self, cx: &mut Context) -> Poll<()>;    │
+│      fn call(&mut self, req: Request) -> Self::Future;           │
+│  }                                                               │
+│                                                                 │
+│  [ServiceBuilder 체이닝]                                        │
+│  ServiceBuilder::new()                                           │
+│      .timeout(Duration::from_secs(5))                            │
+│      .rate_limit(100, Duration::from_secs(1))                    │
+│      .concurrency_limit(50)      // Bulkhead                    │
+│      .retry(MyRetryPolicy)                                       │
+│      .service(MyService)                                         │
+│                                                                 │
+│  [생태계 영향]                                                  │
+│  ├── 144,000+ 의존 크레이트 (Rust 생태계 핵심)                 │
+│  ├── Hyper, Tonic (gRPC), Axum 모두 tower 기반                 │
+│  ├── tower-http: HTTP 특화 미들웨어                             │
+│  └── tower-circuitbreaker: 별도 크레이트 (CB 전용)             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```rust
+use tower::{ServiceBuilder, ServiceExt, timeout::TimeoutLayer};
+use tower::limit::{RateLimitLayer, ConcurrencyLimitLayer};
+use std::time::Duration;
+
+// ServiceBuilder를 통한 Layer 합성
+let service = ServiceBuilder::new()
+    .layer(TimeoutLayer::new(Duration::from_secs(5)))
+    .layer(RateLimitLayer::new(100, Duration::from_secs(1)))
+    .layer(ConcurrencyLimitLayer::new(50))
+    .service(my_service);
+
+// tower-circuitbreaker 별도 사용
+use tower_circuitbreaker::{CircuitBreakerLayer, Config};
+
+let cb_layer = CircuitBreakerLayer::new(
+    Config::new()
+        .failure_threshold(5)
+        .success_threshold(3)
+        .timeout(Duration::from_secs(30))
+);
+
+let service = ServiceBuilder::new()
+    .layer(cb_layer)
+    .service(my_service);
+```
+
+### backon — Zero-cost Retry
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          backon (Xuanwo, v1.6.0)                                 │
+│          이름 유래: "back on" + "backoff"                        │
+│          backoff 크레이트 대체 — 더 현대적인 API                │
+│                                                                 │
+│  [핵심 설계]                                                    │
+│  ├── Iterator 기반 Backoff — 지연 시간 시퀀스 생성             │
+│  ├── .retry() Trait Extension — 기존 함수에 체이닝             │
+│  ├── Zero-cost abstraction — 런타임 오버헤드 없음              │
+│  ├── async/sync 모두 지원                                      │
+│  └── Tokio, async-std 런타임 무관                               │
+│                                                                 │
+│  [Backoff 종류]                                                 │
+│  ├── ExponentialBackoff { factor, min_delay, max_delay,         │
+│  │   max_times }                                                │
+│  ├── ConstantBackoff { delay, max_times }                       │
+│  └── 커스텀 Iterator 구현 가능                                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```rust
+use backon::{ExponentialBuilder, Retryable};
+use anyhow::Result;
+use std::time::Duration;
+
+async fn fetch_data() -> Result<String> {
+    let resp = reqwest::get("https://api.example.com/data").await?;
+    Ok(resp.text().await?)
+}
+
+// Trait Extension 패턴 — .retry()로 체이닝
+let result = fetch_data
+    .retry(ExponentialBuilder::default()
+        .with_factor(2.0)
+        .with_min_delay(Duration::from_millis(100))
+        .with_max_delay(Duration::from_secs(10))
+        .with_max_times(5))
+    .when(|e| e.is::<reqwest::Error>())  // 조건부 재시도
+    .await?;
+```
+
+### governor — GCRA Rate Limiter
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          governor (boinkor-net, v0.10.4)                          │
+│          이름 유래: "조속기 (Governor)" — 엔진 속도 조절 장치   │
+│                                                                 │
+│  [핵심 설계]                                                    │
+│  ├── GCRA (Generic Cell Rate Algorithm) — ATM 네트워크 유래    │
+│  ├── AtomicU64 단일 상태 — 극도로 낮은 메모리 사용             │
+│  ├── lock-free 구현 — 높은 동시성                               │
+│  ├── Keyed Rate Limiter — IP별, 사용자별 독립 제한             │
+│  └── tower-governor — tower Layer 통합                          │
+│                                                                 │
+│  [tower-governor 통합]                                          │
+│  Axum / Tonic에서 미들웨어로 사용:                              │
+│  let governor_layer = GovernorLayer::per_second(10);            │
+│  → 초당 10개 요청 제한                                         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```rust
+use governor::{Quota, RateLimiter};
+use std::num::NonZeroU32;
+
+// 기본 Rate Limiter — 초당 50개 요청
+let limiter = RateLimiter::direct(
+    Quota::per_second(NonZeroU32::new(50).unwrap())
+);
+
+// 요청 전 확인
+if limiter.check().is_ok() {
+    handle_request().await;
+} else {
+    return Err(Status::resource_exhausted("rate limited"));
+}
+
+// Keyed Rate Limiter — IP별 제한
+let keyed_limiter = RateLimiter::keyed(
+    Quota::per_second(NonZeroU32::new(10).unwrap())
+);
+
+// IP별 독립 제한
+keyed_limiter.check_key(&client_ip)?;
+
+// tower-governor Axum 통합
+use tower_governor::{GovernorLayer, GovernorConfigBuilder};
+
+let config = GovernorConfigBuilder::default()
+    .per_second(10)
+    .burst_size(30)
+    .finish()
+    .unwrap();
+
+let app = Router::new()
+    .route("/api", get(handler))
+    .layer(GovernorLayer { config });
+```
+
+## 20.4 언어별 라이브러리 비교표
+
+| 항목 | Python pybreaker | Python tenacity | Python stamina | Node.js opossum | Node.js cockatiel | Rust tower | Rust backon |
+|------|-----------------|----------------|---------------|-----------------|-------------------|------------|-------------|
+| **패턴** | CB | Retry | Retry | CB+Bulkhead | CB+Retry+Timeout+Bulkhead | Timeout+RateLimit+Bulkhead | Retry |
+| **CB 지원** | O (핵심) | X | X | O (핵심) | O (SamplingBreaker) | 별도 크레이트 | X |
+| **Retry 지원** | X | O (핵심) | O (핵심) | X | O | O (Policy) | O (핵심) |
+| **분산 상태** | Redis | X | X | X | X | X | X |
+| **모니터링** | Listener | 콜백 | Prometheus 내장 | EventEmitter | 이벤트 | Metrics Layer | X |
+| **Async** | X (동기) | O (asyncio) | O (asyncio) | O (Promise) | O (Promise) | O (Future) | O (Future) |
+| **번들 크기** | 작음 | 중간 | 작음 | 중간 | Zero deps | Layer 별도 | 작음 |
+| **철학** | 단순 CB | 유연한 조합 | 안전한 기본값 | Node 관용적 | .NET Polly 스타일 | 합성 가능한 Layer | Zero-cost |
+
+---
+
+# 21. gRPC 내장 Resilience 메커니즘
+
+gRPC는 HTTP/2 기반 RPC 프레임워크로, 프로토콜 수준에서 다양한 Resilience 메커니즘을 내장하고 있다. 별도 라이브러리 없이도 상당한 수준의 복원력을 확보할 수 있다.
+
+## 21.1 Retry Policy (gRFC A6)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          gRPC Retry Policy — Service Config 기반                 │
+│          참고: gRFC A6 "Client-Side Retry Design"               │
+│                                                                 │
+│  [Service Config JSON 구조]                                     │
+│                                                                 │
+│  {                                                               │
+│    "methodConfig": [{                                            │
+│      "name": [{ "service": "my.package.MyService" }],           │
+│      "retryPolicy": {                                            │
+│        "maxAttempts": 4,                                         │
+│        "initialBackoff": "0.1s",                                 │
+│        "maxBackoff": "1s",                                       │
+│        "backoffMultiplier": 2,                                   │
+│        "retryableStatusCodes": [                                 │
+│          "UNAVAILABLE", "DEADLINE_EXCEEDED"                      │
+│        ]                                                         │
+│      }                                                           │
+│    }]                                                            │
+│  }                                                               │
+│                                                                 │
+│  [maxAttempts 제한]                                              │
+│  ├── 서버 설정: 최대 5 (하드 리밋)                              │
+│  ├── 초과 값 지정 시 자동으로 5로 절삭                          │
+│  └── 첫 시도 포함 → maxAttempts=4이면 최대 3번 재시도          │
+│                                                                 │
+│  [Backoff 공식]                                                 │
+│  random(0, min(initialBackoff * backoffMultiplier^(n-1),         │
+│              maxBackoff))                                        │
+│  ├── +-20% jitter 자동 적용                                    │
+│  └── n = 재시도 횟수 (1부터 시작)                               │
+│                                                                 │
+│  [retryThrottling — 토큰 기반 재시도 억제]                      │
+│  "retryThrottling": {                                            │
+│    "maxTokens": 10,          // 최대 토큰 수                    │
+│    "tokenRatio": 0.1         // 성공 시 회복 비율               │
+│  }                                                               │
+│  ├── 초기 토큰 = maxTokens                                      │
+│  ├── 재시도 시 1 토큰 소비                                      │
+│  ├── 성공 시 tokenRatio만큼 회복                                │
+│  ├── 토큰 < maxTokens/2 이면 재시도 중단                       │
+│  └── 서버 과부하 시 자동으로 재시도 빈도 감소                  │
+│                                                                 │
+│  [Server Pushback]                                               │
+│  ├── 서버가 "grpc-retry-pushback-ms" 메타데이터 반환           │
+│  ├── 값 >= 0: 해당 시간 후 재시도                               │
+│  ├── 값 없음: 클라이언트 backoff 사용                           │
+│  └── 서버가 재시도 타이밍을 직접 제어 가능                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 21.2 투명 재시도 vs 구성 가능 재시도
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Transparent Retry vs Configurable Retry                 │
+│                                                                 │
+│  [Transparent Retry — 투명 재시도]                              │
+│  ├── 조건: 요청이 서버 애플리케이션에 도달하지 못한 경우       │
+│  │   ├── 연결 실패 (TCP 수준)                                  │
+│  │   ├── HTTP/2 REFUSED_STREAM                                  │
+│  │   └── RST_STREAM (NO_ERROR)                                  │
+│  ├── maxAttempts에 포함되지 않음                                │
+│  ├── 서버 애플리케이션은 요청 존재 자체를 모름                 │
+│  └── 항상 활성화 (비활성화 불가)                                │
+│                                                                 │
+│  [Configurable Retry — 구성 가능 재시도]                        │
+│  ├── 조건: 서버가 retryableStatusCodes 중 하나를 반환          │
+│  ├── maxAttempts에 포함됨                                       │
+│  ├── Service Config에 명시적 설정 필요                          │
+│  ├── 서버 애플리케이션이 요청을 처리하고 실패 응답             │
+│  └── 멱등성(Idempotency) 확인 필수                              │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────┐       │
+│  │          재시도 판단 흐름                             │       │
+│  │                                                       │       │
+│  │  요청 실패                                            │       │
+│  │  ├── 서버 앱 미도달?                                  │       │
+│  │  │   ├── YES → Transparent Retry (자동)              │       │
+│  │  │   └── NO  ↓                                        │       │
+│  │  ├── retryPolicy 설정됨?                              │       │
+│  │  │   ├── NO  → 실패 반환                             │       │
+│  │  │   └── YES ↓                                        │       │
+│  │  ├── Status Code가 retryableStatusCodes에 포함?      │       │
+│  │  │   ├── NO  → 실패 반환                             │       │
+│  │  │   └── YES ↓                                        │       │
+│  │  ├── maxAttempts 초과?                                │       │
+│  │  │   ├── YES → 실패 반환                             │       │
+│  │  │   └── NO  ↓                                        │       │
+│  │  ├── retryThrottling 토큰 부족?                       │       │
+│  │  │   ├── YES → 실패 반환                             │       │
+│  │  │   └── NO  → Backoff 후 재시도                     │       │
+│  │  └── Server Pushback 있으면 해당 시간 대기            │       │
+│  └──────────────────────────────────────────────────────┘       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 21.3 Hedging Policy
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Hedging Policy — 투기적 실행                             │
+│          참고: Jeff Dean "Tail at Scale" (2013) 구현             │
+│                                                                 │
+│  [개념]                                                         │
+│  ├── 첫 요청의 응답이 hedgingDelay 내에 오지 않으면            │
+│  │   동일 요청을 추가 서버에 병렬 전송                         │
+│  ├── 가장 먼저 도착한 응답 사용, 나머지 취소                   │
+│  ├── tail latency (p99) 개선에 매우 효과적                     │
+│  └── retry와 동시 사용 불가 (methodConfig에서 택 1)             │
+│                                                                 │
+│  [Service Config]                                                │
+│  {                                                               │
+│    "methodConfig": [{                                            │
+│      "name": [{ "service": "my.SearchService" }],               │
+│      "hedgingPolicy": {                                          │
+│        "maxAttempts": 3,                                         │
+│        "hedgingDelay": "0.5s",                                   │
+│        "nonFatalStatusCodes": ["UNAVAILABLE", "INTERNAL"]       │
+│      }                                                           │
+│    }]                                                            │
+│  }                                                               │
+│                                                                 │
+│  [동작 타임라인]                                                │
+│                                                                 │
+│  t=0.0s    요청 #1 전송 ──────────────► Server A                │
+│  t=0.5s    응답 없음 → 요청 #2 전송 ──► Server B               │
+│  t=0.7s    Server B 응답 도착 (사용)                            │
+│  t=1.2s    Server A 응답 도착 (취소/무시)                       │
+│                                                                 │
+│  → p99 latency: 1.2s → 0.7s로 개선                             │
+│                                                                 │
+│  [주의사항]                                                     │
+│  ├── 서버 부하 증가 (최대 maxAttempts배)                        │
+│  ├── 멱등(Idempotent) 메서드에만 사용                           │
+│  ├── nonFatalStatusCodes: 해당 코드 수신 시 다음 hedging 허용  │
+│  └── retryThrottling과 연동 (토큰 소비)                        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 21.4 Health Checking (gRFC L5)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          gRPC Health Checking Protocol                            │
+│          참고: gRFC L5 "gRPC Health Checking"                   │
+│                                                                 │
+│  [서비스 정의]                                                  │
+│  package grpc.health.v1;                                         │
+│                                                                 │
+│  service Health {                                                │
+│    rpc Check(HealthCheckRequest)                                 │
+│        returns (HealthCheckResponse);          // Unary          │
+│    rpc Watch(HealthCheckRequest)                                 │
+│        returns (stream HealthCheckResponse);   // Streaming      │
+│  }                                                               │
+│                                                                 │
+│  [상태 값]                                                      │
+│  ├── SERVING         — 정상, 요청 수락 가능                    │
+│  ├── NOT_SERVING     — 비정상, 요청 거부                       │
+│  ├── UNKNOWN         — 상태 미확인 (초기값)                    │
+│  └── SERVICE_UNKNOWN — 해당 서비스 등록 안 됨                  │
+│                                                                 │
+│  [Check vs Watch]                                                │
+│  ├── Check (Unary): 호출 시점의 상태 반환                      │
+│  │   └── 폴링 방식: 주기적으로 Check 호출                      │
+│  └── Watch (Streaming): 상태 변경 시 자동 Push                 │
+│      └── 효율적: 변경 시에만 네트워크 사용                     │
+│                                                                 │
+│  [K8s 1.24+ 네이티브 gRPC Probe]                                │
+│                                                                 │
+│  livenessProbe:                                                  │
+│    grpc:                                                         │
+│      port: 50051                                                 │
+│      service: "my.package.MyService"                             │
+│    initialDelaySeconds: 10                                       │
+│    periodSeconds: 10                                             │
+│                                                                 │
+│  readinessProbe:                                                 │
+│    grpc:                                                         │
+│      port: 50051                                                 │
+│    initialDelaySeconds: 5                                        │
+│    periodSeconds: 5                                              │
+│                                                                 │
+│  → K8s 1.24 이전: grpc-health-probe 바이너리 필요              │
+│  → K8s 1.24+: 네이티브 지원 (바이너리 불필요)                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 21.5 Wait-for-Ready 시맨틱
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Wait-for-Ready                                           │
+│                                                                 │
+│  [개념]                                                         │
+│  ├── 채널이 TRANSIENT_FAILURE 상태일 때                         │
+│  │   ├── 기본: 즉시 UNAVAILABLE 에러 반환                       │
+│  │   └── wait-for-ready: 채널이 READY가 될 때까지 큐잉         │
+│  ├── deadline은 여전히 적용됨                                   │
+│  │   └── deadline 초과 시 DEADLINE_EXCEEDED 반환                │
+│  └── 서비스 시작 순서에 의존하지 않는 설계 가능                │
+│                                                                 │
+│  [사용 예시]                                                    │
+│                                                                 │
+│  // Java                                                         │
+│  stub.withWaitForReady()                                         │
+│      .withDeadlineAfter(30, TimeUnit.SECONDS)                    │
+│      .getData(request);                                          │
+│                                                                 │
+│  // Go                                                           │
+│  grpc.WaitForReady(true)                                         │
+│                                                                 │
+│  [적합한 상황]                                                  │
+│  ├── 서비스 시작 시 의존 서비스가 아직 준비 안 된 경우         │
+│  ├── 일시적 네트워크 단절 후 자동 복구 기대                    │
+│  └── 배치 작업 등 즉시 응답이 필요하지 않은 경우               │
+│                                                                 │
+│  [부적합한 상황]                                                │
+│  ├── 사용자 대면 요청 (즉시 실패가 더 나은 UX)                 │
+│  └── tight deadline이 있는 경우                                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 21.6 Keepalive + MAX_CONNECTION_AGE
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          gRPC Keepalive & Connection Management                   │
+│                                                                 │
+│  [문제: K8s에서 gRPC Long-Lived 연결]                           │
+│  ├── gRPC는 HTTP/2 기반 → 하나의 TCP 연결에 다중 스트림       │
+│  ├── 연결이 오래 유지됨 → K8s Service 로드밸런싱 무력화        │
+│  ├── 새 Pod 추가 시 트래픽 분배 안 됨                          │
+│  └── 해결: MAX_CONNECTION_AGE로 주기적 연결 갱신               │
+│                                                                 │
+│  [서버 측 설정]                                                 │
+│                                                                 │
+│  GRPC_ARG_KEEPALIVE_TIME_MS        = 7200000  // 2시간          │
+│  GRPC_ARG_KEEPALIVE_TIMEOUT_MS     = 20000    // 20초           │
+│  GRPC_ARG_MAX_CONNECTION_AGE_MS    = 3600000  // 1시간          │
+│  GRPC_ARG_MAX_CONNECTION_AGE_GRACE_MS = 5000  // 5초            │
+│                                                                 │
+│  [Keepalive PING 메커니즘]                                      │
+│  ├── 클라이언트 → 서버: 주기적 HTTP/2 PING 프레임             │
+│  ├── 서버 응답 없음 → 연결 끊김 감지                           │
+│  ├── KEEPALIVE_TIMEOUT 내 응답 없으면 연결 종료                │
+│  └── NAT/방화벽 유휴 타임아웃보다 짧게 설정                    │
+│                                                                 │
+│  [MAX_CONNECTION_AGE — +-10% Jitter 자동 적용]                  │
+│  ├── 설정값: 3600초 → 실제: 3240~3960초 (랜덤)                │
+│  ├── Jitter 목적: 모든 연결이 동시에 끊기는 것 방지            │
+│  ├── AGE 도달 → GOAWAY 프레임 전송 → 클라이언트 재연결        │
+│  └── GRACE 기간 동안 진행 중 RPC 완료 허용                     │
+│                                                                 │
+│  [K8s 환경 권장 설정]                                           │
+│  ├── MAX_CONNECTION_AGE: 30분~1시간                             │
+│  │   → Pod 스케일링 시 빠른 재분배                              │
+│  ├── KEEPALIVE_TIME: 30초 (K8s 기본 유휴 타임아웃 고려)        │
+│  └── Client-side LB (grpclb, xDS) 함께 사용 권장               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 21.7 Resilience4j gRPC 통합
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Resilience4j + gRPC 통합 패턴                            │
+│                                                                 │
+│  [ClientInterceptor 기반 통합]                                  │
+│                                                                 │
+│  gRPC Status Code → CB 실패 매핑:                               │
+│  ┌──────────────────────┬──────────────┬──────────────────┐     │
+│  │ gRPC Status Code     │ CB 실패 여부 │ 이유              │     │
+│  ├──────────────────────┼──────────────┼──────────────────┤     │
+│  │ OK                   │ 성공         │ 정상              │     │
+│  │ UNAVAILABLE          │ 실패         │ 서비스 다운       │     │
+│  │ DEADLINE_EXCEEDED    │ 실패         │ 타임아웃          │     │
+│  │ INTERNAL             │ 실패         │ 서버 내부 오류    │     │
+│  │ RESOURCE_EXHAUSTED   │ 실패         │ 과부하            │     │
+│  │ INVALID_ARGUMENT     │ 성공         │ 클라이언트 오류   │     │
+│  │ NOT_FOUND            │ 성공         │ 비즈니스 로직     │     │
+│  │ PERMISSION_DENIED    │ 성공         │ 인증/인가 문제    │     │
+│  │ UNAUTHENTICATED      │ 성공         │ 인증/인가 문제    │     │
+│  └──────────────────────┴──────────────┴──────────────────┘     │
+│                                                                 │
+│  핵심: 서버 측 장애만 CB 실패로 간주,                           │
+│        클라이언트 오류(4xx 계열)는 CB 실패에서 제외             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// Resilience4j gRPC ClientInterceptor 구현
+public class CircuitBreakerInterceptor
+    implements ClientInterceptor {
+
+    private final CircuitBreaker circuitBreaker;
+    private static final Set<Status.Code> FAILURE_CODES =
+        Set.of(
+            Status.Code.UNAVAILABLE,
+            Status.Code.DEADLINE_EXCEEDED,
+            Status.Code.INTERNAL,
+            Status.Code.RESOURCE_EXHAUSTED
+        );
+
+    @Override
+    public <ReqT, RespT> ClientCall<ReqT, RespT>
+        interceptCall(
+            MethodDescriptor<ReqT, RespT> method,
+            CallOptions callOptions,
+            Channel next) {
+
+        if (!circuitBreaker.tryAcquirePermission()) {
+            throw Status.UNAVAILABLE
+                .withDescription("CB OPEN for "
+                    + method.getFullMethodName())
+                .asRuntimeException();
+        }
+
+        long startTime = System.nanoTime();
+
+        return new ForwardingClientCall
+            .SimpleForwardingClientCall<>(
+                next.newCall(method, callOptions)) {
+            @Override
+            public void start(
+                    Listener<RespT> listener,
+                    Metadata headers) {
+                super.start(
+                    new ForwardingClientCallListener
+                        .SimpleForwardingClientCallListener<>(
+                            listener) {
+                        @Override
+                        public void onClose(
+                                Status status,
+                                Metadata trailers) {
+                            long d = System.nanoTime()
+                                - startTime;
+                            if (FAILURE_CODES.contains(
+                                    status.getCode())) {
+                                circuitBreaker.onError(d,
+                                    TimeUnit.NANOSECONDS,
+                                    status
+                                      .asRuntimeException());
+                            } else {
+                                circuitBreaker.onSuccess(d,
+                                    TimeUnit.NANOSECONDS);
+                            }
+                            super.onClose(status, trailers);
+                        }
+                    }, headers);
+            }
+        };
+    }
+}
+```
+
+## 21.8 gRPC Resilience 방식 비교
+
+| 항목 | gRPC Built-in | Resilience4j | Istio/Envoy |
+|------|---------------|-------------|-------------|
+| **Retry** | Service Config JSON | RetryConfig | VirtualService retries |
+| **CB** | 없음 (retryThrottling만) | CircuitBreakerConfig | outlierDetection |
+| **Hedging** | hedgingPolicy | 없음 | 없음 (Mirror만) |
+| **Timeout** | deadline | TimeLimiter | timeout |
+| **Rate Limit** | 없음 | RateLimiterConfig | EnvoyFilter |
+| **Bulkhead** | 없음 | BulkheadConfig | connectionPool |
+| **Health Check** | grpc.health.v1 | HealthIndicator | DestinationRule |
+| **설정 위치** | Service Config / 코드 | Java 코드 / YAML | K8s CRD |
+| **장점** | 프로토콜 수준, 언어 무관 | 세밀한 제어, 풍부한 메트릭 | 코드 수정 없음, 인프라 수준 |
+| **단점** | 제한적 (CB 없음) | Java/JVM 한정 | 운영 복잡성 |
+| **권장 조합** | 기본으로 활성화 | 애플리케이션 레벨 보강 | 서비스 메시 전체 정책 |
+
+---
+
+# 22. Kotlin Coroutine 환경의 Resilience
+
+Kotlin Coroutine은 비동기 프로그래밍의 새로운 패러다임을 제시한다. suspend 함수, Flow, 구조화된 동시성(Structured Concurrency)에서 Resilience 패턴을 올바르게 적용하려면 고유한 고려사항이 필요하다.
+
+## 22.1 resilience4j-kotlin 모듈
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          resilience4j-kotlin — Coroutine 네이티브 확장            │
+│                                                                 │
+│  [핵심 확장 함수]                                                │
+│  ├── executeSuspendFunction — suspend 함수 실행 + 패턴 적용    │
+│  ├── decorateSuspendFunction — suspend 함수 데코레이팅          │
+│  └── Flow 확장 연산자 — circuitBreaker, retry, rateLimiter,     │
+│      timeLimiter 체이닝                                        │
+│                                                                 │
+│  [Cancellation 자동 처리]                                        │
+│  ├── CancellationException 발생 시 permission 자동 해제        │
+│  ├── CB 실패 카운트에 포함되지 않음                             │
+│  └── Coroutine 취소 = 정상적인 제어 흐름 (예외가 아님)         │
+│                                                                 │
+│  [주의사항]                                                     │
+│  ├── TimeLimiter = 내부적으로 withTimeout 래핑                  │
+│  │   → Coroutine 환경에서는 직접 withTimeout 사용이             │
+│  │     더 자연스러움                                            │
+│  ├── Bulkhead maxWaitTime > 0 → Dispatchers.IO에서 블로킹!     │
+│  │   → Semaphore 기반 구현 권장                                │
+│  └── @CircuitBreaker 어노테이션은 suspend 미지원               │
+│      (Issue #2153)                                               │
+│      → AOP 프록시가 Coroutine Context 전파 못함                │
+│      → 프로그래매틱 방식 사용 필수                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```kotlin
+import io.github.resilience4j.kotlin.circuitbreaker.executeSuspendFunction
+import io.github.resilience4j.kotlin.retry.executeSuspendFunction
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.github.resilience4j.retry.Retry
+import kotlinx.coroutines.flow.*
+
+val circuitBreaker = CircuitBreaker.ofDefaults("paymentService")
+val retry = Retry.ofDefaults("paymentRetry")
+
+// suspend 함수에서 CB + Retry 체이닝
+suspend fun callPaymentService(orderId: String): PaymentResult {
+    return circuitBreaker.executeSuspendFunction {
+        retry.executeSuspendFunction {
+            paymentClient.processPayment(orderId)
+        }
+    }
+}
+
+// Flow 연산자 체이닝
+fun observePayments(): Flow<Payment> {
+    return paymentStream()
+        .circuitBreaker(circuitBreaker)
+        .retry(retry)
+        .rateLimiter(rateLimiter)
+        .catch { e -> emit(Payment.fallback()) }
+}
+
+// @CircuitBreaker 어노테이션은 suspend에서 동작 안 함!
+// 반드시 프로그래매틱 방식 사용
+suspend fun processPayment(): PaymentResult {
+    return circuitBreaker.executeSuspendFunction {
+        paymentClient.process()
+    }
+}
+```
+
+## 22.2 Ktor Client Resilience
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Ktor Client — Built-in Resilience 플러그인               │
+│                                                                 │
+│  [HttpRequestRetry 플러그인 (built-in)]                          │
+│  ├── retryOnServerErrors(maxRetries)                            │
+│  ├── retryOnException(maxRetries, retryOnTimeout)               │
+│  ├── exponentialDelay(base, maxDelayMs)                          │
+│  ├── constantDelay(millis)                                      │
+│  └── 커스텀 retryIf 조건                                       │
+│                                                                 │
+│  [HttpTimeout 플러그인 (built-in)]                               │
+│  ├── requestTimeoutMillis                                       │
+│  ├── connectTimeoutMillis                                       │
+│  └── socketTimeoutMillis                                        │
+│                                                                 │
+│  [CB 지원 — extra-ktor-plugins (Flaxoos)]                       │
+│  ├── 서드파티 Ktor 플러그인                                    │
+│  ├── CircuitBreaker 플러그인 제공                               │
+│  └── Resilience4j 대비 기능 제한적                              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```kotlin
+val client = HttpClient {
+    install(HttpRequestRetry) {
+        retryOnServerErrors(maxRetries = 3)
+        retryOnException(maxRetries = 3, retryOnTimeout = true)
+        exponentialDelay(base = 2.0, maxDelayMs = 10_000)
+        retryIf { _, response -> response.status.value == 429 }
+    }
+    install(HttpTimeout) {
+        requestTimeoutMillis = 15_000
+        connectTimeoutMillis = 5_000
+        socketTimeoutMillis = 10_000
+    }
+}
+```
+
+## 22.3 Spring WebFlux + Coroutine 통합
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Spring WebFlux + Kotlin Coroutine Resilience             │
+│                                                                 │
+│  [자동 변환]                                                    │
+│  ├── Mono <-> suspend 함수 (awaitSingle, awaitSingleOrNull)    │
+│  ├── Flux <-> Flow (asFlow, asFlux)                             │
+│  └── Spring이 내부적으로 Coroutine Bridge 제공                  │
+│                                                                 │
+│  [ReactiveCircuitBreaker vs executeSuspendFunction]              │
+│  ┌────────────────────────┬─────────────────────────────┐       │
+│  │ ReactiveCircuitBreaker │ executeSuspendFunction       │       │
+│  ├────────────────────────┼─────────────────────────────┤       │
+│  │ Mono/Flux 기반         │ suspend 기반                │       │
+│  │ Reactor 의존           │ kotlinx.coroutines 의존     │       │
+│  │ Spring Cloud CB 통합   │ resilience4j-kotlin 직접    │       │
+│  │ AOP 가능               │ AOP 불가 (suspend)          │       │
+│  │ 기존 WebFlux 코드 호환 │ Coroutine 우선 프로젝트     │       │
+│  └────────────────────────┴─────────────────────────────┘       │
+│                                                                 │
+│  권장: 신규 프로젝트는 executeSuspendFunction,                   │
+│        기존 WebFlux 마이그레이션은 ReactiveCircuitBreaker       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 22.4 Kotlin 특화 Resilience 패턴
+
+### sealed class로 ResilienceState 모델링
+
+```kotlin
+sealed class ResilienceState<out T> {
+    data class Success<T>(val data: T) : ResilienceState<T>()
+    data class Failure(val error: Throwable) : ResilienceState<Nothing>()
+    data class CircuitOpen(val fallback: Any?) : ResilienceState<Nothing>()
+    data class RateLimited(val retryAfterMs: Long) : ResilienceState<Nothing>()
+    data object Loading : ResilienceState<Nothing>()
+}
+
+when (val state = fetchWithResilience()) {
+    is ResilienceState.Success -> render(state.data)
+    is ResilienceState.Failure -> showError(state.error)
+    is ResilienceState.CircuitOpen -> showFallback(state.fallback)
+    is ResilienceState.RateLimited -> retryAfter(state.retryAfterMs)
+    is ResilienceState.Loading -> showSpinner()
+}
+```
+
+### runCatching의 CancellationException 문제
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          runCatching + CancellationException 위험                 │
+│                                                                 │
+│  [문제]                                                         │
+│  ├── runCatching { ... } 은 모든 Throwable을 잡음              │
+│  ├── CancellationException도 잡혀서 Result.failure로 래핑      │
+│  ├── Coroutine 취소가 전파되지 않음 → 구조화된 동시성 파괴     │
+│  └── 부모 Coroutine이 취소를 인지 못함                         │
+│                                                                 │
+│  [해결: CancellationException 반드시 재던지기]                  │
+│                                                                 │
+│  suspend fun <T> runSuspendCatching(                             │
+│      block: suspend () -> T                                      │
+│  ): Result<T> {                                                  │
+│      return try {                                                │
+│          Result.success(block())                                 │
+│      } catch (e: CancellationException) {                       │
+│          throw e  // 반드시 재던지기!                             │
+│      } catch (e: Throwable) {                                    │
+│          Result.failure(e)                                       │
+│      }                                                           │
+│  }                                                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Channel 기반 Rate Limiting & supervisorScope
+
+```kotlin
+// supervisorScope = Bulkhead (장애 격리)
+// 하나의 자식 실패가 다른 자식에 영향 안 줌
+suspend fun processOrders(orders: List<Order>) {
+    supervisorScope {
+        orders.map { order ->
+            async {
+                try { processOrder(order) }
+                catch (e: Exception) {
+                    logger.error("Order ${order.id} failed", e)
+                    null
+                }
+            }
+        }.awaitAll()
+    }
+}
+
+// Semaphore 기반 Bulkhead (권장 — ThreadPool Bulkhead 대체)
+val bulkhead = Semaphore(permits = 20)
+
+suspend fun callWithBulkhead(request: Request): Response {
+    bulkhead.withPermit {
+        return apiClient.call(request)
+    }
+}
+```
+
+### withTimeout vs TimeLimiter 비교
+
+| 항목 | withTimeout (Coroutine) | TimeLimiter (Resilience4j) |
+|------|------------------------|---------------------------|
+| **취소 방식** | CancellationException + 협력적 취소 | Future.cancel / withTimeout 래핑 |
+| **Coroutine 호환** | 네이티브 | 래핑 필요 |
+| **메트릭** | 직접 구현 필요 | Prometheus/Micrometer 내장 |
+| **설정 관리** | 코드 하드코딩 | YAML/동적 설정 |
+| **권장 사용처** | 단순 타임아웃 | 모니터링 필요, 중앙 관리 |
+
+## 22.5 KMP(Kotlin Multiplatform) Resilience 대안
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          KMP Resilience 라이브러리 비교                            │
+│                                                                 │
+│  [Arrow Resilience]                                              │
+│  ├── Arrow FP 생태계의 Resilience 모듈                          │
+│  ├── Schedule API — 재시도 전략 조합                             │
+│  │   ├── Schedule.recurs(5)                                     │
+│  │   ├── Schedule.exponential(250.milliseconds)                 │
+│  │   └── Schedule.recurs(5) and Schedule.exponential(...)       │
+│  ├── protectOrThrow — 성공 또는 예외                             │
+│  ├── protectEither — Either<Error, Success> 반환                │
+│  └── KMP 지원 (JVM, Native, JS)                                │
+│                                                                 │
+│  [kmp-resilient]                                                 │
+│  ├── 8가지 패턴: CB, Retry, Timeout, Bulkhead,                 │
+│  │   Rate Limiter, Cache, Fallback, Hedge                      │
+│  └── KMP 전용 설계                                              │
+│                                                                 │
+│  [Kresil]                                                        │
+│  ├── Kotlin-first Resilience 라이브러리                         │
+│  ├── CB, Retry, Rate Limiter                                    │
+│  └── KMP 지원                                                   │
+│                                                                 │
+│  ┌───────────────┬──────────────┬──────────────┬─────────────┐  │
+│  │ 항목          │ Arrow        │ kmp-resilient│ Kresil      │  │
+│  ├───────────────┼──────────────┼──────────────┼─────────────┤  │
+│  │ FP 스타일     │ Either/결과 │ 콜백         │ 혼합        │  │
+│  │ CB 지원       │ Schedule     │ O            │ O           │  │
+│  │ KMP 범위      │ 전체        │ 전체         │ JVM+Native  │  │
+│  │ 커뮤니티      │ 대규모      │ 소규모       │ 소규모      │  │
+│  │ 성숙도        │ 높음        │ 중간         │ 초기        │  │
+│  └───────────────┴──────────────┴──────────────┴─────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```kotlin
+// Arrow Resilience — Schedule API
+import arrow.resilience.*
+import kotlin.time.Duration.Companion.milliseconds
+
+val schedule = Schedule.recurs<Throwable>(5) and
+    Schedule.exponential<Throwable>(250.milliseconds, 2.0)
+
+val result: String = schedule.retryOrElseRaise {
+    httpClient.get("https://api.example.com/data").body()
+}
+```
+
+## 22.6 테스팅
+
+```kotlin
+import kotlinx.coroutines.test.*
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+
+@Test
+fun `CB OPEN시 fallback 반환`() = runTest {
+    val cb = CircuitBreaker.ofDefaults("test")
+    cb.transitionToOpenState()  // 강제 OPEN
+
+    val result = runCatching {
+        cb.executeSuspendFunction { apiClient.call() }
+    }
+
+    assertTrue(result.isFailure)
+    assertIs<CallNotPermittedException>(result.exceptionOrNull())
+}
+
+// CB 강제 상태 전환 헬퍼
+fun CircuitBreaker.forceOpen() = transitionToOpenState()
+fun CircuitBreaker.forceClose() = transitionToClosedState()
+fun CircuitBreaker.forceHalfOpen() = transitionToHalfOpenState()
+```
+
+---
+
+# 23. 2025-2026 최신 Resilience 동향
+
+Resilience Engineering은 빠르게 진화하고 있다. eBPF, WebAssembly, AI/LLM, Platform Engineering 등 최신 기술과의 융합이 가속화되고 있다.
+
+## 23.1 eBPF 기반 Resilience
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          eBPF + Resilience — 커널 수준 제어                       │
+│                                                                 │
+│  [Cilium 1.16 — Gateway API 내장]                               │
+│  ├── 2024년 AWS EKS 기본 CNI로 채택                             │
+│  ├── L4 = eBPF (커널 공간) — kube-proxy 대체                   │
+│  │   └── TCP/UDP 로드밸런싱, NAT 직접 처리                     │
+│  ├── L7 = Envoy (유저스페이스) — HTTP/gRPC 라우팅              │
+│  │   └── CB, Retry, Rate Limit 등 L7 정책                      │
+│  ├── Gateway API 1.0 내장 — Ingress 대체 표준                  │
+│  └── kube-proxy 제거 → 네트워크 성능 ~30% 향상                 │
+│                                                                 │
+│  [계층 분리 — L4 eBPF + L7 Envoy]                               │
+│                                                                 │
+│   요청 흐름:                                                    │
+│   Client → [eBPF L4] → [Envoy L7] → Service                    │
+│                │             │                                  │
+│                │             ├── Circuit Breaker                 │
+│                │             ├── Retry Policy                    │
+│                │             ├── Rate Limiting                   │
+│                │             └── Health Checking                 │
+│                │                                                │
+│                ├── Connection Tracking                           │
+│                ├── Load Balancing (DNAT)                         │
+│                ├── Network Policy (필터링)                       │
+│                └── 대부분의 L4 트래픽은 커널에서 처리            │
+│                    → Envoy 바이패스 가능 → 오버헤드 최소화      │
+│                                                                 │
+│  [Tetragon — 런타임 보안 + 옵저버빌리티]                        │
+│  ├── eBPF 기반 런타임 보안 관찰                                │
+│  ├── 프로세스 실행, 파일 접근, 네트워크 이벤트 추적            │
+│  ├── 보안 이벤트 → Resilience 판단에 활용 가능                 │
+│  └── "이 서비스가 공격받고 있는가?" 실시간 감지               │
+│                                                                 │
+│  [bpf_circuit_breaker — 사용자 정의 eBPF CB]                    │
+│  ├── BPF Map에 실패 카운트, 상태 저장                           │
+│  ├── XDP/TC 훅에서 패킷 수준 CB 구현                           │
+│  ├── 유저스페이스 프록시 없이 커널에서 직접 차단               │
+│  └── 연구/실험 단계 — 프로덕션 사례 제한적                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.2 WebAssembly(Wasm) 기반 Resilience 확장
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Proxy-Wasm — 프록시 확장 표준                            │
+│                                                                 │
+│  [Proxy-Wasm v0.2.1 Specification]                               │
+│  ├── 30+ 언어에서 Wasm으로 컴파일 가능                          │
+│  │   (Rust, Go, C/C++, AssemblyScript, Zig 등)                 │
+│  ├── 샌드박스 격리 — 프록시 크래시 방지                        │
+│  ├── 핫 리로드 — 프록시 재시작 없이 필터 교체                  │
+│  └── Envoy, NGINX, Istio에서 지원                               │
+│                                                                 │
+│  [Resilience 확장 사례]                                          │
+│  sentinel-go-envoy-proxy-wasm:                                   │
+│  ├── Alibaba Sentinel의 Go 구현을 Wasm으로 컴파일              │
+│  ├── Envoy 사이드카에 로드                                     │
+│  ├── 커스텀 Rate Limiting, Flow Control 구현                    │
+│  └── 프록시 수준에서 애플리케이션 로직 실행                    │
+│                                                                 │
+│  [아키텍처]                                                     │
+│  ┌────────────────────────────────────────────────┐              │
+│  │ Envoy Proxy                                     │              │
+│  │ ┌──────────┐ ┌──────────┐ ┌──────────────────┐│              │
+│  │ │ HTTP     │→│ Wasm     │→│ Upstream         ││              │
+│  │ │ Listener │ │ Filter   │ │ Cluster          ││              │
+│  │ │          │ │ (CB/RL)  │ │                  ││              │
+│  │ └──────────┘ └──────────┘ └──────────────────┘│              │
+│  │               ↑ Wasm VM (V8/Wasmtime)           │              │
+│  └────────────────────────────────────────────────┘              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.3 AI/LLM 서비스 Resilience
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          AI/LLM 서비스 Resilience — 2025-2026 핵심 과제           │
+│                                                                 │
+│  [복합 Rate Limit 체계]                                          │
+│  ├── RPM (Requests Per Minute) — 요청 횟수 제한                │
+│  ├── TPM (Tokens Per Minute) — 총 토큰 제한                    │
+│  ├── ITPM (Input Tokens Per Minute) — 입력 토큰 제한           │
+│  ├── OTPM (Output Tokens Per Minute) — 출력 토큰 제한          │
+│  └── 4가지 제한 중 하나라도 초과하면 429 에러                  │
+│                                                                 │
+│  기존 HTTP API: 1차원 Rate Limit (RPM만)                        │
+│  LLM API: 4차원 Rate Limit → 훨씬 복잡한 제어 필요            │
+│                                                                 │
+│  [Token Budget Management]                                       │
+│  ├── tiktoken 등으로 사전 토큰 수 계산                          │
+│  ├── 요청 전 토큰 예산 확인 → 초과 시 대기/분할               │
+│  ├── Sliding Window로 분당 토큰 사용량 추적                    │
+│  └── 입력/출력 비율 예측 기반 예산 배분                        │
+│                                                                 │
+│  [다중 제공업체 Circuit Breaker]                                │
+│                                                                 │
+│   요청 → CB(OpenAI) ─── OPEN ──→ CB(Anthropic) ─── OPEN ──→   │
+│          │                        │                              │
+│          └── CLOSED → OpenAI      └── CLOSED → Anthropic        │
+│                                                                  │
+│          모두 OPEN → 로컬 모델 (Ollama/vLLM) Fallback           │
+│                                                                 │
+│  가용성: 88.3% (단일) → 99.7% (다중 CB 적용)                   │
+│                                                                 │
+│  [LiteLLM — 통합 LLM Gateway]                                   │
+│  ├── 470K+ 월간 다운로드                                       │
+│  ├── 100+ LLM 단일 인터페이스 (OpenAI 호환 API)                │
+│  ├── 내장: Load Balancing, Retry, Rate Limit, Fallback          │
+│  └── Budget Manager — 비용 제한                                │
+│                                                                 │
+│  [GPU 서비스 레이어드 방어]                                      │
+│                                                                 │
+│   Layer 1: API Gateway Rate Limit (RPM/TPM)                     │
+│      ↓                                                          │
+│   Layer 2: Token Budget Manager (사전 토큰 검증)                │
+│      ↓                                                          │
+│   Layer 3: Circuit Breaker (제공업체별)                          │
+│      ↓                                                          │
+│   Layer 4: Queue + Priority (요청 우선순위 관리)                │
+│      ↓                                                          │
+│   Layer 5: Prompt Caching (GPU 부하 감소)                       │
+│      ↓                                                          │
+│   Layer 6: Fallback (다른 모델/제공업체/로컬)                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.4 Platform Engineering과 Resilience
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Platform Engineering — Resilience 민주화                 │
+│                                                                 │
+│  [Backstage Golden Path Templates]                               │
+│  ├── 새 서비스 생성 시 Resilience 패턴 기본 포함:              │
+│  │   ├── Canary Deployment 설정                                │
+│  │   ├── OpenTelemetry 계측                                    │
+│  │   ├── Circuit Breaker 기본 설정                              │
+│  │   ├── Retry + Timeout 기본값                                │
+│  │   ├── Health Check 엔드포인트                                │
+│  │   └── Grafana 대시보드 템플릿                                │
+│  ├── 개발자가 Resilience를 "선택"하는 게 아니라                │
+│  │   "기본으로 제공"받는 구조                                  │
+│  └── IDP (Internal Developer Platform) 표준화                  │
+│                                                                 │
+│  [Golden Path 효과]                                              │
+│  ├── Before: 팀별 Resilience 구현 편차 → 장애 취약점 발생     │
+│  └── After: 조직 전체 일관된 Resilience 수준 보장              │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.5 ML 기반 프로액티브 Circuit Breaker
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Proactive Circuit Breaker — ML 예측 기반                 │
+│          참고: arXiv 2503.13195 (2025)                           │
+│                                                                 │
+│  [기존 CB의 한계]                                                │
+│  ├── Reactive: 장애 발생 후 감지 → 이미 일부 요청 실패        │
+│  ├── Sliding Window 기반 → 과거 데이터로 현재 판단             │
+│  └── 임계값 정적 → 트래픽 패턴 변화에 적응 못함               │
+│                                                                 │
+│  [ML 기반 Proactive CB]                                          │
+│  ├── 예측 기반 이상 감지 (Anomaly Detection)                   │
+│  │   ├── 응답 시간 분포 변화 감지 (p50, p95, p99 추이)        │
+│  │   ├── 오류율 추세 분석 (미분값 기반)                        │
+│  │   └── 장애 발생 전 CB OPEN (선제적 차단)                    │
+│  │                                                              │
+│  ├── Ground Truth CB 패턴                                       │
+│  │   ├── 서로게이트 모델: 경량 ML 모델이 서비스 상태 예측     │
+│  │   ├── Health Score: 0.0~1.0 실수                             │
+│  │   │   (이진 OPEN/CLOSED 대신)                                │
+│  │   └── 점진적 트래픽 조절 (0.7이면 30% 차단)                │
+│  │                                                              │
+│  └── LSTM 기반 실패 감지기                                      │
+│      ├── 시계열 메트릭 입력                                     │
+│      │   (latency, error_rate, cpu, memory)                     │
+│      ├── 다음 N분의 장애 확률 예측                              │
+│      ├── 확률 > 임계값 → CB 사전 OPEN                          │
+│      └── 학습 데이터: 과거 장애 이력 (Post-Mortem 기반)        │
+│                                                                 │
+│  [Proactive CB 아키텍처]                                         │
+│                                                                 │
+│  Metrics ──► Feature ──► ML Model ──► Health ──► CB             │
+│  (실시간)    Pipeline    (LSTM/IF)    Score     (점진적)        │
+│                  │                    (0.0~1.0)                  │
+│                  ├── latency_p99                                  │
+│                  ├── error_rate_5m                                │
+│                  ├── cpu_utilization                              │
+│                  ├── memory_pressure                              │
+│                  ├── queue_depth                                  │
+│                  └── gc_pause_time                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.6 OpenTelemetry + Resilience4j 통합
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          OTel + Resilience4j — 메트릭과 트레이스 연결             │
+│                                                                 │
+│  [Exemplars — 메트릭 → 트레이스 연결]                            │
+│  ├── 메트릭 데이터 포인트에 Trace ID 첨부                      │
+│  ├── "실패율이 50% 초과" →                                     │
+│  │   해당 시점 실패 트레이스 즉시 확인                         │
+│  ├── Prometheus + Grafana Tempo/Jaeger 연동                     │
+│  └── 메트릭 대시보드 → 클릭 → 구체적 트레이스                 │
+│                                                                 │
+│  [Issue #2283 — 메트릭 설명 충돌 문제]                           │
+│  ├── Resilience4j 자체 메트릭 설명과 OTel 설명이 충돌          │
+│  ├── MeterRegistry 등록 시 description 불일치 경고             │
+│  └── 해결: OTel SDK 측 description 우선 또는                   │
+│      커스텀 MeterFilter                                         │
+│                                                                 │
+│  [통합 아키텍처]                                                │
+│   Application                                                    │
+│   ├── Resilience4j (CB/Retry/Bulkhead)                           │
+│   │   └── Micrometer Metrics                                     │
+│   │       └── OTel Meter Provider                                │
+│   │           ├── Metrics → Prometheus (+ Exemplars)             │
+│   │           └── Traces → Jaeger/Tempo                          │
+│   └── OTel Instrumentation                                       │
+│       └── Span 자동 생성                                         │
+│           ├── CB state transition → Span Event                   │
+│           ├── Retry attempt → Span Event                         │
+│           └── Bulkhead rejection → Span Attribute                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.7 Serverless Resilience
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Serverless Resilience — 2025-2026                        │
+│                                                                 │
+│  [Lambda Powertools]                                             │
+│  ├── Idempotency — DynamoDB 기반 멱등성 보장                   │
+│  ├── Batch Processing — 부분 실패 처리                          │
+│  └── Parameters — SSM/Secrets Manager 캐싱 + 재시도           │
+│                                                                 │
+│  [Step Functions — 오케스트레이션 수준 Resilience]               │
+│  ├── Saga 패턴: 보상 트랜잭션 자동 실행                        │
+│  ├── Retry 내장: maxAttempts, backoffRate, interval             │
+│  ├── Catch: 특정 에러 타입별 분기                               │
+│  ├── Timeout: HeartbeatSeconds, TimeoutSeconds                   │
+│  └── CB: Step Functions으로 구현 가능                           │
+│      (실패 횟수 DynamoDB 추적 → Choice State 분기)             │
+│                                                                 │
+│  [SnapStart 2.0 — Cold Start 완화]                               │
+│  ├── Java (GA since 2022) → Python, .NET 확장 (2025)           │
+│  ├── Firecracker microVM 스냅샷 기반                            │
+│  ├── 초기화 시간: ~5초 → ~200ms (Java Spring)                  │
+│  ├── Resilience 영향:                                           │
+│  │   ├── Cold Start 감소 → Timeout 임계값 낮출 수 있음         │
+│  │   ├── 스케일링 속도 향상 → Bulkhead 여유 증가              │
+│  │   └── 주의: 스냅샷 후 연결 재수립 필요 (DB, Cache)         │
+│  └── Provisioned Concurrency 비용 절감 효과                    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 23.8 2025-2026 Resilience 연대표
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          2025-2026 Resilience Engineering 연대표                   │
+│                                                                 │
+│  2024 Q4                                                         │
+│  ├── Cilium 1.16 릴리스 (Gateway API 내장)                      │
+│  ├── AWS EKS Cilium CNI 기본 채택                               │
+│  └── Resilience4j 2.3.x 안정화                                  │
+│                                                                 │
+│  2025 Q1                                                         │
+│  ├── Proxy-Wasm v0.2.1 스펙 안정화                              │
+│  ├── LiteLLM 1.x GA (LLM Gateway 표준화)                       │
+│  ├── ML 기반 Proactive CB 논문 (arXiv 2503.13195)              │
+│  └── Lambda SnapStart Python/.NET 지원 시작                     │
+│                                                                 │
+│  2025 Q2-Q3                                                      │
+│  ├── OTel + Resilience4j Exemplars 통합 안정화                  │
+│  ├── Backstage Golden Path에 Resilience 템플릿 표준화          │
+│  ├── eBPF 기반 L4 CB 실험적 구현 등장                          │
+│  └── AI/LLM 다중 제공업체 CB 패턴 보편화                      │
+│                                                                 │
+│  2025 Q4 - 2026 Q1                                               │
+│  ├── LSTM 기반 Proactive CB 프로덕션 사례 등장                 │
+│  ├── Wasm 기반 Resilience 필터 프로덕션 배포 증가              │
+│  ├── Platform Engineering IDP에 Resilience 기본 통합           │
+│  └── Kubernetes Gateway API + Resilience 정책 통합             │
+│                                                                 │
+│  [핵심 트렌드 요약]                                              │
+│  ├── 1. 인프라 수준 Resilience (eBPF, Wasm)                    │
+│  │      ← 코드 수정 최소                                       │
+│  ├── 2. AI/LLM 특화 패턴                                       │
+│  │      (복합 Rate Limit, 다중 제공업체)                       │
+│  ├── 3. 예측 기반 Proactive (ML/LSTM → 사전 차단)              │
+│  ├── 4. Platform Engineering                                    │
+│  │      (Golden Path → 기본 제공)                              │
+│  └── 5. 관측 가능성 통합                                       │
+│         (OTel + Resilience 메트릭 일체화)                       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 24. 실전 모니터링 대시보드 구성 상세
+
+Resilience 패턴의 효과를 극대화하려면 정밀한 모니터링이 필수이다. 이 섹션에서는 Resilience4j 메트릭 레퍼런스, Grafana 패널 구성, PromQL 쿼리, AlertManager 규칙, 분산 트레이싱 통합, Runbook까지 실전에서 필요한 모든 것을 다룬다.
+
+## 24.1 Resilience4j 전체 메트릭 레퍼런스
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Resilience4j 메트릭 전체 목록                             │
+│                                                                 │
+│  [Circuit Breaker — 9개 메트릭]                                  │
+│  ┌──────────────────────────────────────────────┬──────────┐    │
+│  │ 메트릭 이름                                  │ 타입     │    │
+│  ├──────────────────────────────────────────────┼──────────┤    │
+│  │ resilience4j_circuitbreaker_state            │ Gauge    │    │
+│  │  └ state: closed=0, open=1, half_open=2,    │          │    │
+│  │    disabled=3, forced_open=4, metrics_only=5 │          │    │
+│  │ resilience4j_circuitbreaker_calls_seconds    │ Timer    │    │
+│  │  └ kind: successful, failed, ignored,       │          │    │
+│  │    not_permitted                              │          │    │
+│  │ resilience4j_circuitbreaker_not_permitted     │          │    │
+│  │  _calls_total                                │ Counter  │    │
+│  │ resilience4j_circuitbreaker_failure_rate     │ Gauge    │    │
+│  │ resilience4j_circuitbreaker_slow_call_rate   │ Gauge    │    │
+│  │ resilience4j_circuitbreaker_buffered_calls   │ Gauge    │    │
+│  │ resilience4j_circuitbreaker_slow_calls       │ Gauge    │    │
+│  │ resilience4j_circuitbreaker_failed_calls     │ Gauge    │    │
+│  │ resilience4j_circuitbreaker_successful_calls │ Gauge    │    │
+│  └──────────────────────────────────────────────┴──────────┘    │
+│                                                                 │
+│  [Retry — 4개 kind]                                              │
+│  resilience4j_retry_calls_total                                  │
+│  └ kind: successful_without_retry,                               │
+│    successful_with_retry, failed_without_retry,                  │
+│    failed_with_retry                                             │
+│                                                                 │
+│  [Bulkhead — Semaphore]                                          │
+│  resilience4j_bulkhead_available_concurrent_calls   (Gauge)      │
+│  resilience4j_bulkhead_max_allowed_concurrent_calls (Gauge)      │
+│                                                                 │
+│  [Bulkhead — ThreadPool]                                         │
+│  resilience4j_bulkhead_queue_depth            (Gauge)            │
+│  resilience4j_bulkhead_queue_capacity         (Gauge)            │
+│  resilience4j_bulkhead_thread_pool_size       (Gauge)            │
+│  resilience4j_bulkhead_active_thread_count    (Gauge)            │
+│                                                                 │
+│  [RateLimiter]                                                   │
+│  resilience4j_ratelimiter_available_permissions (Gauge)           │
+│  resilience4j_ratelimiter_waiting_threads       (Gauge)          │
+│                                                                 │
+│  [Custom Tags 전략]                                              │
+│  ├── application: 서비스 이름                                  │
+│  ├── environment: prod / staging / dev                          │
+│  ├── region: ap-northeast-2 / us-east-1                        │
+│  └── 설정: MeterRegistryCustomizer에서 commonTags() 추가      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 24.2 Grafana 패널 구성
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Grafana 대시보드 패널 구성                                │
+│                                                                 │
+│  [Row 1: Circuit Breaker 상태 Overview]                          │
+│  ┌──────────────┬──────────────┬──────────────────────────────┐ │
+│  │ State        │ Failure Rate │ Calls per Second             │ │
+│  │ Timeline     │ Gauge        │ Time Series                  │ │
+│  │              │              │                              │ │
+│  │ CLOSED       │   ┌───┐     │  ~~ successful ~~            │ │
+│  │ OPEN         │   │47%│     │  ~~ failed ~~                │ │
+│  │ HALF_OPEN    │   └───┘     │  ~~ not_permitted ~~          │ │
+│  │ (서비스별    │ 50% 빨강    │                              │ │
+│  │  색상 구분)  │ 30% 노랑    │                              │ │
+│  └──────────────┴──────────────┴──────────────────────────────┘ │
+│                                                                 │
+│  [Row 2: Retry & Bulkhead]                                       │
+│  ┌──────────────────────────────┬────────────────────────────┐  │
+│  │ Retry Outcomes (Pie Chart)   │ Bulkhead Utilization       │  │
+│  │  72% no retry                │ paymentPool   ████████░░  │  │
+│  │  18% retry success           │ inventoryPool ██████░░░░  │  │
+│  │   7% retry failed            │ searchPool    ████░░░░░░  │  │
+│  │   3% no retry fail           │ 80% 노랑, 95% 빨강       │  │
+│  └──────────────────────────────┴────────────────────────────┘  │
+│                                                                 │
+│  [Row 3: Rate Limiter & Response Time]                           │
+│  ┌──────────────────────────────┬────────────────────────────┐  │
+│  │ RateLimiter Permissions      │ Average Response Time      │  │
+│  │ — available_permissions      │ — avg_response_ms          │  │
+│  │ — waiting_threads            │ .. slow_call_threshold     │  │
+│  └──────────────────────────────┴────────────────────────────┘  │
+│                                                                 │
+│  [Template Variables]                                            │
+│  ├── $application: label_values(                                │
+│  │   resilience4j_circuitbreaker_state, application)           │
+│  ├── $environment: label_values(environment)                    │
+│  ├── $cb_name: label_values(                                    │
+│  │   resilience4j_circuitbreaker_state{                         │
+│  │     application="$application"}, name)                      │
+│  └── $interval: 1m, 5m, 15m, 1h                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 24.3 검증된 PromQL 쿼리 13개
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          PromQL 쿼리 레퍼런스                                      │
+│                                                                 │
+│  [1] CB 상태 인코딩 (State Timeline 패널용)                      │
+│  resilience4j_circuitbreaker_state{                              │
+│    application="$application", name="$cb_name" }                │
+│  # 0=CLOSED, 1=OPEN, 2=HALF_OPEN                                │
+│                                                                 │
+│  [2] 실패율                                                     │
+│  resilience4j_circuitbreaker_failure_rate{                       │
+│    application="$application", name="$cb_name" }                │
+│                                                                 │
+│  [3] 성공 호출률                                                │
+│  sum(rate(resilience4j_circuitbreaker_calls_seconds_count{      │
+│    application="$application", name="$cb_name",                 │
+│    kind="successful"}[$interval]))                               │
+│                                                                 │
+│  [4] 실패 호출률                                                │
+│  sum(rate(resilience4j_circuitbreaker_calls_seconds_count{      │
+│    application="$application", name="$cb_name",                 │
+│    kind="failed"}[$interval]))                                   │
+│                                                                 │
+│  [5] 무시된 호출률                                               │
+│  (kind="ignored" — CB 실패 카운트에 영향 안 주는 예외)          │
+│                                                                 │
+│  [6] 차단된 호출률 (CB OPEN)                                     │
+│  sum(rate(resilience4j_circuitbreaker_not_permitted             │
+│    _calls_total{...}[$interval]))                                │
+│                                                                 │
+│  [7] Retry Storm 감지                                            │
+│  sum(rate(retry_calls{kind=~".*_with_retry"}[$interval]))       │
+│  / sum(rate(retry_calls[$interval]))                             │
+│  # > 0.5 → Retry Storm 의심                                    │
+│                                                                 │
+│  [8] Bulkhead 사용률                                             │
+│  1 - (available_concurrent_calls / max_allowed_concurrent_calls)│
+│  # 0.0 (여유) ~ 1.0 (포화)                                     │
+│                                                                 │
+│  [9] RateLimiter 잔여 Permission                                 │
+│  resilience4j_ratelimiter_available_permissions{...}             │
+│  # 0에 가까우면 Rate Limit 임박                                  │
+│                                                                 │
+│  [10] 평균 응답 시간 (ms)                                        │
+│  sum(rate(calls_seconds_sum{kind="successful"}[$interval]))     │
+│  / sum(rate(calls_seconds_count{kind="successful"}[$interval])) │
+│  * 1000                                                          │
+│                                                                 │
+│  [11] Slow Call Rate                                              │
+│  resilience4j_circuitbreaker_slow_call_rate{...}                │
+│                                                                 │
+│  [12] Retry 소진율                                               │
+│  rate(retry{kind="failed_with_retry"})                           │
+│  / rate(retry{kind=~".*_with_retry"})                            │
+│  # > 0.7 → 재시도가 도움이 안 되는 상황                        │
+│                                                                 │
+│  [13] RateLimiter 대기 스레드 추이                                │
+│  resilience4j_ratelimiter_waiting_threads{...}                   │
+│  # 지속적 증가 → Rate Limit 설정 검토 필요                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 24.4 AlertManager 규칙 9개
+
+```yaml
+groups:
+  - name: resilience4j_alerts
+    rules:
+      # [1] CB OPEN — Critical
+      - alert: CircuitBreakerOpen
+        expr: resilience4j_circuitbreaker_state == 1
+        for: 30s
+        labels: { severity: critical }
+        annotations:
+          summary: "CB OPEN: {{ $labels.name }}"
+          runbook_url: "https://wiki.example.com/runbook/cb-open"
+
+      # [2] CB HALF_OPEN 장기 지속 — Warning
+      - alert: CircuitBreakerHalfOpenProlonged
+        expr: resilience4j_circuitbreaker_state == 2
+        for: 5m
+        labels: { severity: warning }
+
+      # [3] 실패율 50% 초과 — Warning
+      - alert: HighFailureRate
+        expr: resilience4j_circuitbreaker_failure_rate > 50
+        for: 1m
+        labels: { severity: warning }
+
+      # [4] 실패율 80% 초과 — Critical
+      - alert: CriticalFailureRate
+        expr: resilience4j_circuitbreaker_failure_rate > 80
+        for: 30s
+        labels: { severity: critical }
+
+      # [5] Slow Call Rate 50% 초과 — Warning
+      - alert: HighSlowCallRate
+        expr: resilience4j_circuitbreaker_slow_call_rate > 50
+        for: 2m
+        labels: { severity: warning }
+
+      # [6] Retry Storm — Warning
+      - alert: RetryStorm
+        expr: |
+          sum(rate(resilience4j_retry_calls_total
+            {kind=~".*_with_retry"}[5m])) by (application)
+          / sum(rate(resilience4j_retry_calls_total[5m]))
+            by (application) > 0.5
+        for: 3m
+        labels: { severity: warning }
+
+      # [7] Retry 소진 — Critical
+      - alert: RetryExhaustion
+        expr: |
+          sum(rate(resilience4j_retry_calls_total
+            {kind="failed_with_retry"}[5m])) by (application)
+          / sum(rate(resilience4j_retry_calls_total
+            {kind=~".*_with_retry"}[5m])) by (application)
+          > 0.7
+        for: 5m
+        labels: { severity: critical }
+
+      # [8] Bulkhead 80% 초과 — Warning
+      - alert: BulkheadNearExhaustion
+        expr: |
+          1 - (resilience4j_bulkhead_available_concurrent_calls
+          / resilience4j_bulkhead_max_allowed_concurrent_calls)
+          > 0.8
+        for: 2m
+        labels: { severity: warning }
+
+      # [9] RateLimiter 대기 스레드 — Warning
+      - alert: RateLimiterWaitingThreads
+        expr: resilience4j_ratelimiter_waiting_threads > 10
+        for: 1m
+        labels: { severity: warning }
+```
+
+## 24.5 Distributed Tracing 통합
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Spring Boot 3 + Micrometer Tracing + OTel                │
+│                                                                 │
+│  [의존성]                                                        │
+│  ├── micrometer-tracing-bridge-otel                              │
+│  ├── opentelemetry-exporter-otlp                                 │
+│  └── resilience4j-micrometer                                     │
+│                                                                 │
+│  [자동 계측]                                                     │
+│  Spring Boot 3 + Micrometer Tracing 조합 시:                    │
+│  ├── HTTP 요청 → 자동 Span 생성                                │
+│  ├── Resilience4j 메트릭 → 자동 수집                           │
+│  └── Trace ID가 로그에 자동 삽입 (MDC)                          │
+│                                                                 │
+│  [한계: Resilience4j 이벤트 → Span 연결은 수동]                │
+│  ├── CB 상태 전환 → Span Tag/Event 수동 추가 필요              │
+│  ├── Retry 시도 횟수 → Span Event 수동 추가 필요               │
+│  └── 커스텀 이벤트 리스너로 구현                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// CB 상태 변화를 Span Event로 기록하는 커스텀 리스너
+@Component
+public class TracingCircuitBreakerListener
+    implements RegistryEventConsumer<CircuitBreaker> {
+
+    private final Tracer tracer;
+
+    @Override
+    public void onEntryAddedEvent(
+            EntryAddedEvent<CircuitBreaker> event) {
+        CircuitBreaker cb = event.getAddedEntry();
+        cb.getEventPublisher()
+            .onStateTransition(e -> {
+                Span span = tracer.currentSpan();
+                if (span != null) {
+                    span.tag("cb.name", cb.getName());
+                    span.tag("cb.state",
+                        e.getStateTransition()
+                         .getToState().name());
+                    span.event("CB State: "
+                        + e.getStateTransition()
+                            .getFromState()
+                        + " -> "
+                        + e.getStateTransition()
+                            .getToState());
+                }
+            });
+    }
+}
+```
+
+### TraceQL 쿼리 예시
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          TraceQL 쿼리 예시 (Grafana Tempo)                        │
+│                                                                 │
+│  [1] CB OPEN 상태 전환이 발생한 트레이스                         │
+│  { span.cb.state = "OPEN" }                                      │
+│                                                                 │
+│  [2] 3회 이상 Retry가 발생한 트레이스                            │
+│  { span.retry.attempts >= 3 }                                    │
+│                                                                 │
+│  [3] 특정 서비스에서 에러가 발생한 트레이스                      │
+│  { resource.service.name = "payment-service"                     │
+│    && status = error }                                           │
+│                                                                 │
+│  [4] CB OPEN + 5초 이상 소요된 트레이스                          │
+│  { span.cb.state = "OPEN" && duration > 5s }                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## 24.6 Runbook 4종
+
+### Runbook 1: CB OPEN 대응 (5단계)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Runbook: Circuit Breaker OPEN 대응                        │
+│                                                                 │
+│  [단계 1: 상황 파악 (2분 이내)]                                  │
+│  ├── Grafana 대시보드 → CB 상태 Timeline 확인                  │
+│  ├── 어떤 CB가 OPEN인지, 언제부터인지 확인                     │
+│  ├── 영향 범위: 해당 CB를 사용하는 API 엔드포인트 파악        │
+│  └── 다른 CB도 OPEN인지 확인 (연쇄 장애 가능성)               │
+│                                                                 │
+│  [단계 2: 다운스트림 확인 (3분 이내)]                            │
+│  ├── 다운스트림 서비스 Health Check 직접 호출                  │
+│  ├── 다운스트림 메트릭 확인 (CPU, Memory, Error Rate)          │
+│  ├── 다운스트림 로그 확인 (최근 에러)                          │
+│  └── 네트워크 이슈 여부 확인 (DNS, 방화벽, 인증서)            │
+│                                                                 │
+│  [단계 3: 즉시 조치 (5분 이내)]                                  │
+│  ├── 다운스트림 장애 → 팀 알림 + Fallback 확인                │
+│  ├── 네트워크 이슈 → 인프라팀 알림                             │
+│  └── 원인 불명 → CB 설정/최근 배포 이력 확인                  │
+│                                                                 │
+│  [단계 4: 복구 확인]                                             │
+│  ├── CB HALF_OPEN → CLOSED 전환 확인                            │
+│  ├── 메트릭 정상 범위 복귀 확인                                │
+│  └── Error Budget 소진량 확인                                  │
+│                                                                 │
+│  [단계 5: 포스트모텀]                                            │
+│  ├── 타임라인 정리 (감지 → 대응 → 복구)                       │
+│  ├── 근본 원인 분석 (Root Cause Analysis)                      │
+│  ├── CB 설정 튜닝 필요 여부 판단                               │
+│  └── 개선 Action Item 생성                                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Runbook 2: Retry Storm 감지/대응
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Runbook: Retry Storm 감지 및 대응                        │
+│                                                                 │
+│  [감지 조건] 재시도 비율 > 50%이 3분 이상 지속                  │
+│                                                                 │
+│  [대응 절차]                                                     │
+│  1. 다운스트림 상태 확인                                        │
+│     ├── 살아있지만 느린 경우:                                   │
+│     │   → Retry가 부하 가중 → maxAttempts 축소 검토            │
+│     └── 완전히 다운된 경우:                                     │
+│         → CB가 OPEN이어야 하는데 왜 Retry? → 임계값 확인      │
+│                                                                 │
+│  2. Retry 설정 긴급 조정                                        │
+│     ├── maxAttempts 축소 (5 → 2)                                │
+│     ├── waitDuration 증가 (500ms → 2000ms)                     │
+│     └── Spring Cloud Config / Feature Flag로 무중단 반영       │
+│                                                                 │
+│  3. 해소 확인                                                    │
+│     ├── 재시도 비율 < 20% 복귀                                 │
+│     └── 전체 시스템 TPS/응답시간 정상 확인                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Runbook 3: Bulkhead Exhaustion 대응
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Runbook: Bulkhead Exhaustion 대응                        │
+│                                                                 │
+│  [감지 조건] Bulkhead 사용률 > 80%이 2분 이상 지속              │
+│                                                                 │
+│  [대응 절차]                                                     │
+│  1. 원인 분석                                                    │
+│     ├── 다운스트림 응답 지연 → 슬롯이 오래 점유               │
+│     ├── 트래픽 급증 → 정상적 용량 초과                         │
+│     └── 리소스 누수 → 슬롯이 반환되지 않음                    │
+│                                                                 │
+│  2. 즉시 조치                                                    │
+│     ├── 지연 시: Timeout 축소 검토                              │
+│     ├── 트래픽 시: 오토스케일링 확인, Bulkhead 임시 증가       │
+│     └── 누수 시: Thread Dump / Heap Dump 수집                  │
+│                                                                 │
+│  3. 포화 시                                                      │
+│     ├── BulkheadFullException 빈도 확인                        │
+│     └── Fallback 정상 동작 확인                                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Runbook 4: 모니터링 → Chaos Engineering 피드백 루프
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          모니터링 → Chaos Engineering 피드백 루프                  │
+│                                                                 │
+│  [Observe → Hypothesize → Experiment → Learn]                    │
+│                                                                 │
+│  1. OBSERVE (관찰)                                               │
+│  ├── "이 CB는 한 번도 OPEN된 적 없다"                           │
+│  ├── "Bulkhead 사용률이 항상 10% 미만이다"                     │
+│  └── "Retry가 정말 효과가 있는지 모르겠다"                     │
+│                    │                                             │
+│                    ▼                                             │
+│  2. HYPOTHESIZE (가설)                                           │
+│  ├── "CB 임계값이 너무 높아서 실제 장애 시 OPEN 안 될 수 있다"│
+│  ├── "Bulkhead 설정이 너무 넉넉해서 격리 효과가 없다"         │
+│  └── "Retry 3회가 너무 많아서 Retry Storm 위험"                │
+│                    │                                             │
+│                    ▼                                             │
+│  3. EXPERIMENT (실험 — Chaos Engineering)                        │
+│  ├── Chaos Toolkit으로 다운스트림 500 에러 주입                 │
+│  ├── CB가 예상 시간 내 OPEN 되는지 확인                         │
+│  ├── Fallback이 정상 동작하는지 확인                            │
+│  ├── Retry Storm이 발생하지 않는지 확인                         │
+│  └── Bulkhead가 다른 서비스 호출을 보호하는지 확인             │
+│                    │                                             │
+│                    ▼                                             │
+│  4. LEARN (학습)                                                 │
+│  ├── 실험 결과 → 설정 튜닝 (CB/Bulkhead/Retry)                │
+│  ├── 새로운 알람 규칙 추가                                     │
+│  ├── 대시보드 개선                                              │
+│  └── Runbook 업데이트                                           │
+│                    │                                             │
+│                    ▼                                             │
+│          ┌──── 다시 1. OBSERVE로 ────┐                          │
+│          └───────────────────────────┘                           │
+│                                                                 │
+│  [주기]                                                         │
+│  ├── 일상: 대시보드 관찰 → 이상 징후 메모                     │
+│  ├── 월간: 관찰 결과 기반 가설 수립                            │
+│  ├── 분기: GameDay (Chaos Engineering 실험)                    │
+│  └── 실험 후: 설정 튜닝 + 모니터링 개선                       │
+│                                                                 │
+│  핵심: 모니터링은 그 자체가 목적이 아니라,                      │
+│        시스템을 더 잘 이해하고 개선하기 위한 입력이다.          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
