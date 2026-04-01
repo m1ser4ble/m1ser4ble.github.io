@@ -30,7 +30,7 @@ TL;DR
 
 # Fan-In, Race Condition, Pessimistic Lock
 
-> 관련 이슈: [cck-eng/cck#1673](https://github.com/cck-eng/cck/issues/1673) - Dashboard OCR 항목이 terminal 전이 누락 시 계속 처리중으로 보이는 문제
+> 관련 이슈: [example-org/example#1673](https://github.com/example-org/example/issues/1673) - Dashboard OCR 항목이 terminal 전이 누락 시 계속 처리중으로 보이는 문제
 
 ---
 

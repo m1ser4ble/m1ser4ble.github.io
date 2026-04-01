@@ -490,7 +490,7 @@ OAuth 2.0과 Keycloak이(가) 등장한 배경과 기존 한계를 정리한다.
 │  Payload (Claims):                                                         │
 │  {                                                                         │
 │    // 필수 Claims                                                          │
-│    "iss": "https://keycloak.example.com/realms/cck",  // 발급자            │
+│    "iss": "https://keycloak.example.com/realms/example",  // 발급자            │
 │    "sub": "user-uuid-12345",                          // 사용자 식별자     │
 │    "aud": "accio-frontend",                           // 대상 클라이언트   │
 │    "exp": 1706860800,                                 // 만료 시간         │
@@ -584,7 +584,7 @@ OAuth 2.0과 Keycloak이(가) 등장한 배경과 기존 한계를 정리한다.
 │     │ Keycloak Server                                             │        │
 │     │                                                             │        │
 │     │  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐    │        │
-│     │  │ Realm: master │  │ Realm: cck    │  │ Realm: demo   │    │        │
+│     │  │ Realm: master │  │ Realm: example    │  │ Realm: demo   │    │        │
 │     │  │ (관리자용)    │  │ - Users: 100  │  │ - Users: 10   │    │        │
 │     │  │               │  │ - Clients: 5  │  │ - Clients: 2  │    │        │
 │     │  └───────────────┘  └───────────────┘  └───────────────┘    │        │
@@ -875,9 +875,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://keycloak.example.com/realms/cck
+          issuer-uri: https://keycloak.example.com/realms/example
           # 또는 직접 JWK Set URI 지정
-          # jwk-set-uri: https://keycloak.example.com/realms/cck/protocol/openid-connect/certs
+          # jwk-set-uri: https://keycloak.example.com/realms/example/protocol/openid-connect/certs
 
 // SecurityConfig.kt
 @Configuration
@@ -953,7 +953,7 @@ import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
     url: 'https://keycloak.example.com',
-    realm: 'cck',
+    realm: 'example',
     clientId: 'accio-frontend'
 });
 
