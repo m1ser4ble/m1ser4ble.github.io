@@ -479,10 +479,10 @@ GET 요청의 URL은 여러 곳에 자동으로 기록되어 민감한 정보가
 
 | 프로젝트 | 문서 위치 | 핵심 내용 |
 |---------|----------|----------|
-| **Leap** | `jump/leap/backend/docs/detailed-guides/API-DESIGN-GUIDE.md` | "모든 API가 POST 방식인 이유" 상세 설명 |
-| **Mothership** | `mothership/backend/src/CLAUDE.md` | "❌ GET/PUT/DELETE 방식 사용 (POST only)" |
-| **Accio** | `accio/backend/docs/v1/bcl/apis.md` | "현재: 모든 API가 POST 방식 사용" |
-| **Helloworld** | `helloworld/CLAUDE.md` | "**All POST**: 모든 엔드포인트 POST 방식" |
+| **Leap** | `app-c/leap/backend/docs/detailed-guides/API-DESIGN-GUIDE.md` | "모든 API가 POST 방식인 이유" 상세 설명 |
+| **Mothership** | `core-service/backend/src/CLAUDE.md` | "❌ GET/PUT/DELETE 방식 사용 (POST only)" |
+| **Accio** | `app-a/backend/docs/v1/bcl/apis.md` | "현재: 모든 API가 POST 방식 사용" |
+| **Helloworld** | `app-b/CLAUDE.md` | "**All POST**: 모든 엔드포인트 POST 방식" |
 | **공통 규칙** | `.claude/skills/kotlin-rules/api-patterns.md` | PathVariable 사용 금지, kebab-case URL 규칙 |
 
 ### 4.2 사내 API 설계 가이드 발췌
@@ -673,7 +673,7 @@ const api = {
 
 ## 참고 자료
 
-- 사내 API Design Guide: `jump/leap/backend/docs/detailed-guides/API-DESIGN-GUIDE.md`
+- 사내 API Design Guide: `app-c/leap/backend/docs/detailed-guides/API-DESIGN-GUIDE.md`
 - 사내 Kotlin API Patterns: `.claude/skills/kotlin-rules/api-patterns.md`
 - OWASP CSRF Prevention: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
 - HTTP Caching: https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching

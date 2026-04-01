@@ -994,7 +994,7 @@ Hibernate는 Soft Delete를 위한 전용 어노테이션을 제공합니다.
 - Hibernate ORM 공식 문서: https://hibernate.org/orm/documentation/
 - JPA 3.0 명세 (Jakarta Persistence): https://jakarta.ee/specifications/persistence/
 - Hibernate @SoftDelete (6.4+): https://docs.jboss.org/hibernate/orm/6.4/userguide/html_single/Hibernate_User_Guide.html#soft-delete
-- 사내 Mothership CLAUDE.md: `mothership/backend/src/CLAUDE.md`
+- 사내 Mothership CLAUDE.md: `core-service/backend/src/CLAUDE.md`
 
 ---
 

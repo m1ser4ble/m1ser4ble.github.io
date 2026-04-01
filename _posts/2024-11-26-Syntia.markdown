@@ -50,7 +50,7 @@ https://github.com/RUB-SysSec/syntia
 
 ### CFG(Control Flow Graph) Construction
 
-indirect jump 들로 난독화되어있기 때문에 CFG 를 정적으로 재구성한다는 것은 어려움. 예를 들면 VMProtect 2.13 에서는 다음과 같이 난독화한다고 한다. 대부분의 쓸데없는 코드는 없앴다고 한다. 
+indirect app-c 들로 난독화되어있기 때문에 CFG 를 정적으로 재구성한다는 것은 어려움. 예를 들면 VMProtect 2.13 에서는 다음과 같이 난독화한다고 한다. 대부분의 쓸데없는 코드는 없앴다고 한다. 
 
 ```asm
 mov al, byte ptr [esi-0x1]
@@ -63,8 +63,8 @@ ret 0x2c
 보면 알겠지만, esi 에 저장된 VM Program Counter(VPC) 를 al 로 가져와서 그에 적절한 handler 를 ecx 에 담고 그곳으로 jmp 하는 코드다. 그러나 각 실제 handler 가 어디에 있는지, 무슨 정보를 들고있는지는 dynamic execution 으로만 알 수 있다. 
 CFG 를 재구성하는 구체적인 방법은 다음과 같음
 * basic block 을 초기화함
-  * basic block 은 instruction sequence 의 한 단위인데 보통 어떤 jump 등을 통해서 하나의 basic block 이 구분된다. 
-  * 그러면 jump 혹은 instruction 의 배열에 따라 basic block 간의 directed graph 를 생성할 수 있게 된다.
+  * basic block 은 instruction sequence 의 한 단위인데 보통 어떤 app-c 등을 통해서 하나의 basic block 이 구분된다. 
+  * 그러면 app-c 혹은 instruction 의 배열에 따라 basic block 간의 directed graph 를 생성할 수 있게 된다.
 *  basic block 간의 병합
   * basic block B1 의 outbound degree 가 1, basic block B2 의 inbound degree 가 1 이면서 B1->B2 의 그래프가 형성되어있다면 B12 로 하나의 basic block 으로 병합할 수 있다.
 * 더이상 병합되는 basic block 이 없을때까지 반복. 

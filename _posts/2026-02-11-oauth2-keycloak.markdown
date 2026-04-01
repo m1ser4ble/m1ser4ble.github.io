@@ -492,7 +492,7 @@ OAuth 2.0과 Keycloak이(가) 등장한 배경과 기존 한계를 정리한다.
 │    // 필수 Claims                                                          │
 │    "iss": "https://keycloak.example.com/realms/example",  // 발급자            │
 │    "sub": "user-uuid-12345",                          // 사용자 식별자     │
-│    "aud": "accio-frontend",                           // 대상 클라이언트   │
+│    "aud": "app-a-frontend",                           // 대상 클라이언트   │
 │    "exp": 1706860800,                                 // 만료 시간         │
 │    "iat": 1706857200,                                 // 발급 시간         │
 │                                                                             │
@@ -619,7 +619,7 @@ OAuth 2.0과 Keycloak이(가) 등장한 배경과 기존 한계를 정리한다.
 │                                                                             │
 │     Client Role:                                                           │
 │     - 특정 클라이언트에서만 유효                                           │
-│     - 예: accio-admin, accio-viewer                                        │
+│     - 예: app-a-admin, app-a-viewer                                        │
 │                                                                             │
 │  5️⃣ Group (그룹)                                                           │
 │  ─────────────────                                                          │
@@ -954,7 +954,7 @@ import Keycloak from 'keycloak-js';
 const keycloak = new Keycloak({
     url: 'https://keycloak.example.com',
     realm: 'example',
-    clientId: 'accio-frontend'
+    clientId: 'app-a-frontend'
 });
 
 export default keycloak;

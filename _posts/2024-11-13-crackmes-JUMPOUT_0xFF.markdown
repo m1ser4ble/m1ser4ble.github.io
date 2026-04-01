@@ -28,7 +28,7 @@ tags: reversing
 
 ### Instruction overlapping
 
-alignment 를 의도적으로 다르게해서 disassembler 에게 혼란을 주는 난독화를 해두었다. jump target 으로 가서 convert to data( shortcut : d) 를 한 뒤 convert to code(shortcut : c) 를 하면 제대로된 assembly 를 볼 수 있다.
+alignment 를 의도적으로 다르게해서 disassembler 에게 혼란을 주는 난독화를 해두었다. app-c target 으로 가서 convert to data( shortcut : d) 를 한 뒤 convert to code(shortcut : c) 를 하면 제대로된 assembly 를 볼 수 있다.
 
 ### useless operations
 

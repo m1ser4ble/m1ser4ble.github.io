@@ -31,7 +31,7 @@ tags: reversing
 ## VM 기본 구조
 
 x86 general purpose register 8개를 모두 특정 메모리에 저장한다. 
-그리고 어디론가 jump 한다. 당연히 이는 virtualized function 에 진입하기 위한 백업과정임. 
+그리고 어디론가 app-c 한다. 당연히 이는 virtualized function 에 진입하기 위한 백업과정임. 
 이런 백업과정을 찾게 되면 필연적으로 VM handler table 의 base 와 op code 를 세팅하는 로직이 보일 것이다. 그러면 VM handler table 에 op code 만큼의 offset 을 이동해서 어떤 함수를 실행시킬 지를 알게 되는 것. 이 진입 지점을 vm function entry 라고 함. 이 vm function entry 부분은 decompilation 이 실패하는게 일반적이다. 
 
 이 예제에서 사용하는 handler 함수에 들어가보면 decompilation 이 말이 안되는데, handler 가 다른 섹션의 코드를 재사용하고 있다고 한다. 그리고 그 코드를 chaining 해서 사용하는데 이는 ROP 기법과 동일하다. 
