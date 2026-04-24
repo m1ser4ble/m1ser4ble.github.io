@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "실시간 통신 패턴: WebSocket, SSE, Polling"
-date: 2026-03-12 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "WebSocket, SSE, Polling 패턴은 실시간 요구사항과 인프라 제약에 맞춰 지연시간, 확장성, 구현 복잡도를 균형 있게 선택하는 통신 전략이다."
+excerpt: "용어 풀네임 어원/유래 Polling - 13세기 중세 영어 poll(머리) → 머리 세기 → 여론조사 → 컴퓨터 상태 조회."
 toc: true
 toc_sticky: true
-tags: [realtime, websocket, sse, polling, webtransport, grpc]
+tags: [backend, realtime, websocket, sse, polling]
 source: "/home/dwkim/dwkim/docs/backend/realtime-통신패턴-websocket-sse-polling.md"
 ---
 TL;DR
-- 실시간 통신 패턴은 서버 이벤트를 지연 없이 전달하기 위해 Polling, SSE, WebSocket 등 연결 모델을 목적에 맞게 선택하는 방법론이다.
-- 채팅, 대시보드, 협업, AI 스트리밍처럼 지연시간과 상호작용 요구가 다른 시나리오에서는 단일 기술보다 상황별 패턴 선택이 운영 효율을 좌우한다.
-- RFC와 기업 사례를 바탕으로 WebSocket/SSE/Long Polling의 내부 동작, 성능, 인프라 설정, 마이그레이션 전략을 체계적으로 비교한다.
+- 용어 풀네임 어원/유래 Polling - 13세기 중세 영어 "poll(머리)" → "머리 세기" → "여론조사" → 컴퓨터 상태 조회.
+- Long Polling - 2006년 Alex Russell의 "Comet" 명명과 함께 정착. 기존 polling이 "짧은(short)" 방식이라면, 서버가 연결을 "길게(long)" 붙잡는 방식이라는 직관적 명칭
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-실시간 통신 패턴은 서버 이벤트를 지연 없이 전달하기 위해 Polling, SSE, WebSocket 등 연결 모델을 목적에 맞게 선택하는 방법론이다.
+용어 풀네임 어원/유래 Polling - 13세기 중세 영어 "poll(머리)" → "머리 세기" → "여론조사" → 컴퓨터 상태 조회.
 
 ## 2. 배경
-HTTP 요청응답 구조의 한계와 대규모 동시 연결(C10K/C10M) 요구가 커지면서 이벤트 기반 통신 패턴이 웹 표준과 함께 진화했다.
+Polling - 13세기 중세 영어 "poll(머리)" → "머리 세기" → "여론조사" → 컴퓨터 상태 조회. 1957년 영국 면직 공장 수리공 순회 모델이 수학적 연구의 시초. 1968년 "polling system" 용어 공식 문헌 등장
 
 ## 3. 이유
-채팅, 대시보드, 협업, AI 스트리밍처럼 지연시간과 상호작용 요구가 다른 시나리오에서는 단일 기술보다 상황별 패턴 선택이 운영 효율을 좌우한다.
+Long Polling - 2006년 Alex Russell의 "Comet" 명명과 함께 정착. 기존 polling이 "짧은(short)" 방식이라면, 서버가 연결을 "길게(long)" 붙잡는 방식이라는 직관적 명칭
 
 ## 4. 특징
-RFC와 기업 사례를 바탕으로 WebSocket/SSE/Long Polling의 내부 동작, 성능, 인프라 설정, 마이그레이션 전략을 체계적으로 비교한다.
+SSE Server-Sent Events "서버가 보내는 이벤트". 2004년 Ian Hickson이 WHATWG 제안에 포함. 2006년 Opera 브라우저가 최초 구현. 클라이언트 API명 EventSource는 "이벤트의 출처"라는 의미
 
 ## 5. 상세 내용
 
 # 실시간 통신 패턴: WebSocket, SSE, Polling
 
-> **작성일**: 2026-03-12
-> **카테고리**: Backend / Web / Real-time Communication
-> **포함 내용**: WebSocket, SSE, Server-Sent Events, EventSource, Polling, Long Polling, Short Polling, HTTP Streaming, Comet, gRPC Streaming, WebTransport, QUIC, GraphQL Subscriptions, Socket.IO, Engine.IO, STOMP, Bayeux Protocol, RFC 6455, RFC 6202, RFC 8441, RFC 9220, HTTP Upgrade, 핸드셰이크, 프레임 구조, ping/pong, text/event-stream, Last-Event-ID, C10K, C10M, epoll, kqueue, Redis Pub/Sub, Nginx 설정, Spring WebFlux, Kotlin Flow, 실시간 아키텍처
 
----
 
 # 1. 실시간 통신이란?
 

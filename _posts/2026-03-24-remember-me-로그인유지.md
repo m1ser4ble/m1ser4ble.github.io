@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Remember Me 로그인 유지 완전 가이드"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "HTTP Stateless와 인증의 근본 문제"
+excerpt: "Session Cookie만 사용하던 시대의 사용자 경험 문제: - 매일 아침 이메일 확인 시 매번 로그인 필요 - 개인 PC에서도 브라우저 재시작마다 재인증 - 비밀번호 기억 부담 → 단순..."
 toc: true
 toc_sticky: true
-tags: [backend, remember, me, 로그인, 유지]
+tags: [backend, remember, me]
 source: "/home/dwkim/dwkim/docs/backend/remember-me-로그인유지.md"
 ---
 TL;DR
-- Remember Me 로그인 유지 완전 가이드의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- Session Cookie만 사용하던 시대의 사용자 경험 문제: - 매일 아침 이메일 확인 시 매번 로그인 필요 - 개인 PC에서도 브라우저 재시작마다 재인증 - 비밀번호 기억 부담 → 단순 비밀번호 설정 → 보안 약화 - 잦은 로그인 요구 → 서비스 이탈률 증가 Remember Me = 인증 마찰(Authentication Friction) 제거 관점 Session Login Persistent Login (Remember Me) 사용 편의 매번 재로그인 필요 자동 로그인 보안 위험 기간 브라우저 닫으면 종료 수일~수개월 XSS 피해 규모 Session 종료 후 무력화 장기간 유효 CSRF 위험 상대적으로 낮음 상대적으로 높음 공용 PC 위험 낮음 매우 높음 Token Theft 영향 단기 피해 장기 피해 핵심 규칙: Remember Me는 신뢰할 수 있는 개인 기기에서만 사용하도록 설계해야 한다.
+- - 개인 PC에서도 브라우저 재시작마다 재인증
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Remember Me 로그인 유지 완전 가이드의 핵심 정의와 문제 공간을 간단히 정리한다.
+Session Cookie만 사용하던 시대의 사용자 경험 문제: - 매일 아침 이메일 확인 시 매번 로그인 필요 - 개인 PC에서도 브라우저 재시작마다 재인증 - 비밀번호 기억 부담 → 단순 비밀번호 설정 → 보안 약화 - 잦은 로그인 요구 → 서비스 이탈률 증가 Remember Me = 인증 마찰(Authentication Friction) 제거 관점 Session Login Persistent Login (Remember Me) 사용 편의 매번 재로그인 필요 자동 로그인 보안 위험 기간 브라우저 닫으면 종료 수일~수개월 XSS 피해 규모 Session 종료 후 무력화 장기간 유효 CSRF 위험 상대적으로 낮음 상대적으로 높음 공용 PC 위험 낮음 매우 높음 Token Theft 영향 단기 피해 장기 피해 핵심 규칙: Remember Me는 신뢰할 수 있는 개인 기기에서만 사용하도록 설계해야 한다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+- 매일 아침 이메일 확인 시 매번 로그인 필요
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+- 개인 PC에서도 브라우저 재시작마다 재인증
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+- 비밀번호 기억 부담 → 단순 비밀번호 설정 → 보안 약화
 
 ## 5. 상세 내용
 
 # Remember Me 로그인 유지 완전 가이드
 
-> **작성일**: 2026-03-13
-> **카테고리**: Backend / Authentication / Session Management / Cookie / Token
-> **포함 내용**: Remember Me, Persistent Login, Cookie, Session, JWT, Refresh Token, Series+Token, Token Rotation, HttpOnly, Secure, SameSite, CSRF, XSS, Credential Stuffing, Bearer Token, OAuth 2.0, OIDC, WebAuthn, Passkeys, BFF Pattern, Step-up Authentication, Risk-based Authentication, OWASP, NIST SP 800-63B, GDPR, PCI DSS
 
----
 
 # 1. Remember Me의 등장 배경과 역사
 

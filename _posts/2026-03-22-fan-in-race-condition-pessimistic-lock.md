@@ -1,30 +1,30 @@
 ---
 layout: single
 title: "Fan-In, Race Condition, Pessimistic Lock"
-date: 2026-03-22 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "Fan-In 구간에서 발생하는 Race Condition을 비관적 잠금으로 직렬화해 파이프라인 정합성을 보장하는 방법을 설명한다."
+excerpt: "> 관련 이슈: example-org/example1673 - Dashboard OCR 항목이 terminal 전이 누락 시 계속 처리중으로 보이는 문제 여러 갈래로 나뉘었던 비동기 작업이 하나로 합쳐지는..."
 toc: true
 toc_sticky: true
-tags: [backend, fanin, racecondition, pessimisticlock, concurrency]
+tags: [done, fan, in, race, condition, pessimistic]
 source: "/home/dwkim/dwkim/docs/done/fan-in-race-condition-pessimistic-lock.md"
 ---
 TL;DR
-- Fan-In, Race Condition, Pessimistic Lock의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 이 주제가 필요한지 맥락을 이해할 수 있다.
-- 실무에서 바로 참고할 수 있도록 주요 포인트를 구조화해 정리했다.
+- > 관련 이슈: example-org/example1673 - Dashboard OCR 항목이 terminal 전이 누락 시 계속 처리중으로 보이는 문제 여러 갈래로 나뉘었던 비동기 작업이 하나로 합쳐지는 지점을 말한다.
+- 반대로 하나가 여러 개로 퍼지는 건 Fan-out이라 한다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-여러 갈래로 나뉘었던 비동기 작업이 **하나로 합쳐지는 지점**을 말한다.
+> 관련 이슈: example-org/example1673 - Dashboard OCR 항목이 terminal 전이 누락 시 계속 처리중으로 보이는 문제 여러 갈래로 나뉘었던 비동기 작업이 하나로 합쳐지는 지점을 말한다.
 
 ## 2. 배경
-해당 주제가 필요한 실무 맥락과 기존 접근의 한계를 함께 이해해야 올바른 설계 판단이 가능하다.
+여러 갈래로 나뉘었던 비동기 작업이 하나로 합쳐지는 지점을 말한다.
 
 ## 3. 이유
-문제 재발을 줄이고 운영 안정성을 높이기 위해 개념뿐 아니라 적용 기준과 트레이드오프를 명확히 정리할 필요가 있다.
+반대로 하나가 여러 개로 퍼지는 건 Fan-out이라 한다.
 
 ## 4. 특징
-핵심 용어, 동작 흐름, 구현 포인트, 주의사항을 한 문서에 묶어 빠르게 참고할 수 있다.
+파이프라인이 여러 문서의 OCR를 동시에 요청하고, 모든 문서의 OCR가 끝나야 다음 단계로 넘어간다.
 
 ## 5. 상세 내용
 
@@ -32,7 +32,6 @@ TL;DR
 
 > 관련 이슈: [example-org/example#1673](https://github.com/example-org/example/issues/1673) - Dashboard OCR 항목이 terminal 전이 누락 시 계속 처리중으로 보이는 문제
 
----
 
 ## Fan-In (팬인)
 

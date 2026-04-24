@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Claude Cowork - 에이전트형 데스크톱 AI 도우미"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "\"Claude Desktop 앱 안에서 실제로 업무를 수행해주는"
+excerpt: "Claude Cowork, Claude Code, Claude Desktop, Agent, 에이전트, VM Isolation, VZVirtualMachine, Apple Virtualizati..."
 toc: true
 toc_sticky: true
-tags: [backend, claude, cowork, 에이전트형, 데스크톱]
+tags: [ai, claude, cowork]
 source: "/home/dwkim/dwkim/docs/ai/claude-cowork-에이전트.md"
 ---
 TL;DR
-- Claude Cowork - 에이전트형 데스크톱 AI 도우미의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- Claude Cowork, Claude Code, Claude Desktop, Agent, 에이전트, VM Isolation, VZVirtualMachine, Apple Virtualization Framework, MCP, Plugin, 플러그인, Chrome Connector, 스케줄링, TeammateTool, 서브 에이전트, Bubblewrap, Seccomp, Boris Cherny, OpenClaw, SaaS Disruption, Prompt Injection, 프롬프트 인젝션, vsock, Knowledge Worker, 지식 노동자
+- Claude Cowork - 에이전트형 데스크톱 AI 도우미를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Claude Cowork - 에이전트형 데스크톱 AI 도우미의 핵심 정의와 문제 공간을 간단히 정리한다.
+Claude Cowork, Claude Code, Claude Desktop, Agent, 에이전트, VM Isolation, VZVirtualMachine, Apple Virtualization Framework, MCP, Plugin, 플러그인, Chrome Connector, 스케줄링, TeammateTool, 서브 에이전트, Bubblewrap, Seccomp, Boris Cherny, OpenClaw, SaaS Disruption, Prompt Injection, 프롬프트 인젝션, vsock, Knowledge Worker, 지식 노동자
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+Claude Cowork - 에이전트형 데스크톱 AI 도우미가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+Claude Cowork - 에이전트형 데스크톱 AI 도우미를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+Claude Cowork - 에이전트형 데스크톱 AI 도우미의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # Claude Cowork - 에이전트형 데스크톱 AI 도우미
 
-> **작성일**: 2026-02-26
-> **카테고리**: AI / Agent / Productivity
-> **포함 내용**: Claude Cowork, Claude Code, Agent, VM Isolation, MCP Plugin, Chrome Connector, 스케줄링, 엔터프라이즈 플러그인
 
----
 
 # 1. Claude Cowork이란? (완전 기초부터)
 

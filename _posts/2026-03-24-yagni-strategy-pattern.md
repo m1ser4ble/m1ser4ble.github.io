@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "YAGNI 원칙과 Strategy Pattern"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "YAGNI = \"지금 필요하지 않은 기능은 만들지 마라\""
+excerpt: "YAGNI, You Aren't Gonna Need It, Strategy Pattern, 전략 패턴, OCP, Open-Closed Principle, GoF, 디자인 패턴, 행위 패턴, i..."
 toc: true
 toc_sticky: true
-tags: [backend, yagni, 원칙과, strategy, pattern]
+tags: [backend, yagni, strategy, pattern]
 source: "/home/dwkim/dwkim/docs/backend/yagni-strategy-pattern.md"
 ---
 TL;DR
-- YAGNI 원칙과 Strategy Pattern의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- YAGNI, You Aren't Gonna Need It, Strategy Pattern, 전략 패턴, OCP, Open-Closed Principle, GoF, 디자인 패턴, 행위 패턴, if-else 제거, 런타임 교체, 과잉 설계, Over-Engineering, KISS, DRY, Rule of Three, Composition over Inheritance, Kent Beck, XP
+- YAGNI 원칙과 Strategy Pattern를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-YAGNI 원칙과 Strategy Pattern의 핵심 정의와 문제 공간을 간단히 정리한다.
+YAGNI, You Aren't Gonna Need It, Strategy Pattern, 전략 패턴, OCP, Open-Closed Principle, GoF, 디자인 패턴, 행위 패턴, if-else 제거, 런타임 교체, 과잉 설계, Over-Engineering, KISS, DRY, Rule of Three, Composition over Inheritance, Kent Beck, XP
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+YAGNI 원칙과 Strategy Pattern가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+YAGNI 원칙과 Strategy Pattern를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+YAGNI 원칙과 Strategy Pattern의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # YAGNI 원칙과 Strategy Pattern
 
-> **작성일**: 2026-02-11
-> **카테고리**: Backend / 설계 원칙 / 디자인 패턴
-> **포함 내용**: YAGNI, Strategy Pattern, OCP, 과잉 설계, GoF, 행위 패턴, if-else 제거, 런타임 교체
 
----
 
 # 1. YAGNI (You Aren't Gonna Need It)
 

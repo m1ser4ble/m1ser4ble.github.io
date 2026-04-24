@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Circuit Breaker & Resilience 패턴 완전 가이드"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "연쇄 장애 (Cascading Failure) 시나리오"
+excerpt: "Partial Failure (부분 장애) 란 분산 시스템에서만 존재하는 개념이다."
 toc: true
 toc_sticky: true
-tags: [backend, circuit, breaker, resilience, 패턴]
+tags: [backend, circuit, breaker, resilience]
 source: "/home/dwkim/dwkim/docs/backend/circuit-breaker-resilience-패턴.md"
 ---
 TL;DR
-- Circuit Breaker & Resilience 패턴 완전 가이드의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- Partial Failure (부분 장애) 란 분산 시스템에서만 존재하는 개념이다.
+- 파라미터 기본값 설명
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Circuit Breaker & Resilience 패턴 완전 가이드의 핵심 정의와 문제 공간을 간단히 정리한다.
+Partial Failure (부분 장애) 란 분산 시스템에서만 존재하는 개념이다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+핵심 파라미터:
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+파라미터 기본값 설명
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+failureRateThreshold 50 실패율 임계값 (%) — 이 값 이상이면 OPEN
 
 ## 5. 상세 내용
 
 # Circuit Breaker & Resilience 패턴 완전 가이드
 
-> **작성일**: 2026-03-19
-> **카테고리**: Backend / Distributed Systems / Microservices / Resilience Engineering
-> **키워드**: Circuit Breaker, Resilience4j, Hystrix, Retry, Timeout, Bulkhead, Rate Limiter, Fallback, Graceful Degradation, Cascading Failure, Service Mesh, Istio, Envoy, Chaos Engineering, Polly, Sentinel
 
----
 
 # 1. Circuit Breaker & Resilience 패턴이란?
 

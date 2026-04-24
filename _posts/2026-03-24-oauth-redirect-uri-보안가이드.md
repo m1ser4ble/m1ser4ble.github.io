@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "OAuth Redirect URI 보안 완전 가이드"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: security
-excerpt: "1. [용어 사전](#1-용어-사전)"
+excerpt: "Redirect URI란 무엇인가 3."
 toc: true
 toc_sticky: true
-tags: [security, oauth, redirect, uri, 보안]
+tags: [security, oauth, redirect, uri]
 source: "/home/dwkim/dwkim/docs/security/oauth-redirect-uri-보안가이드.md"
 ---
 TL;DR
-- OAuth Redirect URI 보안 완전 가이드의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- Redirect URI란 무엇인가 3.
+- 3. [의도적 커플링: 왜 서버가 클라이언트 URL을 알아야 하는가](3-의도적-커플링-왜-서버가-클라이언트-url을-알아야-하는가)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-OAuth Redirect URI 보안 완전 가이드의 핵심 정의와 문제 공간을 간단히 정리한다.
+Redirect URI란 무엇인가 3.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+2. [Redirect URI란 무엇인가](2-redirect-uri란-무엇인가)
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+3. [의도적 커플링: 왜 서버가 클라이언트 URL을 알아야 하는가](3-의도적-커플링-왜-서버가-클라이언트-url을-알아야-하는가)
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+4. [Open Redirector 공격](4-open-redirector-공격)
 
 ## 5. 상세 내용
 
 # OAuth Redirect URI 보안 완전 가이드
 
-> **작성일**: 2026-03-05
-> **범위**: Redirect URI 등록 → 의도적 커플링 → Open Redirector 공격 → PKCE → PAR → Dynamic Client Registration → BFF → 환경별 관리 → 대형 서비스 정책
-> **포함 내용**: Redirect URI, Authorization Code, Open Redirector, PKCE, PAR, DCR, BFF, Custom URI Scheme, Universal Links, App Links, Loopback Redirect, Device Authorization Grant, Exact String Matching, Wildcard Bypass, Subdomain Takeover, RFC 6749, RFC 9700, OAuth 2.1, RFC 7636, RFC 9126, RFC 7591, RFC 8252, RFC 8628
 
----
 
 ## 목차
 

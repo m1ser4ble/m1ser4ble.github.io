@@ -1,41 +1,36 @@
 ---
 layout: single
 title: "Harness Engineering (하네스 엔지니어링)"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "= AI 에이전트가 안정적이고 일관되게 작업할 수 있도록"
+excerpt: "> - Harness Engineering - Martin Fowler (Birgitta Böckeler) > - Improving Deep Agents with Harness Engineer..."
 toc: true
 toc_sticky: true
-tags: [backend, harness, engineering, 하네스, 엔지니어링]
+tags: [ai, harness, engineering]
 source: "/home/dwkim/dwkim/docs/ai/harness-engineering.md"
 ---
 TL;DR
-- Harness Engineering (하네스 엔지니어링)의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- > - Harness Engineering - Martin Fowler (Birgitta Böckeler) > - Improving Deep Agents with Harness Engineering - LangChain > - Harness Engineering: Leveraging Codex in an Agent-First World - OpenAI > - OpenAI Introduces Harness Engineering - InfoQ
+- > - [Harness Engineering: Leveraging Codex in an Agent-First World - OpenAI](https://openai.com/index/harness-engineering/)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Harness Engineering (하네스 엔지니어링)의 핵심 정의와 문제 공간을 간단히 정리한다.
+> - Harness Engineering - Martin Fowler (Birgitta Böckeler) > - Improving Deep Agents with Harness Engineering - LangChain > - Harness Engineering: Leveraging Codex in an Agent-First World - OpenAI > - OpenAI Introduces Harness Engineering - InfoQ
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+> - [Improving Deep Agents with Harness Engineering - LangChain](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/)
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+> - [Harness Engineering: Leveraging Codex in an Agent-First World - OpenAI](https://openai.com/index/harness-engineering/)
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+> - [OpenAI Introduces Harness Engineering - InfoQ](https://www.infoq.com/news/2026/02/openai-harness-engineering-codex/)
 
 ## 5. 상세 내용
 
 # Harness Engineering (하네스 엔지니어링)
 
-> **작성일**: 2026-02-20
-> **카테고리**: AI / 에이전트 엔지니어링
-> **포함 내용**: Harness Engineering, Context Engineering, AI Agent, Codex, AGENTS.md, Self-Verification, Loop Detection, Structural Tests, Custom Linters, Entropy Management, Trace Analysis
-> **출처**: [Martin Fowler](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html), [LangChain](https://blog.langchain.com/improving-deep-agents-with-harness-engineering/), [OpenAI](https://openai.com/index/harness-engineering/)
 
----
 
 # 1. 정의
 

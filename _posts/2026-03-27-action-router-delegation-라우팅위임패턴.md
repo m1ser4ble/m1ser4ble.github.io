@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Action Router & Delegation 패턴 완전 가이드"
-date: 2026-03-27 23:01:13 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "Action Router & Delegation 패턴 완전 가이드의 개념과 배경, 도입 이유와 특징을 정리해 실무 적용 판단을 돕는다."
+excerpt: "Action Router는 들어온 요청(Action)을 분석하여 적절한 처리자(Handler)에게 라우팅(경로 결정)하고 위임(실행 전달)하는 아키텍처 패턴이다."
 toc: true
 toc_sticky: true
-tags: [backend, action, router, delegation, 라우팅위임패턴, 패턴]
+tags: [backend, action, router, delegation]
 source: "/home/dwkim/dwkim/docs/backend/action-router-delegation-라우팅위임패턴.md"
 ---
 TL;DR
-- Action Router & Delegation 패턴 완전 가이드의 핵심 개념을 빠르게 파악할 수 있다.
-- 등장 배경과 도입 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 주요 특징과 상세 내용을 바탕으로 적용 시 고려사항을 정리할 수 있다.
+- Action Router는 들어온 요청(Action)을 분석하여 적절한 처리자(Handler)에게 라우팅(경로 결정)하고 위임(실행 전달)하는 아키텍처 패턴이다.
+- Action Router, Delegation, Dispatcher, Front Controller, Command Pattern, Handler, Controller, Middleware, Chain of Responsibility, Strategy Pattern, Proxy Pattern, Decorator Pattern, Mediator Pattern, Template Method, Visitor Pattern, Double Dispatch, Dynamic Dispatch, Service Locator, Dependency Injection, IoC, SOLID, OCP, SRP, DIP, GoF Design Patterns, Smalltalk Message Passing, Self Language, Prototype-based Delegation, Favor Composition over Inheritance, Fowler PoEAA, Application Controller, Page Controller, Hohpe Woolf EIP, Content-Based Router, Dynamic Router, Routing Slip, Process Manager, Hexagonal Architecture, Ports and Adapters, Clean Architecture, Use Case, Dependency Rule, Spring DispatcherServlet, HandlerMapping, HandlerAdapter, ViewResolver, RequestMappingHandlerMapping, @GetMapping, @PostMapping, @PathVariable, @RequestParam, HandlerMethodArgumentResolver, Servlet Filter, HandlerInterceptor, Spring AOP, JDK Dynamic Proxy, CGLIB, Spring Security FilterChain, @EventListener, @TransactionalEventListener, ApplicationEventPublisher, Spring WebFlux, RouterFunction, HandlerFunction, Spring Cloud Gateway, Predicate, GatewayFilter, Express.js, Koa Onion Model, ASP.NET Core Middleware, Ruby on Rails routes.rb, Django urls.py, Redux dispatch reducer, GraphQL Resolver, DataLoader, N+1 Problem, gRPC proto dispatch, Protobuf, HTTP/2, API Gateway, Reverse Proxy, Kong, NGINX, Envoy, Traefik, BFF Pattern, Service Mesh, Istio, VirtualService, DestinationRule, Sidecar Proxy, xDS API, Serverless, AWS Lambda, EventBridge, Step Functions, ALB, Event Source Mapping, AI Agent Routing, ReAct Pattern, LangChain Agent, OpenAI Function Calling, CrewAI, LangGraph, CQRS, Command Handler, Query Handler, Event Sourcing, Domain Event, Pub/Sub, Message Broker, RabbitMQ Exchange, Kafka Consumer, Smart Broker, Smart Consumer, Dead Letter Queue, Backpressure, Fan-out, Fan-in, Reactive Streams, Google GFE, gRPC, Borg BNS, Guice, Dagger, Netflix Zuul 2, Hystrix, Resilience4j, Meta GraphQL, ServiceRouter, Uber DOMA, Cadence, Temporal, LinkedIn Rest.li, Super Blocks, Twitter Finagle, Dtabs, Stripe API Versioning, Version Change Module, Spotify Backstage, Airbnb Viaduct, God Controller, Switch-Case Routing, Deep Inheritance Hierarchy, Fragile Base Class, Circular Delegation, Leaky Abstraction, Over-abstraction, YAGNI, Anemic Domain Model, Middleware Hell, Hidden Control Flow, MDC, Correlation ID, @RestControllerAdvice
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Action Router & Delegation 패턴 완전 가이드의 정의와 문제 공간을 간단히 정리한다.
+Action Router는 들어온 요청(Action)을 분석하여 적절한 처리자(Handler)에게 라우팅(경로 결정)하고 위임(실행 전달)하는 아키텍처 패턴이다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·운영적 배경과 기존 접근의 한계를 설명한다.
+Spring MVC 코드 예시:
 
 ## 3. 이유
-왜 이 방식이 필요한지, 도입 시 기대 효과와 트레이드오프를 정리한다.
+Action Router, Delegation, Dispatcher, Front Controller, Command Pattern, Handler, Controller, Middleware, Chain of Responsibility, Strategy Pattern, Proxy Pattern, Decorator Pattern, Mediator Pattern, Template Method, Visitor Pattern, Double Dispatch, Dynamic Dispatch, Service Locator, Dependency Injection, IoC, SOLID, OCP, SRP, DIP, GoF Design Patterns, Smalltalk Message Passing, Self Language, Prototype-based Delegation, Favor Composition over Inheritance, Fowler PoEAA, Application Controller, Page Controller, Hohpe Woolf EIP, Content-Based Router, Dynamic Router, Routing Slip, Process Manager, Hexagonal Architecture, Ports and Adapters, Clean Architecture, Use Case, Dependency Rule, Spring DispatcherServlet, HandlerMapping, HandlerAdapter, ViewResolver, RequestMappingHandlerMapping, @GetMapping, @PostMapping, @PathVariable, @RequestParam, HandlerMethodArgumentResolver, Servlet Filter, HandlerInterceptor, Spring AOP, JDK Dynamic Proxy, CGLIB, Spring Security FilterChain, @EventListener, @TransactionalEventListener, ApplicationEventPublisher, Spring WebFlux, RouterFunction, HandlerFunction, Spring Cloud Gateway, Predicate, GatewayFilter, Express.js, Koa Onion Model, ASP.NET Core Middleware, Ruby on Rails routes.rb, Django urls.py, Redux dispatch reducer, GraphQL Resolver, DataLoader, N+1 Problem, gRPC proto dispatch, Protobuf, HTTP/2, API Gateway, Reverse Proxy, Kong, NGINX, Envoy, Traefik, BFF Pattern, Service Mesh, Istio, VirtualService, DestinationRule, Sidecar Proxy, xDS API, Serverless, AWS Lambda, EventBridge, Step Functions, ALB, Event Source Mapping, AI Agent Routing, ReAct Pattern, LangChain Agent, OpenAI Function Calling, CrewAI, LangGraph, CQRS, Command Handler, Query Handler, Event Sourcing, Domain Event, Pub/Sub, Message Broker, RabbitMQ Exchange, Kafka Consumer, Smart Broker, Smart Consumer, Dead Letter Queue, Backpressure, Fan-out, Fan-in, Reactive Streams, Google GFE, gRPC, Borg BNS, Guice, Dagger, Netflix Zuul 2, Hystrix, Resilience4j, Meta GraphQL, ServiceRouter, Uber DOMA, Cadence, Temporal, LinkedIn Rest.li, Super Blocks, Twitter Finagle, Dtabs, Stripe API Versioning, Version Change Module, Spotify Backstage, Airbnb Viaduct, God Controller, Switch-Case Routing, Deep Inheritance Hierarchy, Fragile Base Class, Circular Delegation, Leaky Abstraction, Over-abstraction, YAGNI, Anemic Domain Model, Middleware Hell, Hidden Control Flow, MDC, Correlation ID, @RestControllerAdvice
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 요약한다.
+Action Router & Delegation 패턴 완전 가이드의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # Action Router & Delegation 패턴 완전 가이드
 
-> **작성일**: 2026-03-26
-> **카테고리**: Backend / Design Patterns / Architecture / Routing / Delegation
-> **키워드**: Action Router, Delegation, Dispatcher, Front Controller, Command Pattern, Handler, Middleware, Chain of Responsibility, Strategy Pattern, Proxy, Decorator, Mediator, Service Locator, DI, Double Dispatch, Dynamic Dispatch, Event-Driven, Message Broker, Content-Based Router, Routing Slip, API Gateway, GraphQL Resolver, Service Mesh, Serverless, AI Agent Routing, CQRS, DispatcherServlet, Express.js, Redux, gRPC, Envoy, Istio, LangChain, ReAct
 
----
 
 # 1. Action Router & Delegation이란?
 

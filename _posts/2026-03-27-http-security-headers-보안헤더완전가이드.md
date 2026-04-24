@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "HTTP 보안 헤더 완전 가이드 — XSS·클릭재킹·SSL Stripping 방어"
-date: 2026-03-27 23:01:13 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: security
-excerpt: "HTTP 보안 헤더 완전 가이드 — XSS·클릭재킹·SSL Stripping 방어의 개념과 배경, 도입 이유와 특징을 정리해 실무 적용 판단을 돕는다."
+excerpt: "진화 타임라인 (1993-2025) 4."
 toc: true
 toc_sticky: true
-tags: [security, http, headers, 보안헤더완전가이드, 보안, 헤더]
+tags: [security, http, headers, xss, ssl, stripping]
 source: "/home/dwkim/dwkim/docs/security/http-security-headers-보안헤더완전가이드.md"
 ---
 TL;DR
-- HTTP 보안 헤더 완전 가이드 — XSS·클릭재킹·SSL Stripping 방어의 핵심 개념을 빠르게 파악할 수 있다.
-- 등장 배경과 도입 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 주요 특징과 상세 내용을 바탕으로 적용 시 고려사항을 정리할 수 있다.
+- 진화 타임라인 (1993-2025) 4.
+- 3. [진화 타임라인 (1993-2025)](3-진화-타임라인-1993-2025)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-HTTP 보안 헤더 완전 가이드 — XSS·클릭재킹·SSL Stripping 방어의 정의와 문제 공간을 간단히 정리한다.
+진화 타임라인 (1993-2025) 4.
 
 ## 2. 배경
-이 주제가 등장한 기술적·운영적 배경과 기존 접근의 한계를 설명한다.
+2. [왜 보안 헤더가 필요한가?](2-왜-보안-헤더가-필요한가)
 
 ## 3. 이유
-왜 이 방식이 필요한지, 도입 시 기대 효과와 트레이드오프를 정리한다.
+3. [진화 타임라인 (1993-2025)](3-진화-타임라인-1993-2025)
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 요약한다.
+4. [XSS 방어 헤더](4-xss-방어-헤더)
 
 ## 5. 상세 내용
 
 # HTTP 보안 헤더 완전 가이드 — XSS·클릭재킹·SSL Stripping 방어
 
-> **작성일**: 2026-03-26
-> **카테고리**: Security / Web / HTTP Headers / XSS / Clickjacking / CSP / HSTS
-> **포함 내용**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, COOP, COEP, CORP, CORS, SRI, X-XSS-Protection, Clear-Site-Data, Trusted Types, nonce, strict-dynamic, frame-ancestors
 
----
 
 ## 목차
 

@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Jenkins vs GitHub Actions"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: devops
-excerpt: "GitHub에서 제공하는 SaaS형 CI/CD"
+excerpt: "항목 Jenkins GitHub Actions 호스팅 Self-hosted SaaS (+ self-hosted runner) 비용 모델 무료 (인프라 비용) 분당 과금 (무료 티어) 설정 방식..."
 toc: true
 toc_sticky: true
 tags: [devops, jenkins, vs, github, actions]
 source: "/home/dwkim/dwkim/docs/devops/jenkins-vs-github-actions.md"
 ---
 TL;DR
-- Jenkins vs GitHub Actions의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- 항목 Jenkins GitHub Actions 호스팅 Self-hosted SaaS (+ self-hosted runner) 비용 모델 무료 (인프라 비용) 분당 과금 (무료 티어) 설정 방식 Groovy / UI YAML 학습 곡선 높음 낮음 유연성 매우 높음 중간 플러그인/확장 2000+ 플러그인 Marketplace Actions 관리 부담 높음 (직접 운영) 낮음 (GitHub 관리) 보안 통제 완전 통제 제한적 GitHub 통합 플러그인 필요 네이티브 멀티 저장소 모두 지원 GitHub 전용 스케일링 직접 관리 자동 (SaaS) 상황 추천 스타트업, 오픈소스 GitHub Actions 금융권, 공공기관 Jenkins 소규모 팀, 빠른 시작 GitHub Actions 대규모, 빌드 많음 Jenkins (비용) 복잡한 파이프라인 Jenkins 표준 CI/CD GitHub Actions GitLab/Bitbucket 사용 Jenkins 망분리 환경 Jenkins DevOps 인력 부족 GitHub Actions 레거시 시스템 연동 Jenkins Jenkins, GitHub Actions, CI/CD, Self-hosted, SaaS, 파이프라인, Groovy, YAML, 보안 규제, 망분리, 온프레미스, DevOps, 빌드 자동화
+- 비용 모델 무료 (인프라 비용) 분당 과금 (무료 티어)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Jenkins vs GitHub Actions의 핵심 정의와 문제 공간을 간단히 정리한다.
+항목 Jenkins GitHub Actions 호스팅 Self-hosted SaaS (+ self-hosted runner) 비용 모델 무료 (인프라 비용) 분당 과금 (무료 티어) 설정 방식 Groovy / UI YAML 학습 곡선 높음 낮음 유연성 매우 높음 중간 플러그인/확장 2000+ 플러그인 Marketplace Actions 관리 부담 높음 (직접 운영) 낮음 (GitHub 관리) 보안 통제 완전 통제 제한적 GitHub 통합 플러그인 필요 네이티브 멀티 저장소 모두 지원 GitHub 전용 스케일링 직접 관리 자동 (SaaS) 상황 추천 스타트업, 오픈소스 GitHub Actions 금융권, 공공기관 Jenkins 소규모 팀, 빠른 시작 GitHub Actions 대규모, 빌드 많음 Jenkins (비용) 복잡한 파이프라인 Jenkins 표준 CI/CD GitHub Actions GitLab/Bitbucket 사용 Jenkins 망분리 환경 Jenkins DevOps 인력 부족 GitHub Actions 레거시 시스템 연동 Jenkins Jenkins, GitHub Actions, CI/CD, Self-hosted, SaaS, 파이프라인, Groovy, YAML, 보안 규제, 망분리, 온프레미스, DevOps, 빌드 자동화
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+호스팅 Self-hosted SaaS (+ self-hosted runner)
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+비용 모델 무료 (인프라 비용) 분당 과금 (무료 티어)
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+설정 방식 Groovy / UI YAML
 
 ## 5. 상세 내용
 
 # Jenkins vs GitHub Actions
 
-> **작성일**: 2026-02-09
-> **카테고리**: DevOps / CI/CD
-> **포함 내용**: Jenkins, GitHub Actions, CI/CD, Self-hosted, 파이프라인, 보안 규제, 비용 비교
 
----
 
 # 1. 핵심 차이
 

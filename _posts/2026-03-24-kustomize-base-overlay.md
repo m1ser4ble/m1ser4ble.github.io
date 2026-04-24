@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Kustomize Base/Overlay 패턴"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: infra
-excerpt: "Kustomize = Kubernetes 공식 설정 커스터마이징 도구"
+excerpt: "항목 Kustomize Helm 핵심 추상화 Overlay / Patch 패키지 매니저 + 템플릿 설정 언어 순수 YAML + 패치 Go 템플릿 + values.yaml kubectl 통합 네..."
 toc: true
 toc_sticky: true
-tags: [infra, kustomize, base, overlay, 패턴]
+tags: [infra, kustomize, base, overlay]
 source: "/home/dwkim/dwkim/docs/infra/kustomize-base-overlay.md"
 ---
 TL;DR
-- Kustomize Base/Overlay 패턴의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- 항목 Kustomize Helm 핵심 추상화 Overlay / Patch 패키지 매니저 + 템플릿 설정 언어 순수 YAML + 패치 Go 템플릿 + values.yaml kubectl 통합 네이티브 내장 별도 바이너리 버전 관리/패키징 없음 (Git 위임) SemVer Chart 롤백 없음 (Git 위임) 네이티브 지원 에코시스템 없음 Artifact Hub 10,000+ Charts GitOps 적합성 최적 렌더링 별도 필요 학습 곡선 낮음 높음 실제 조합 예시: Kustomize, Base/Overlay, kubectl apply -k, Strategic Merge Patch, JSON 6902, Helm, GitOps, ArgoCD, Flux CD, Component, SIG-CLI, kustomization.yaml, Kubernetes, 환경별 설정, 패치 기반 커스터마이징
+- 설정 언어 순수 YAML + 패치 Go 템플릿 + values.yaml
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Kustomize Base/Overlay 패턴의 핵심 정의와 문제 공간을 간단히 정리한다.
+항목 Kustomize Helm 핵심 추상화 Overlay / Patch 패키지 매니저 + 템플릿 설정 언어 순수 YAML + 패치 Go 템플릿 + values.yaml kubectl 통합 네이티브 내장 별도 바이너리 버전 관리/패키징 없음 (Git 위임) SemVer Chart 롤백 없음 (Git 위임) 네이티브 지원 에코시스템 없음 Artifact Hub 10,000+ Charts GitOps 적합성 최적 렌더링 별도 필요 학습 곡선 낮음 높음 실제 조합 예시: Kustomize, Base/Overlay, kubectl apply -k, Strategic Merge Patch, JSON 6902, Helm, GitOps, ArgoCD, Flux CD, Component, SIG-CLI, kustomization.yaml, Kubernetes, 환경별 설정, 패치 기반 커스터마이징
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+핵심 추상화 Overlay / Patch 패키지 매니저 + 템플릿
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+설정 언어 순수 YAML + 패치 Go 템플릿 + values.yaml
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+kubectl 통합 네이티브 내장 별도 바이너리
 
 ## 5. 상세 내용
 
 # Kustomize Base/Overlay 패턴
 
-> **작성일**: 2026-02-24
-> **카테고리**: Infra / Kubernetes / Kustomize
-> **포함 내용**: Kustomize, Base/Overlay, kubectl apply -k, Strategic Merge Patch, JSON 6902, Helm 비교, GitOps, Component, SIG-CLI, kustomization.yaml, 환경별 설정
 
----
 
 # 1. 핵심 개념
 

@@ -1,41 +1,36 @@
 ---
 layout: single
 title: "KEDA ScaledObject — 이벤트 기반 오토스케일링"
-date: 2026-03-03 23:00:00 +0900
-categories: infra
-tags: [infra, network, web, proxy]
-excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+date: 2026-04-24 23:00:00 +0900
+categories: cloud
+excerpt: "KEDA 탄생 배경과 CNCF 여정 3."
+toc: true
+toc_sticky: true
+tags: [cloud, keda, scaledobject]
 source: "/home/dwkim/dwkim/docs/cloud/keda-scaledobject-이벤트기반오토스케일링.md"
-
-
 ---
+TL;DR
+- KEDA 탄생 배경과 CNCF 여정 3.
+- 3. [아키텍처 — KEDA는 HPA를 대체하지 않는다](3-아키텍처--keda는-hpa를-대체하지-않는다)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
-**TL;DR**
-- KEDA
-- ScaledObject
-- ScaledJob
+## 1. 개념
+KEDA 탄생 배경과 CNCF 여정 3.
 
-## 1. Concept
-KEDA ScaledObject — 이벤트 기반 오토스케일링의 핵심 개념과 범위를 간단히 정의하고, 왜 이 문서가 필요한지 요점을 잡습니다.
+## 2. 배경
+2. [KEDA 탄생 배경과 CNCF 여정](2-keda-탄생-배경과-cncf-여정)
 
-## 2. Background
-이 주제가 등장하게 된 배경과 문제 상황, 기술적 맥락을 짚습니다.
+## 3. 이유
+3. [아키텍처 — KEDA는 HPA를 대체하지 않는다](3-아키텍처--keda는-hpa를-대체하지-않는다)
 
-## 3. Reason
-왜 이 접근이 필요한지, 기존 대안의 한계나 목표를 설명합니다.
+## 4. 특징
+4. [ScaledObject CRD 완전 해부](4-scaledobject-crd-완전-해부)
 
-## 4. Features
-문서에서 다루는 주요 구성요소와 실전 적용 포인트를 정리합니다.
-
-## 5. Detailed Notes
+## 5. 상세 내용
 
 # KEDA ScaledObject — 이벤트 기반 오토스케일링
 
-> **작성일**: 2026-03-03
-> **카테고리**: Cloud / Kubernetes / Autoscaling
-> **포함 내용**: KEDA, ScaledObject, ScaledJob, HPA, Event-Driven Autoscaling, Scale-to-Zero, TriggerAuthentication, Kafka Scaler, SQS Scaler, Prometheus Scaler, Cron Scaler, CNCF Graduated
 
----
 
 ## 목차
 
@@ -2132,4 +2127,3 @@ K8s 버전 업그레이드 시 KEDA도 호환 버전으로 업그레이드해야
 `Consumer Group Lag` `Queue Depth` `Custom Metrics`
 `Karpenter` `Cluster Autoscaler` `Spot Instance`
 `Graceful Shutdown` `Admission Webhook` `Metrics API Aggregation`
-

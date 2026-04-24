@@ -1,45 +1,41 @@
 ---
 layout: single
 title: "OAuth 2.0과 Keycloak"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 **OAuth 2.0**과 **OpenID Connect(OIDC)**, 그리고 이를 구현한 오픈소스 IAM 솔루션 **Keycloak**에 대해 상세히 설명합니다."
+excerpt: "이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 OAuth 2.0과 OpenID Connect(OIDC), 그리고 이를 구현한 오픈소스 IAM 솔루션 Keycloak에 대해 상세..."
 toc: true
 toc_sticky: true
-tags: [backend, oauth, 0과, keycloak]
+tags: [backend, oauth2, keycloak, oauth, 2, 0]
 source: "/home/dwkim/dwkim/docs/backend/oauth2-keycloak.md"
 ---
 TL;DR
-- OAuth 2.0과 Keycloak의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- 이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 OAuth 2.0과 OpenID Connect(OIDC), 그리고 이를 구현한 오픈소스 IAM 솔루션 Keycloak에 대해 상세히 설명합니다.
+- - OAuth 2.0 RFC 6749: https://datatracker.ietf.org/doc/html/rfc6749
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-OAuth 2.0과 Keycloak의 핵심 정의와 문제 공간을 간단히 정리한다.
+이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 OAuth 2.0과 OpenID Connect(OIDC), 그리고 이를 구현한 오픈소스 IAM 솔루션 Keycloak에 대해 상세히 설명합니다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+가장 일반적이고 안전한 흐름입니다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+- OAuth 2.0 RFC 6749: https://datatracker.ietf.org/doc/html/rfc6749
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+- OpenID Connect 명세: https://openid.net/specs/openid-connect-core-1_0.html
 
 ## 5. 상세 내용
 
 # OAuth 2.0과 Keycloak
 
-> **작성일**: 2026-02-02
-> **키워드**: OAuth 2.0, OpenID Connect, OIDC, Keycloak, SSO, JWT, Access Token, Refresh Token, Authorization Server, IAM, 인증, 인가
 
----
 
 ## 개요
 
 이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 **OAuth 2.0**과 **OpenID Connect(OIDC)**, 그리고 이를 구현한 오픈소스 IAM 솔루션 **Keycloak**에 대해 상세히 설명합니다.
 
----
 
 ## 1. 배경: 왜 인증/인가가 복잡해졌나?
 

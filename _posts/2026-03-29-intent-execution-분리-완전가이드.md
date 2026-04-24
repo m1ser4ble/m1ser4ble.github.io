@@ -1,39 +1,37 @@
 ---
 layout: single
 title: "Intent와 Execution의 분리 완전 가이드"
-date: 2026-03-29 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "Intent와 Execution 분리는 무엇과 방법을 분리해 이식성, 테스트 용이성, 확장성을 높이는 설계 원리다."
+excerpt: "> 코드 한 줄부터 OS 커널, 클라우드 인프라, AI 에이전트까지 모든 추상화 수준에서 반복적으로 재발견된 근본 원리."
 toc: true
 toc_sticky: true
-tags: [backend, architecture, intent, execution, design]
+tags: [backend, intent, execution]
 source: "/home/dwkim/dwkim/docs/backend/intent-execution-분리-완전가이드.md"
 ---
 TL;DR
-- Intent와 Execution을 분리하면 변경 영향도를 낮추고 시스템 진화를 쉽게 만든다.
-- SQL, Kubernetes, React, CQRS 등 서로 다른 기술이 같은 원리를 반복적으로 구현한다.
-- 멱등성, 계약(Contract), Reconciliation, 관측성(Observability)이 실무 품질을 좌우한다.
+- > 코드 한 줄부터 OS 커널, 클라우드 인프라, AI 에이전트까지 모든 추상화 수준에서 반복적으로 재발견된 근본 원리.
+- 2. [용어 사전 (Terminology)](2-용어-사전-terminology)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Intent와 Execution 분리는 “무엇을 달성할지(What)”와 “어떻게 수행할지(How)”를 분리하는 설계 원리다.
+> 코드 한 줄부터 OS 커널, 클라우드 인프라, AI 에이전트까지 모든 추상화 수준에서 반복적으로 재발견된 근본 원리.
 
 ## 2. 배경
-하드웨어/플랫폼 종속 코드의 유지보수 한계, 자동 최적화 불가, 대규모 시스템 복잡도 폭증이 이 분리 원리를 확산시켰다.
+1. [개요](1-개요)
 
 ## 3. 이유
-분리를 통해 이식성·교체 가능성·테스트 용이성·감사 가능성·확장성을 확보하고 실행 계층의 자동 최적화를 허용할 수 있다.
+2. [용어 사전 (Terminology)](2-용어-사전-terminology)
 
 ## 4. 특징
-선언적 표현, 명시적 계약, 핸들러/컨트롤러 기반 실행, 멱등성, 피드백 루프, 상태 비교(Reconciliation)가 핵심 특징이다.
+3. [등장 배경과 이유](3-등장-배경과-이유)
 
 ## 5. 상세 내용
 
 # Intent와 Execution의 분리 완전 가이드
 
-> **"무엇을 원하는가(What)"와 "어떻게 달성하는가(How)"의 분리.**
 > 코드 한 줄부터 OS 커널, 클라우드 인프라, AI 에이전트까지 모든 추상화 수준에서 반복적으로 재발견된 근본 원리.
 
----
 
 ## 목차
 
@@ -4145,4 +4143,3 @@ report = reconciler.reconcile(server, desired)
 ---
 
 > **이 문서의 핵심 메시지**: Intent와 Execution의 분리는 특정 기술이나 패턴이 아니라, 인간이 복잡한 시스템을 다루기 위해 반복적으로 재발견하는 **보편적 원리**이다. SQL에서든, Kubernetes에서든, AI Agent에서든, 법률에서든, 군사에서든 — 형태는 다르지만 구조는 동일하다. "무엇을 원하는가"를 명확히 선언하고, "어떻게 달성하는가"를 독립적으로 진화시킬 수 있는 시스템이 장기적으로 생존한다.
-

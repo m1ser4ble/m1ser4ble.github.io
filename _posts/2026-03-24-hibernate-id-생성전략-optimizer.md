@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Hibernate ID 생성 전략과 Sequence Optimizer"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "모든 DB 테이블의 행(row)은 고유한 식별자(PK)가 필요하다"
+excerpt: "Hibernate ID 생성 전략과 Sequence Optimizer의 핵심 개념과 실무 적용 포인트를 함께 정리한 글이다."
 toc: true
 toc_sticky: true
-tags: [backend, hibernate, id, 생성, 전략과]
+tags: [backend, hibernate, id, optimizer, sequence]
 source: "/home/dwkim/dwkim/docs/backend/hibernate-id-생성전략-optimizer.md"
 ---
 TL;DR
-- Hibernate ID 생성 전략과 Sequence Optimizer의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- Hibernate ID 생성 전략과 Sequence Optimizer의 핵심 개념과 실무 적용 포인트를 함께 정리한 글이다.
+- Hibernate ID 생성 전략과 Sequence Optimizer를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Hibernate ID 생성 전략과 Sequence Optimizer의 핵심 정의와 문제 공간을 간단히 정리한다.
+Hibernate ID 생성 전략과 Sequence Optimizer의 핵심 개념과 실무 적용 포인트를 함께 정리한 글이다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+Hibernate ID 생성 전략과 Sequence Optimizer가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+Hibernate ID 생성 전략과 Sequence Optimizer를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+Hibernate ID 생성 전략과 Sequence Optimizer의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # Hibernate ID 생성 전략과 Sequence Optimizer
 
-> **작성일**: 2026-03-03
-> **카테고리**: Backend / Java / JPA / Hibernate
-> **포함 내용**: GenerationType, IDENTITY, SEQUENCE, TABLE, allocationSize, Hi/Lo, Pooled, Pooled-Lo, SequenceStyleGenerator, Hibernate 6 마이그레이션, JDBC Batch, INCREMENT BY, new_generator_mappings, UUID v7, TSID, Snowflake ID, 분산 ID 생성
 
----
 
 # 1. ID 생성 전략이란?
 

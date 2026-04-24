@@ -1,38 +1,36 @@
 ---
 layout: single
-title: "TOCTOU Gap(Time-of-Check-to-Time-of-Use) 완전 가이드"
-date: 2026-04-02 23:00:00 +0900
+title: "TOCTOU Gap - Time-of-Check-to-Time-of-Use Race Condition 완전 가이드"
+date: 2026-04-24 23:00:00 +0900
 categories: security
-excerpt: TOCTOU 갭은 확인과 사용 사이의 시간차에서 발생하는 레이스 컨디션으로, 원자적 연산과 락·트랜잭션으로 위험을 줄이는 보안 취약점을 정리한다.
+excerpt: "용어 사전 (Terminology) 3."
 toc: true
 toc_sticky: true
-tags: [security, toctou, race, concurrency, filesystem, mitigation]
+tags: [security, toctou, gap, time, of, check]
 source: "/home/dwkim/dwkim/docs/security/toctou-gap-완전가이드.md"
 ---
 TL;DR
-- TOCTOU는 리소스 상태를 확인한 시점과 사용하는 시점 사이의 갭에서 발생하는 레이스 컨디션으로, 파일 시스템부터 분산 시스템까지 전 영역에 존재한다.
-- Check-Then-Act 패턴이 구조적으로 취약하며, 원자적 연산(예: O_CREAT|O_EXCL), 트랜잭션, 락/버전 검증으로 갭을 제거하거나 축소해야 한다.
-- 취약 창을 인지하고 설계·코드·운영(모니터링/탐지)까지 일관된 방어 전략을 적용하는 것이 핵심이다.
+- 용어 사전 (Terminology) 3.
+- 3. [등장 배경과 이유](3-등장-배경과-이유)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-TOCTOU(Time-of-Check-to-Time-of-Use) 갭은 리소스 상태를 확인한 후 실제로 사용하는 사이에 시간이 벌어지면서 상태가 바뀌는 레이스 컨디션을 말한다. 이 갭은 체크 결과의 유효성을 무너뜨려 보안 취약점, 데이터 무결성 붕괴, 권한 상승으로 이어질 수 있다.
+용어 사전 (Terminology) 3.
 
 ## 2. 배경
-멀티프로세스/멀티스레드, 분산 시스템, 네트워크 지연 등으로 인해 “확인 후 사용” 흐름은 본질적으로 분리된다. OS와 API가 비원자적으로 설계된 영역(파일 시스템, 데이터베이스, IPC)에서는 TOCTOU가 쉽게 발생한다.
+2. [용어 사전 (Terminology)](2-용어-사전-terminology)
 
 ## 3. 이유
-Check-Then-Act는 인간에게 자연스러운 코드 패턴이지만, 동시성 환경에서는 상태 불변성·원자성·독점성을 보장하지 못한다. 따라서 이 패턴이 남아 있는 곳마다 갭이 생기고 공격 또는 충돌의 창이 열리게 된다.
+3. [등장 배경과 이유](3-등장-배경과-이유)
 
 ## 4. 특징
-TOCTOU는 표면적으로는 단순한 레이스처럼 보이지만, 실제로는 권한 상승, 데이터 손상, 분산 환경의 중복 실행 같은 심각한 문제를 만든다. 파일 시스템, DB 트랜잭션, 스마트 컨트랙트 등 다양한 영역에 동일한 원인이 반복적으로 나타난다는 점이 핵심 특징이다.
+4. [역사적 기원](4-역사적-기원)
 
 ## 5. 상세 내용
 
 # TOCTOU Gap - Time-of-Check-to-Time-of-Use Race Condition 완전 가이드
 
-> **한 줄 요약:** TOCTOU(Time-of-Check-to-Time-of-Use)는 리소스 상태를 확인(Check)한 시점과 사용(Use)하는 시점 사이의 시간 간격(Gap)에서 발생하는 race condition으로, 파일 시스템부터 분산 시스템, 스마트 컨트랙트까지 모든 동시성 환경에서 나타나는 근본적 보안 취약점이다.
 
----
 
 ## 목차
 

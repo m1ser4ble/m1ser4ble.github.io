@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "SonarQube - 코드 품질 관리 플랫폼"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: devops
-excerpt: "SonarQube = 코드 품질 및 보안 분석 플랫폼"
+excerpt: "SonarQube, SonarCloud, SonarLint, 정적 분석, Static Analysis, 코드 스멜, Code Smell, Quality Gate, 기술 부채, Technical..."
 toc: true
 toc_sticky: true
-tags: [devops, sonarqube, 코드, 품질, 관리]
+tags: [devops, sonarqube]
 source: "/home/dwkim/dwkim/docs/devops/sonarqube-코드품질.md"
 ---
 TL;DR
-- SonarQube - 코드 품질 관리 플랫폼의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- SonarQube, SonarCloud, SonarLint, 정적 분석, Static Analysis, 코드 스멜, Code Smell, Quality Gate, 기술 부채, Technical Debt, 코드 품질, SAST, 코드 커버리지
+- SonarQube - 코드 품질 관리 플랫폼를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-SonarQube - 코드 품질 관리 플랫폼의 핵심 정의와 문제 공간을 간단히 정리한다.
+SonarQube, SonarCloud, SonarLint, 정적 분석, Static Analysis, 코드 스멜, Code Smell, Quality Gate, 기술 부채, Technical Debt, 코드 품질, SAST, 코드 커버리지
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+SonarQube - 코드 품질 관리 플랫폼가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+SonarQube - 코드 품질 관리 플랫폼를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+SonarQube - 코드 품질 관리 플랫폼의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # SonarQube - 코드 품질 관리 플랫폼
 
-> **작성일**: 2026-01-30
-> **카테고리**: DevOps / Code Quality / Static Analysis
-> **포함 내용**: SonarQube, 정적 분석, 코드 스멜, Quality Gate, SonarLint, 기술 부채
 
----
 
 # 1. SonarQube란?
 

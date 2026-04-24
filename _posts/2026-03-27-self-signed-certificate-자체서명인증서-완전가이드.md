@@ -1,38 +1,36 @@
 ---
 layout: single
 title: "Self-Signed Certificate 자체 서명 인증서 완전 가이드"
-date: 2026-03-27 23:01:13 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: security
-excerpt: "Self-Signed Certificate 자체 서명 인증서 완전 가이드의 개념과 배경, 도입 이유와 특징을 정리해 실무 적용 판단을 돕는다."
+excerpt: "용어 사전 (Terminology) 3."
 toc: true
 toc_sticky: true
-tags: [security, self, signed, certificate, 자체서명인증서, 완전가이드]
+tags: [security, self, signed, certificate]
 source: "/home/dwkim/dwkim/docs/security/self-signed-certificate-자체서명인증서-완전가이드.md"
 ---
 TL;DR
-- Self-Signed Certificate 자체 서명 인증서 완전 가이드의 핵심 개념을 빠르게 파악할 수 있다.
-- 등장 배경과 도입 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 주요 특징과 상세 내용을 바탕으로 적용 시 고려사항을 정리할 수 있다.
+- 용어 사전 (Terminology) 3.
+- 3. [등장 배경과 이유](3-등장-배경과-이유)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Self-Signed Certificate 자체 서명 인증서 완전 가이드의 정의와 문제 공간을 간단히 정리한다.
+용어 사전 (Terminology) 3.
 
 ## 2. 배경
-이 주제가 등장한 기술적·운영적 배경과 기존 접근의 한계를 설명한다.
+2. [용어 사전 (Terminology)](2-용어-사전-terminology)
 
 ## 3. 이유
-왜 이 방식이 필요한지, 도입 시 기대 효과와 트레이드오프를 정리한다.
+3. [등장 배경과 이유](3-등장-배경과-이유)
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 요약한다.
+4. [역사적 기원](4-역사적-기원)
 
 ## 5. 상세 내용
 
 # Self-Signed Certificate 자체 서명 인증서 완전 가이드
 
-> **한 줄 요약:** Self-signed 인증서는 제3자 CA 없이 스스로 서명한 인증서로, 개발/테스트 환경에서 유용하지만 프로덕션에서는 내부 CA 또는 Let's Encrypt 등 자동화된 PKI 체계로 대체해야 한다.
 
----
 
 ## 목차
 

@@ -1,45 +1,41 @@
 ---
 layout: single
 title: "Hibernate와 Soft Delete"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "이 문서에서는 Java/Kotlin 진영의 대표적인 ORM 프레임워크인 **Hibernate**의 탄생 배경과 핵심 개념, 그리고 데이터 삭제 전략인 **Soft Delete**의 필요성과 구현 방법을 상세히 설명합니다."
+excerpt: "이 문서에서는 Java/Kotlin 진영의 대표적인 ORM 프레임워크인 Hibernate의 탄생 배경과 핵심 개념, 그리고 데이터 삭제 전략인 Soft Delete의 필요성과 구현 방법을 상세..."
 toc: true
 toc_sticky: true
-tags: [backend, hibernate와, soft, delete]
+tags: [backend, hibernate, soft, delete]
 source: "/home/dwkim/dwkim/docs/backend/hibernate-soft-delete.md"
 ---
 TL;DR
-- Hibernate와 Soft Delete의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- 이 문서에서는 Java/Kotlin 진영의 대표적인 ORM 프레임워크인 Hibernate의 탄생 배경과 핵심 개념, 그리고 데이터 삭제 전략인 Soft Delete의 필요성과 구현 방법을 상세히 설명합니다.
+- 1️⃣ 상속 표현 문제
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Hibernate와 Soft Delete의 핵심 정의와 문제 공간을 간단히 정리한다.
+이 문서에서는 Java/Kotlin 진영의 대표적인 ORM 프레임워크인 Hibernate의 탄생 배경과 핵심 개념, 그리고 데이터 삭제 전략인 Soft Delete의 필요성과 구현 방법을 상세히 설명합니다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+2000년대 초반 Java 개발자들은 심각한 문제에 직면했습니다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+1️⃣ 상속 표현 문제
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+2️⃣ 관계 표현 문제
 
 ## 5. 상세 내용
 
 # Hibernate와 Soft Delete
 
-> **작성일**: 2026-02-02
-> **키워드**: Hibernate, ORM, JPA, Soft Delete, Hard Delete, @SQLDelete, @SQLRestriction, @SoftDelete, 논리적 삭제, Gavin King
 
----
 
 ## 개요
 
 이 문서에서는 Java/Kotlin 진영의 대표적인 ORM 프레임워크인 **Hibernate**의 탄생 배경과 핵심 개념, 그리고 데이터 삭제 전략인 **Soft Delete**의 필요성과 구현 방법을 상세히 설명합니다.
 
----
 
 ## 1. Hibernate란 무엇인가?
 

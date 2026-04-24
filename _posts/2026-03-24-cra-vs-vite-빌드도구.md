@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "CRA vs Vite - React 빌드 도구의 세대 교체"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: frontend
-excerpt: "Create React App (CRA)"
+excerpt: "CRA, Create React App, Vite, webpack, esbuild, Rollup, Rolldown, Dan Abramov, Evan You, JavaScript Fatigue,..."
 toc: true
 toc_sticky: true
 tags: [frontend, cra, vs, vite, react]
 source: "/home/dwkim/dwkim/docs/frontend/cra-vs-vite-빌드도구.md"
 ---
 TL;DR
-- CRA vs Vite - React 빌드 도구의 세대 교체의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- CRA, Create React App, Vite, webpack, esbuild, Rollup, Rolldown, Dan Abramov, Evan You, JavaScript Fatigue, ESM, ES Modules, HMR, Hot Module Replacement, react-scripts, eject, Turbopack, VoidZero, State of JS, 번들러, 빌드 도구, 프론트엔드 도구체인
+- CRA vs Vite - React 빌드 도구의 세대 교체를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-CRA vs Vite - React 빌드 도구의 세대 교체의 핵심 정의와 문제 공간을 간단히 정리한다.
+CRA, Create React App, Vite, webpack, esbuild, Rollup, Rolldown, Dan Abramov, Evan You, JavaScript Fatigue, ESM, ES Modules, HMR, Hot Module Replacement, react-scripts, eject, Turbopack, VoidZero, State of JS, 번들러, 빌드 도구, 프론트엔드 도구체인
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+CRA vs Vite - React 빌드 도구의 세대 교체가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+CRA vs Vite - React 빌드 도구의 세대 교체를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+CRA vs Vite - React 빌드 도구의 세대 교체의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # CRA vs Vite - React 빌드 도구의 세대 교체
 
-> **작성일**: 2026-02-27
-> **카테고리**: Frontend / Build Tools
-> **포함 내용**: CRA, Create React App, Vite, webpack, esbuild, Rollup, Rolldown, ESM, HMR, Dan Abramov, Evan You, react-scripts, eject, Turbopack, 번들러, 빌드 도구
 
----
 
 # 1. CRA란 무엇인가?
 

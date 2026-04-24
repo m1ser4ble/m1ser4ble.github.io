@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Asynchronous Request-Reply와 Server-Side Orchestration 완전 가이드"
-date: 2026-03-12 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "Asynchronous Request-Reply와 서버사이드 오케스트레이션은 장기 실행 작업을 안정적으로 처리하고 분산 트랜잭션 복잡도를 줄이는 설계 방법이다."
+excerpt: "용어 풀네임 어원 / 유래 최초 등장 Asynchronous a- + syn + chronos 그리스어."
 toc: true
 toc_sticky: true
-tags: [asynchronous, requestreply, orchestration, saga, workflow, temporal]
+tags: [backend, async, request, reply, asynchronous, server]
 source: "/home/dwkim/dwkim/docs/backend/async-request-reply-서버사이드-오케스트레이션.md"
 ---
 TL;DR
-- Asynchronous Request-Reply와 서버사이드 오케스트레이션은 접수와 실행을 분리해 장기 작업을 비동기로 처리하고 중앙에서 흐름을 조율하는 아키텍처 패턴이다.
-- 대규모 분산 시스템에서 가용성과 복구 가능성, 감사 가능성을 동시에 확보하려면 워크플로 기반 오케스트레이션과 Saga 패턴이 필요하다.
-- HTTP 202 패턴, Polling/SSE/Webhook 선택지, Saga 보상 트랜잭션, Workflow Engine(Temporal/Step Functions 등) 비교와 운영 베스트 프랙티스를 함께 다룬다.
+- 용어 풀네임 어원 / 유래 최초 등장 Asynchronous a- + syn + chronos 그리스어.
+- Reply vs Response Request-Reply Pattern EIP(Enterprise Integration Patterns, 2003)에서 의도적 구분. Response = HTTP 동기 응답, Reply = 별도 채널로 돌아오는 비동기 메시지. Reply channel은 point-to-point로 requestor에게만 반환 2003
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Asynchronous Request-Reply와 서버사이드 오케스트레이션은 접수와 실행을 분리해 장기 작업을 비동기로 처리하고 중앙에서 흐름을 조율하는 아키텍처 패턴이다.
+용어 풀네임 어원 / 유래 최초 등장 Asynchronous a- + syn + chronos 그리스어.
 
 ## 2. 배경
-동기 HTTP의 타임아웃, 모바일 연결 불안정, 서비스 체인 지연 누적 문제를 해결하기 위해 비동기 처리와 오케스트레이션이 표준처럼 채택되었다.
+Asynchronous a- + syn + chronos 그리스어. a-(not) + syn(together) + chronos(time) = "동시에 일어나지 않는". 1735년 최초 기록 1735
 
 ## 3. 이유
-대규모 분산 시스템에서 가용성과 복구 가능성, 감사 가능성을 동시에 확보하려면 워크플로 기반 오케스트레이션과 Saga 패턴이 필요하다.
+Reply vs Response Request-Reply Pattern EIP(Enterprise Integration Patterns, 2003)에서 의도적 구분. Response = HTTP 동기 응답, Reply = 별도 채널로 돌아오는 비동기 메시지. Reply channel은 point-to-point로 requestor에게만 반환 2003
 
 ## 4. 특징
-HTTP 202 패턴, Polling/SSE/Webhook 선택지, Saga 보상 트랜잭션, Workflow Engine(Temporal/Step Functions 등) 비교와 운영 베스트 프랙티스를 함께 다룬다.
+Orchestration Orchestra + -ation 고대 그리스어 orchesthai("to dance"). 오케스트라 지휘자가 각 악기에 지시하듯 중앙 조정자가 서비스를 조율. 음악 용어 1840년, 은유적 용법 1883년. SOA 공식 사용 2002년 BPEL부터 1840 / 2002
 
 ## 5. 상세 내용
 
 # Asynchronous Request-Reply와 Server-Side Orchestration 완전 가이드
 
-> **작성일**: 2026-03-12
-> **카테고리**: Backend / Distributed Systems / Async Patterns
-> **키워드**: Asynchronous Request-Reply, HTTP 202, Polling, Webhook, Orchestration, Choreography, Saga, Temporal, Step Functions, Durable Functions, Conductor, Camunda, Event Sourcing, CQRS, BFF, Circuit Breaker, Idempotency, Workflow Engine
 
----
 
 # 1. Asynchronous Request-Reply란?
 

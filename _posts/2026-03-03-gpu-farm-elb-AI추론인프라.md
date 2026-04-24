@@ -1,41 +1,36 @@
 ---
 layout: single
 title: "GPU Farm과 ELB: AI 추론 인프라 아키텍처"
-date: 2026-03-03 23:00:00 +0900
-categories: infra
-tags: [infra, network, web, proxy]
-excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+date: 2026-04-24 23:00:00 +0900
+categories: cloud
+excerpt: "GPU Farm은 GPU 서버 여러 대를 대규모로 수용하는 물리적 시설 또는 데이터센터 수준의 인프라이다."
+toc: true
+toc_sticky: true
+tags: [cloud, gpu, farm, elb, ai]
 source: "/home/dwkim/dwkim/docs/cloud/gpu-farm-elb-AI추론인프라.md"
-
-
 ---
+TL;DR
+- GPU Farm은 GPU 서버 여러 대를 대규모로 수용하는 물리적 시설 또는 데이터센터 수준의 인프라이다.
+- GPU 노드들을 고속 네트워크로 연결하여 대규모 병렬 연산을 수행한다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
-**TL;DR**
-- GPU Farm
-- ELB
-- ALB
+## 1. 개념
+GPU Farm은 GPU 서버 여러 대를 대규모로 수용하는 물리적 시설 또는 데이터센터 수준의 인프라이다.
 
-## 1. Concept
-GPU Farm과 ELB: AI 추론 인프라 아키텍처의 핵심 개념과 범위를 간단히 정의하고, 왜 이 문서가 필요한지 요점을 잡습니다.
+## 2. 배경
+데이터센터 수준의 인프라이다. AI/ML 워크로드를 처리하기 위해
 
-## 2. Background
-이 주제가 등장하게 된 배경과 문제 상황, 기술적 맥락을 짚습니다.
+## 3. 이유
+GPU 노드들을 고속 네트워크로 연결하여 대규모 병렬 연산을 수행한다.
 
-## 3. Reason
-왜 이 접근이 필요한지, 기존 대안의 한계나 목표를 설명합니다.
+## 4. 특징
+CPU는 직렬 처리에 최적화된 소수의 강력한 코어를 가지고 있어,
 
-## 4. Features
-문서에서 다루는 주요 구성요소와 실전 적용 포인트를 정리합니다.
-
-## 5. Detailed Notes
+## 5. 상세 내용
 
 # GPU Farm과 ELB: AI 추론 인프라 아키텍처
 
-> **작성일**: 2026-03-03
-> **카테고리**: Cloud / AWS / GPU / AI Infrastructure / Load Balancing
-> **포함 내용**: GPU Farm, ELB, ALB, NLB, GLB, GPU Cluster, CUDA, GPGPU, NVIDIA, V100, A100, H100, B200, AI Inference, ML Training, Load Balancing, Round Robin, Least Outstanding Requests, KV Cache Aware Routing, vLLM, TGI, Triton, KServe, Seldon Core, SageMaker, Auto Scaling, KEDA, Scale-to-Zero, Prefill-Decode Disaggregation, Health Check, Spot Instance, DCGM, Istio Inference Extension, Envoy AI Gateway, PagedAttention, Continuous Batching, Target Optimizer
 
----
 
 # 1. GPU Farm이란?
 
@@ -1163,4 +1158,3 @@ AWS EKS에서의 통합 패턴:
 - [RunPod Serverless GPU Architecture](https://www.runpod.io/product/serverless)
 - [GPU Cost Optimization Playbook](https://www.spheron.network/blog/gpu-cost-optimization-playbook/)
 - [SpotServe: LLM Serving on Preemptible Instances](https://arxiv.org/abs/2311.15566)
-

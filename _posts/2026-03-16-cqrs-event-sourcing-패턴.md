@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "CQRS와 Event Sourcing 완전 가이드"
-date: 2026-03-16 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "CQRS와 Event Sourcing은 읽기/쓰기 책임을 분리하고 상태 변화를 이벤트로 저장해 추적성과 확장성을 높이는 아키텍처 패턴이다."
+excerpt: "용어 풀네임 / 어원 의미 CQRS Command Query Responsibility Segregation 명령(쓰기)과 질의(읽기)의 책임을 물리적으로 분리하는 아키텍처 패턴 CQS Com..."
 toc: true
 toc_sticky: true
-tags: [cqrs, eventsourcing, ddd, architecture, backend]
+tags: [backend, cqrs, event, sourcing]
 source: "/home/dwkim/dwkim/docs/backend/cqrs-event-sourcing-패턴.md"
 ---
 TL;DR
-- 이 글은 CQRS와 Event Sourcing 완전 가이드의 핵심 개념과 실제 적용 포인트를 빠르게 정리한다.
-- 왜 이 패턴/기법이 등장했는지 배경과 도입 이유를 함께 설명한다.
-- 실무에서 바로 쓰기 위한 특징과 상세 내용을 원문 기반으로 정리한다.
+- 용어 풀네임 / 어원 의미 CQRS Command Query Responsibility Segregation 명령(쓰기)과 질의(읽기)의 책임을 물리적으로 분리하는 아키텍처 패턴 CQS Command Query Separation (Bertrand Meyer, 1988) 메서드 레벨에서 명령과 질의를 분리하는 객체지향 원칙.
+- CQS Command Query Separation (Bertrand Meyer, 1988) 메서드 레벨에서 명령과 질의를 분리하는 객체지향 원칙. CQRS의 이론적 기원
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-CQRS와 Event Sourcing 완전 가이드의 정의와 핵심 원리를 먼저 이해하면 뒤의 구현 전략을 훨씬 정확하게 판단할 수 있다.
+용어 풀네임 / 어원 의미 CQRS Command Query Responsibility Segregation 명령(쓰기)과 질의(읽기)의 책임을 물리적으로 분리하는 아키텍처 패턴 CQS Command Query Separation (Bertrand Meyer, 1988) 메서드 레벨에서 명령과 질의를 분리하는 객체지향 원칙.
 
 ## 2. 배경
-기존 방식의 한계와 운영상의 문제를 해결하기 위해 이 접근이 발전했다.
+CQRS Command Query Responsibility Segregation 명령(쓰기)과 질의(읽기)의 책임을 물리적으로 분리하는 아키텍처 패턴
 
 ## 3. 이유
-확장성, 안정성, 유지보수성, 보안을 함께 높이기 위해 이 설계가 필요하다.
+CQS Command Query Separation (Bertrand Meyer, 1988) 메서드 레벨에서 명령과 질의를 분리하는 객체지향 원칙. CQRS의 이론적 기원
 
 ## 4. 특징
-핵심 특징은 표준화된 구조, 명확한 책임 분리, 그리고 운영 관점에서의 예측 가능성이다.
+Event Sourcing "Sourcing" = Source of Truth에서 유래 상태가 아닌 상태 변경 이벤트를 저장하고, 이벤트를 재생하여 현재 상태를 도출
 
 ## 5. 상세 내용
 
 # CQRS와 Event Sourcing 완전 가이드
 
-> **작성일**: 2026-03-16
-> **카테고리**: Backend / Distributed Systems / Architecture Patterns
-> **키워드**: CQRS, Command Query Responsibility Segregation, Event Sourcing, Event Store, Projection, Aggregate, DDD, Eventual Consistency, Snapshot, Rehydration, Axon Framework, EventStoreDB, Marten
 
----
 
 # 1. CQRS와 Event Sourcing이란?
 
@@ -1191,4 +1187,3 @@ CQRS와 Event Sourcing 완전 가이드의 정의와 핵심 원리를 먼저 이
 | Enterprise Integration Patterns | Hohpe, Woolf (2003) | 메시징 패턴 기초 |
 | CQRS Journey (MS Patterns & Practices) | Microsoft | 실전 구현 가이드 |
 | Versioning in an Event Sourced System | Greg Young | 이벤트 버전관리 심화 |
-

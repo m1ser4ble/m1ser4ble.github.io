@@ -1,41 +1,36 @@
 ---
 layout: single
 title: "Spring Boot Actuator Health"
-date: 2026-03-03 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-tags: [backend, spring, architecture]
-excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+excerpt: "Spring Boot Actuator, Health Endpoint, Liveness Probe, Readiness Probe, Startup Probe, Kubernetes, HealthIn..."
+toc: true
+toc_sticky: true
+tags: [backend, spring, actuator, health, boot]
 source: "/home/dwkim/dwkim/docs/backend/spring-actuator-health.md"
-
-
 ---
+TL;DR
+- Spring Boot Actuator, Health Endpoint, Liveness Probe, Readiness Probe, Startup Probe, Kubernetes, HealthIndicator, Health Groups, ApplicationAvailability, LivenessState, ReadinessState, StatusAggregator, Graceful Shutdown, Zero-Downtime, Rolling Update, preStop, terminationGracePeriodSeconds, Cascading Failure, Thundering Herd, Spring Boot 2.3, KUBERNETES_SERVICE_HOST, Prometheus, Micrometer, management.server.port, show-details, probes.enabled, AbstractHealthIndicator, AvailabilityChangeEvent, CompositeHealthContributor, Spring Security, 자가 치유, 캐스케이딩 실패
+- Spring Boot Actuator Health를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
-**TL;DR**
-- Spring Boot Actuator
-- Health Endpoint
-- Liveness Probe
+## 1. 개념
+Spring Boot Actuator, Health Endpoint, Liveness Probe, Readiness Probe, Startup Probe, Kubernetes, HealthIndicator, Health Groups, ApplicationAvailability, LivenessState, ReadinessState, StatusAggregator, Graceful Shutdown, Zero-Downtime, Rolling Update, preStop, terminationGracePeriodSeconds, Cascading Failure, Thundering Herd, Spring Boot 2.3, KUBERNETES_SERVICE_HOST, Prometheus, Micrometer, management.server.port, show-details, probes.enabled, AbstractHealthIndicator, AvailabilityChangeEvent, CompositeHealthContributor, Spring Security, 자가 치유, 캐스케이딩 실패
 
-## 1. Concept
-Spring Boot Actuator Health의 핵심 개념과 범위를 간단히 정의하고, 왜 이 문서가 필요한지 요점을 잡습니다.
+## 2. 배경
+Spring Boot Actuator Health가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
-## 2. Background
-이 주제가 등장하게 된 배경과 문제 상황, 기술적 맥락을 짚습니다.
+## 3. 이유
+Spring Boot Actuator Health를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
-## 3. Reason
-왜 이 접근이 필요한지, 기존 대안의 한계나 목표를 설명합니다.
+## 4. 특징
+Spring Boot Actuator Health의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
-## 4. Features
-문서에서 다루는 주요 구성요소와 실전 적용 포인트를 정리합니다.
-
-## 5. Detailed Notes
+## 5. 상세 내용
 
 # Spring Boot Actuator Health
 
-> **작성일**: 2026-03-03
-> **카테고리**: Backend / Spring Boot / Kubernetes / DevOps
-> **포함 내용**: Spring Boot Actuator, Health Endpoint, Liveness Probe, Readiness Probe, Startup Probe, Kubernetes, HealthIndicator, Health Groups, ApplicationAvailability, Graceful Shutdown, Zero-Downtime, 자가 치유, MCP, Prometheus, Micrometer
 
----
 
 # 1. Spring Boot Actuator란?
 
@@ -1141,4 +1136,3 @@ spec:
 ## 관련 키워드
 
 `Spring Boot Actuator`, `Health Endpoint`, `Liveness Probe`, `Readiness Probe`, `Startup Probe`, `Kubernetes`, `HealthIndicator`, `Health Groups`, `ApplicationAvailability`, `LivenessState`, `ReadinessState`, `StatusAggregator`, `Graceful Shutdown`, `Zero-Downtime`, `Rolling Update`, `preStop`, `terminationGracePeriodSeconds`, `Cascading Failure`, `Thundering Herd`, `Spring Boot 2.3`, `KUBERNETES_SERVICE_HOST`, `Prometheus`, `Micrometer`, `management.server.port`, `show-details`, `probes.enabled`, `AbstractHealthIndicator`, `AvailabilityChangeEvent`, `CompositeHealthContributor`, `Spring Security`, `자가 치유`, `캐스케이딩 실패`
-

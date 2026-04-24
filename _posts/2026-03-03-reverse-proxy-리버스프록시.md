@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Reverse Proxy (리버스 프록시)"
-date: 2026-03-26 23:01:57 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: infra
-excerpt: "1. [리버스 프록시란?](#1-리버스-프록시란)"
+excerpt: "Production 운영 가이드 10."
 toc: true
 toc_sticky: true
-tags: [infra, reverse, proxy, 리버스, 프록시]
+tags: [infra, reverse, proxy]
 source: "/home/dwkim/dwkim/docs/infra/reverse-proxy-리버스프록시.md"
 ---
 TL;DR
-- Reverse Proxy (리버스 프록시)의 핵심 개념을 빠르게 파악할 수 있다.
-- 등장 배경과 채택 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 주요 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- Production 운영 가이드 10.
+- 3. [왜 필요한가?](3-왜-필요한가)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Reverse Proxy (리버스 프록시)의 핵심 정의와 문제 공간을 간단히 정리한다.
+Production 운영 가이드 10.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+2. [등장 배경 - 왜 만들어졌나?](2-등장-배경---왜-만들어졌나)
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+3. [왜 필요한가?](3-왜-필요한가)
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+4. [주요 기능들](4-주요-기능들)
 
 ## 5. 상세 내용
 
 # Reverse Proxy (리버스 프록시)
 
-> **작성일**: 2026-03-03
-> **카테고리**: Infra / Network / Web Server
-> **포함 내용**: Reverse Proxy, Forward Proxy, Load Balancing, SSL Termination, Nginx, HAProxy, Envoy, Traefik, Caddy, CDN, API Gateway, Service Mesh, Zero Trust, Kubernetes Ingress
 
----
 
 ## 목차
 

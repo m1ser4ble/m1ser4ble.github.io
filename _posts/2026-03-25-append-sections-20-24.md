@@ -1,40 +1,32 @@
 ---
 layout: single
-title: "Resilience 엔지니어링 확장 섹션 20-24"
-date: 2026-03-25 23:00:00 +0900
+title: "20. 다중 언어 생태계 Resilience 라이브러리"
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "다중 언어와 gRPC 코루틴 최신 동향까지 아우르는 resilience 실전 지식을 체계적으로 정리해 설계와 운영 의사결정을 빠르게 돕는다."
+excerpt: "Java/Spring 생태계 밖에서도 Resilience 패턴은 필수이다."
 toc: true
 toc_sticky: true
-tags: [resilience, grpc, kotlin, observability, monitoring]
+tags: [backend, append, sections, 20, 24, resilience]
 source: "/home/dwkim/dwkim/docs/backend/_append_sections_20_24.md"
 ---
 TL;DR
-- Python, Node.js, Rust 생태계의 Resilience 라이브러리를 비교해 언어별 선택 기준을 한 번에 파악할 수 있다.
-- gRPC 내장 메커니즘, Kotlin Coroutine 통합 패턴, 최신 2025-2026 트렌드를 통해 설계부터 운영까지 연결된 관점을 제공한다.
-- 모니터링 대시보드/PromQL/알림/런북까지 포함해 실무에서 바로 적용 가능한 운영 가이드를 제공한다.
+- Java/Spring 생태계 밖에서도 Resilience 패턴은 필수이다.
+- 패턴 CB Retry Retry CB+Bulkhead CB+Retry+Timeout+Bulkhead Timeout+RateLimit+Bulkhead Retry
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-이 문서는 Resilience 엔지니어링의 확장 주제(섹션 20~24)를 모아, 언어별 라이브러리 선택부터 gRPC·Kotlin 통합, 최신 산업 동향, 운영 모니터링 실전까지를 한 흐름으로 정리한 기술 레퍼런스다.
+Java/Spring 생태계 밖에서도 Resilience 패턴은 필수이다.
 
 ## 2. 배경
-분산 시스템은 장애가 기본값이며, 단일 기술 스택만으로는 복원력 요구사항을 충족하기 어렵다. 특히 멀티 언어 아키텍처, gRPC 기반 마이크로서비스, 코루틴/비동기 실행 모델, 그리고 AI 서비스 확산으로 인해 기존의 단편적인 패턴 문서만으로는 현장 대응이 어려워졌다.
+항목 Python pybreaker Python tenacity Python stamina Node.js opossum Node.js cockatiel Rust tower Rust backon
 
 ## 3. 이유
-실무에서는 “어떤 라이브러리를 쓰는가”보다 “어떤 운영 결과를 만들 수 있는가”가 중요하다. 이 문서는 설계 원칙, 구현 패턴, 메트릭/알림/런북까지 한 번에 연결해 팀이 공통 기준으로 빠르게 의사결정하고 장애 대응 품질을 높이도록 돕는다.
+패턴 CB Retry Retry CB+Bulkhead CB+Retry+Timeout+Bulkhead Timeout+RateLimit+Bulkhead Retry
 
 ## 4. 특징
-- 언어별(Py/Node/Rust) 핵심 라이브러리 비교와 선택 포인트 제공
-- gRPC 내장 Retry/Hedging/Health Checking 등 프로토콜 레벨 복원력 설명
-- Kotlin Coroutine 환경에서의 Resilience4j 통합 시 주의사항 정리
-- eBPF/Wasm/LLM/Platform Engineering 등 2025-2026 최신 트렌드 반영
-- Grafana, PromQL, AlertManager, Tracing, Runbook까지 포함한 운영 중심 구성
+CB 지원 O (핵심) X X O (핵심) O (SamplingBreaker) 별도 크레이트 X
 
 ## 5. 상세 내용
-
-
-
----
 
 # 20. 다중 언어 생태계 Resilience 라이브러리
 

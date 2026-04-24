@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "JPA Auditing & EntityListener 완전 가이드"
-date: 2026-03-31 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: JPA Auditing은 엔티티 생성수정 시점과 주체를 자동 기록해 보일러플레이트를 줄이고 감사 추적 신뢰성을 높인다.
+excerpt: "참고 자료 AuditingEntityListener는 JPA 엔티티의 라이프사이클 이벤트(@PrePersist, @PreUpdate)를 감지하여 감사(Audit) 메타데이터를 자동으로 채우는..."
 toc: true
 toc_sticky: true
-tags: [backend, jpa, springdata, auditing, entitylistener]
+tags: [backend, jpa, auditing, entitylistener]
 source: "/home/dwkim/dwkim/docs/backend/jpa-auditing-entitylistener-완전가이드.md"
 ---
 TL;DR
-- AuditingEntityListener는 @PrePersist와 @PreUpdate 훅에서 생성수정 시각과 사용자를 자동으로 채운다.
-- @EnableJpaAuditing + AuditorAware 조합으로 JPA 순수성은 유지하면서 SecurityContext 사용자 추적을 연결할 수 있다.
-- 변경 이력 전체(변경 전후 값)가 필요하면 Envers나 CDC를 함께 써야 한다.
+- 참고 자료 AuditingEntityListener는 JPA 엔티티의 라이프사이클 이벤트(@PrePersist, @PreUpdate)를 감지하여 감사(Audit) 메타데이터를 자동으로 채우는 Spring Data JPA의 핵심 인프라 리스너이다.
+- 3. [등장 배경과 이유](3-등장-배경과-이유)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-JPA Auditing은 엔티티 생명주기 이벤트를 이용해 생성/수정 시점과 주체를 자동 기록하는 메커니즘이다.
+참고 자료 AuditingEntityListener는 JPA 엔티티의 라이프사이클 이벤트(@PrePersist, @PreUpdate)를 감지하여 감사(Audit) 메타데이터를 자동으로 채우는 Spring Data JPA의 핵심 인프라 리스너이다.
 
 ## 2. 배경
-엔티티마다 중복되는 @PrePersist/@PreUpdate 보일러플레이트와 사용자 추적 한계를 줄이기 위해 Spring Data JPA가 Auditing 추상화를 제공했다.
+2. [용어 사전](2-용어-사전)
 
 ## 3. 이유
-감사 정보 자동화는 실수 가능성을 줄이고, 디버깅·컴플라이언스·운영 가시성을 동시에 높여 대규모 서비스에서 필수 인프라가 된다.
+3. [등장 배경과 이유](3-등장-배경과-이유)
 
 ## 4. 특징
-선언형 어노테이션 기반 설정, AuditorAware를 통한 사용자 주입, DateTimeProvider 커스터마이징, BaseEntity 상속 패턴과의 높은 결합성이 핵심 특징이다.
+4. [역사적 기원과 진화](4-역사적-기원과-진화)
 
 ## 5. 상세 내용
 
 # JPA Auditing & EntityListener 완전 가이드
 
-> **작성일**: 2026-03-31
-> **카테고리**: Backend / JPA / Spring Data / Auditing
-> **키워드**: AuditingEntityListener, @CreatedDate, @LastModifiedDate, @CreatedBy, @LastModifiedBy, @EnableJpaAuditing, AuditorAware, @EntityListeners, @PrePersist, @PreUpdate, Hibernate Envers, CDC, Event Sourcing
 
----
 
 ## 목차
 

@@ -1,42 +1,36 @@
 ---
 layout: single
-title: "lettuce redis 클라이언트"
-date: 2026-03-05 08:08:14 +0900
+title: "Lettuce Redis 클라이언트"
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "lettuce redis 클라이언트는 핵심 개념과 적용 포인트를 정리해 실무 판단 기준을 제공한다."
+excerpt: "Lettuce Redis 클라이언트의 핵심 개념과 실무 적용 포인트를 함께 정리한 글이다."
 toc: true
 toc_sticky: true
-tags: [backend, spring, db, architecture]
+tags: [backend, lettuce, redis]
 source: "/home/dwkim/dwkim/docs/backend/lettuce-redis-클라이언트.md"
-
 ---
-
-**TL;DR**
-- lettuce redis 클라이언트의 핵심 개념과 적용 범위를 정리
-- 등장 배경과 필요한 이유를 요약
-- 주요 특징과 실무 활용 포인트를 정리
+TL;DR
+- Lettuce Redis 클라이언트의 핵심 개념과 실무 적용 포인트를 함께 정리한 글이다.
+- Lettuce Redis 클라이언트를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-lettuce redis 클라이언트의 핵심 개념과 범위를 간단히 정의하고, 왜 이 문서가 필요한지 요점을 잡습니다.
+Lettuce Redis 클라이언트의 핵심 개념과 실무 적용 포인트를 함께 정리한 글이다.
 
 ## 2. 배경
-이 주제가 등장하게 된 배경과 문제 상황, 기술적 맥락을 짚습니다.
+Lettuce Redis 클라이언트가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 이 접근이 필요한지, 기존 대안의 한계나 목표를 설명합니다.
+Lettuce Redis 클라이언트를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-문서에서 다루는 주요 구성요소와 실전 적용 포인트를 정리합니다.
+Lettuce Redis 클라이언트의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # Lettuce Redis 클라이언트
 
-> **작성일**: 2026-03-04
-> **카테고리**: Backend / Java / Spring / Redis
-> **포함 내용**: Lettuce, Jedis, Redisson, Netty, 비동기 I/O, 논블로킹, 커넥션 풀, StatefulRedisConnection, RedisFuture, Project Reactor, Redis Cluster, Sentinel, Pub/Sub, Redis Streams, ReadFrom, Pipeline, MULTI/EXEC, EventLoop, TCP KeepAlive, Valkey, Spring Data Redis, LettuceConnectionFactory
 
----
 
 # 1. Lettuce란?
 
@@ -1045,4 +1039,3 @@ spring.data.redis.jedis.pool.max-wait=2000ms
 13. Redisson - Distributed Locks Wiki
     https://github.com/redisson/redisson/wiki/8.-distributed-locks-and-synchronizers
 ```
-

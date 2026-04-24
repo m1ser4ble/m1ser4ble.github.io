@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "SQLAlchemy - Python ORM"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "SQLAlchemy = Python에서 가장 널리 쓰이는 ORM/SQL 툴킷"
+excerpt: "SQLAlchemy, ORM, Object-Relational Mapping, Core, Session, Mapped, mapped_column, relationship, async, Asyn..."
 toc: true
 toc_sticky: true
-tags: [backend, sqlalchemy, python, orm]
+tags: [backend, sqlalchemy, orm, python]
 source: "/home/dwkim/dwkim/docs/backend/sqlalchemy-orm.md"
 ---
 TL;DR
-- SQLAlchemy - Python ORM의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- SQLAlchemy, ORM, Object-Relational Mapping, Core, Session, Mapped, mapped_column, relationship, async, AsyncSession, Engine, select, N+1 문제, Eager Loading, joinedload, selectinload
+- SQLAlchemy - Python ORM를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-SQLAlchemy - Python ORM의 핵심 정의와 문제 공간을 간단히 정리한다.
+SQLAlchemy, ORM, Object-Relational Mapping, Core, Session, Mapped, mapped_column, relationship, async, AsyncSession, Engine, select, N+1 문제, Eager Loading, joinedload, selectinload
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+SQLAlchemy - Python ORM가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+SQLAlchemy - Python ORM를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+SQLAlchemy - Python ORM의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
 ## 5. 상세 내용
 
 # SQLAlchemy - Python ORM
 
-> **작성일**: 2026-01-29
-> **카테고리**: Backend / Database / ORM
-> **포함 내용**: SQLAlchemy, ORM, Core, Session, Mapped, relationship, async, FastAPI 통합
 
----
 
 # 1. SQLAlchemy란?
 

@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Presigned URL 메커니즘 완전 가이드"
-date: 2026-03-16 23:00:00 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: cloud
-excerpt: "Presigned URL은 서명된 임시 권한을 URL에 담아 자격증명 노출 없이 S3 객체를 안전하게 직접 업로드·다운로드하게 해준다."
+excerpt: "Presigned URL은 S3 객체에 대한 접근 권한을 URL 자체에 내포시킨 임시 접근 토큰이다."
 toc: true
 toc_sticky: true
-tags: [presignedurl, aws, s3, sigv4, security]
+tags: [cloud, presigned, url]
 source: "/home/dwkim/dwkim/docs/cloud/presigned-url-메커니즘-완전가이드.md"
 ---
 TL;DR
-- 이 글은 Presigned URL 메커니즘 완전 가이드의 핵심 개념과 실제 적용 포인트를 빠르게 정리한다.
-- 왜 이 패턴/기법이 등장했는지 배경과 도입 이유를 함께 설명한다.
-- 실무에서 바로 쓰기 위한 특징과 상세 내용을 원문 기반으로 정리한다.
+- Presigned URL은 S3 객체에 대한 접근 권한을 URL 자체에 내포시킨 임시 접근 토큰이다.
+- 문제 Presigned URL 해결 방식
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Presigned URL 메커니즘 완전 가이드의 정의와 핵심 원리를 먼저 이해하면 뒤의 구현 전략을 훨씬 정확하게 판단할 수 있다.
+Presigned URL은 S3 객체에 대한 접근 권한을 URL 자체에 내포시킨 임시 접근 토큰이다.
 
 ## 2. 배경
-기존 방식의 한계와 운영상의 문제를 해결하기 위해 이 접근이 발전했다.
+Pre-signed"의 의미: 클라이언트가 URL을 사용하는 시점 이전에(pre) 서버가 서명을 완성(signed)하여 URL 쿼리 스트링에 내포시킨다. 서명은 완전히 로컬 계산이며, AWS API 호출이 발생하지 않는다.
 
 ## 3. 이유
-확장성, 안정성, 유지보수성, 보안을 함께 높이기 위해 이 설계가 필요하다.
+문제 Presigned URL 해결 방식
 
 ## 4. 특징
-핵심 특징은 표준화된 구조, 명확한 책임 분리, 그리고 운영 관점에서의 예측 가능성이다.
+IAM 키 노출 위험 클라이언트에게 키를 주지 않고, 서명된 URL만 전달
 
 ## 5. 상세 내용
 
 # Presigned URL 메커니즘 완전 가이드
 
-> **작성일**: 2026-03-16
-> **카테고리**: Cloud / AWS / S3 / Security
-> **키워드**: Presigned URL, AWS Signature Version 4, HMAC-SHA256, Query String Authentication, Canonical Request, Signing Key, Capability-based Security, CloudFront Signed URL, Azure SAS Token, GCP Signed URL
 
----
 
 # 1. Presigned URL이란?
 
@@ -850,4 +846,3 @@ def generate_post_policy(bucket: str, key_prefix: str, max_size_mb: int = 10,
 ## 관련 키워드
 
 `Presigned URL`, `AWS Signature Version 4`, `SigV4`, `HMAC-SHA256`, `Query String Authentication`, `Canonical Request`, `StringToSign`, `Signing Key`, `Credential Scope`, `X-Amz-Signature`, `X-Amz-Expires`, `X-Amz-Credential`, `Capability-based Security`, `Capability URL`, `CloudFront Signed URL`, `Signed Cookies`, `Azure SAS Token`, `GCP Signed URL`, `S3`, `STS`, `임시 자격증명`, `서명 검증`, `POST Policy`, `s3:signatureAge`, `RFC 2104`, `Dennis & Van Horn`
-

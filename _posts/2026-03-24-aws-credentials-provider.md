@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "AWS Credentials Provider"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: cloud
-excerpt: "AWS API 호출 시 \"나는 누구인가?\"를 증명해야 함"
+excerpt: "항목 DefaultCredentialsProvider CustomCredentialProvider 구현 주체 AWS SDK 내장 개발자 직접 구현 설정 방식 자동 (환경 기반) 명시적 코드 유..."
 toc: true
 toc_sticky: true
 tags: [cloud, aws, credentials, provider]
 source: "/home/dwkim/dwkim/docs/cloud/aws-credentials-provider.md"
 ---
 TL;DR
-- AWS Credentials Provider의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- 항목 DefaultCredentialsProvider CustomCredentialProvider 구현 주체 AWS SDK 내장 개발자 직접 구현 설정 방식 자동 (환경 기반) 명시적 코드 유연성 제한적 (정해진 순서) 완전한 제어 유지보수 AWS가 관리 개발자가 관리 테스트 환경 의존적 Mock 가능 캐싱 SDK 기본 캐싱 직접 구현 필요 개념 OAuth 2.0 AWS STS 단기 토큰 Access Token Session Credentials 장기 토큰 Refresh Token 없음 갱신 방법 Refresh Token으로 재발급 AssumeRole 재호출 갱신 조건 Refresh Token만 있으면 됨 원본 자격 증명 필요 사용자 개입 불필요 불필요 (자동화 가능) DefaultCredentialsProvider, CustomCredentialProvider, AWS SDK, IAM, STS, AssumeRole, IRSA, Instance Profile, Task Role, Vault, 자격 증명 체인, credentials, Access Key, Secret Key, Session Token, 토큰 만료, 자동 갱신, StsAssumeRoleCredentialsProvider, ExpiredTokenException, MaxSessionDuration
+- 설정 방식 자동 (환경 기반) 명시적 코드
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-AWS Credentials Provider의 핵심 정의와 문제 공간을 간단히 정리한다.
+항목 DefaultCredentialsProvider CustomCredentialProvider 구현 주체 AWS SDK 내장 개발자 직접 구현 설정 방식 자동 (환경 기반) 명시적 코드 유연성 제한적 (정해진 순서) 완전한 제어 유지보수 AWS가 관리 개발자가 관리 테스트 환경 의존적 Mock 가능 캐싱 SDK 기본 캐싱 직접 구현 필요 개념 OAuth 2.0 AWS STS 단기 토큰 Access Token Session Credentials 장기 토큰 Refresh Token 없음 갱신 방법 Refresh Token으로 재발급 AssumeRole 재호출 갱신 조건 Refresh Token만 있으면 됨 원본 자격 증명 필요 사용자 개입 불필요 불필요 (자동화 가능) DefaultCredentialsProvider, CustomCredentialProvider, AWS SDK, IAM, STS, AssumeRole, IRSA, Instance Profile, Task Role, Vault, 자격 증명 체인, credentials, Access Key, Secret Key, Session Token, 토큰 만료, 자동 갱신, StsAssumeRoleCredentialsProvider, ExpiredTokenException, MaxSessionDuration
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+구현 주체 AWS SDK 내장 개발자 직접 구현
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+설정 방식 자동 (환경 기반) 명시적 코드
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+유연성 제한적 (정해진 순서) 완전한 제어
 
 ## 5. 상세 내용
 
 # AWS Credentials Provider
 
-> **작성일**: 2026-02-05
-> **카테고리**: Cloud / AWS / Authentication
-> **포함 내용**: DefaultCredentialsProvider, CustomCredentialProvider, 자격 증명 체인, IAM, STS, Vault 연동
 
----
 
 # 1. AWS 자격 증명 개요
 

@@ -1,40 +1,36 @@
 ---
 layout: single
-title: "Compare-And-Swap CAS 완전 가이드"
-date: 2026-03-31 10:17:00 +0900
+title: "Compare-And-Swap (CAS) 완전 가이드"
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "CAS는 기대값 검증 후 교체를 원자적으로 수행해 잠금 없이 동시성 제어와 고성능 확장을 가능하게 하는 핵심 메커니즘이다."
+excerpt: "참고 자료 Compare-And-Swap (CAS)은 동시성 프로그래밍에서 가장 근본적인 원자적(atomic) 연산이다."
 toc: true
 toc_sticky: true
-tags: [backend, concurrency, cas, lockfree, distributed]
+tags: [backend, cas, compare, and, swap]
 source: "/home/dwkim/dwkim/docs/backend/cas-compare-and-swap-완전가이드.md"
 ---
 TL;DR
-- CAS는 기대값과 현재값을 비교한 뒤 일치할 때만 교체하는 원자 연산으로, 낙관적 동시성 제어의 핵심이다.
-- CPU 명령어에서 시작한 CAS 패턴은 OS, 런타임, DB, 분산 시스템까지 동일한 원리로 확장된다.
-- 실무에서는 ABA 문제, 고경합 재시도 폭주, 메모리 오더링 함정을 피하기 위한 설계가 성패를 좌우한다.
+- 참고 자료 Compare-And-Swap (CAS)은 동시성 프로그래밍에서 가장 근본적인 원자적(atomic) 연산이다.
+- 3. [등장 배경과 이유](3-등장-배경과-이유)
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-CAS(Compare-And-Swap)는 메모리(또는 상태)의 현재 값이 기대값과 같을 때만 새 값으로 바꾸는 원자적 비교-교환 연산이다.
+참고 자료 Compare-And-Swap (CAS)은 동시성 프로그래밍에서 가장 근본적인 원자적(atomic) 연산이다.
 
 ## 2. 배경
-멀티코어 환경에서 단순 락만으로는 데드락·우선순위 역전·경합 확장성 한계가 빈번해져, 잠금 없는 원자 연산 기반 동시성 제어가 필요해졌다.
+2. [용어 사전](2-용어-사전)
 
 ## 3. 이유
-CAS는 충돌이 적은 환경에서 대기 없이 빠른 진행을 보장하고, 실패 시 재시도로 정합성을 유지해 처리량과 응답성의 균형을 만든다.
+3. [등장 배경과 이유](3-등장-배경과-이유)
 
 ## 4. 특징
-단일 연산의 원자성, lock-free 알고리즘의 기반, OCC/조건부 쓰기와의 구조적 동일성, 그리고 다양한 레벨(CPU~분산 시스템)로의 일관된 확장성이 핵심 특징이다.
+4. [역사적 기원과 진화](4-역사적-기원과-진화)
 
 ## 5. 상세 내용
 
 # Compare-And-Swap (CAS) 완전 가이드
 
-> **작성일**: 2026-03-30
-> **카테고리**: Backend / Concurrency / Distributed Systems / CPU Architecture
-> **키워드**: CAS, Compare-And-Swap, Optimistic Locking, Lock-Free, Wait-Free, ABA Problem, CMPXCHG, LL/SC, Linearizability, Consensus Number, MVCC, Conditional Write, etcd, DynamoDB, Kafka, Striped64
 
----
 
 ## 목차
 

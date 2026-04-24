@@ -1,40 +1,36 @@
 ---
 layout: single
 title: "Spring Pageable - 페이지네이션 완벽 가이드"
-date: 2026-03-24 00:02:25 +0900
+date: 2026-04-24 23:00:00 +0900
 categories: backend
-excerpt: "페이지네이션(Pagination)은 대량의 데이터를 일정한 크기의 **페이지 단위**로 나누어 조회하는 기법입니다."
+excerpt: "페이지네이션(Pagination)은 대량의 데이터를 일정한 크기의 페이지 단위로 나누어 조회하는 기법입니다."
 toc: true
 toc_sticky: true
-tags: [backend, spring, pageable, 페이지네이션, 완벽]
+tags: [backend, spring, pageable]
 source: "/home/dwkim/dwkim/docs/backend/spring-pageable-페이지네이션.md"
 ---
 TL;DR
-- Spring Pageable - 페이지네이션 완벽 가이드의 핵심 개념을 빠르게 파악할 수 있다.
-- 배경과 이유를 통해 왜 필요한지 맥락을 이해할 수 있다.
-- 특징과 상세 내용을 통해 실무 적용 포인트를 확인할 수 있다.
+- 페이지네이션(Pagination)은 대량의 데이터를 일정한 크기의 페이지 단위로 나누어 조회하는 기법입니다.
+- 페이지네이션이 없으면 다음과 같은 문제가 발생합니다:
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
 ## 1. 개념
-Spring Pageable - 페이지네이션 완벽 가이드의 핵심 정의와 문제 공간을 간단히 정리한다.
+페이지네이션(Pagination)은 대량의 데이터를 일정한 크기의 페이지 단위로 나누어 조회하는 기법입니다.
 
 ## 2. 배경
-이 주제가 등장한 기술적·조직적 배경과 기존 접근의 한계를 설명한다.
+비유하면 도서관의 도서 목록과 같습니다. 도서관에 10만 권의 책이 있다고 해서, 방문객에게 10만 건의 목록을 한 번에 보여줄 수는 없습니다. 대신 "1페이지에 20권씩, 제목 가나다순"으로 나누어 보여주는 것이 자연스럽습니다. 웹 애플리케이션도 마찬가지입니다.
 
 ## 3. 이유
-왜 지금 이 방식을 채택해야 하는지, 기대 효과와 트레이드오프를 함께 정리한다.
+페이지네이션이 없으면 다음과 같은 문제가 발생합니다:
 
 ## 4. 특징
-핵심 동작 방식, 장단점, 적용 시 주의점을 빠르게 훑을 수 있도록 요약한다.
+문제 설명
 
 ## 5. 상세 내용
 
 # Spring Pageable - 페이지네이션 완벽 가이드
 
-> **작성일**: 2026-02-27
-> **카테고리**: Backend / Spring / Data Access
-> **포함 내용**: Pageable, PageRequest, Page, Slice, Sort, Window, ScrollPosition, Keyset Pagination, OFFSET, LIMIT, HATEOAS
 
----
 
 # 1. 페이지네이션이란?
 

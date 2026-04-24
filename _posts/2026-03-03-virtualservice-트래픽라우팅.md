@@ -1,41 +1,36 @@
 ---
 layout: single
 title: "VirtualService와 트래픽 라우팅"
-date: 2026-03-03 23:00:00 +0900
-categories: infra
-tags: [infra, network, web, proxy]
-excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+date: 2026-04-24 23:00:00 +0900
+categories: cloud
+excerpt: "VirtualService, DestinationRule, Gateway, Istio, Service Mesh, Envoy, Traffic Routing, Canary Deployment, A..."
+toc: true
+toc_sticky: true
+tags: [cloud, virtualservice]
 source: "/home/dwkim/dwkim/docs/cloud/virtualservice-트래픽라우팅.md"
-
-
 ---
+TL;DR
+- VirtualService, DestinationRule, Gateway, Istio, Service Mesh, Envoy, Traffic Routing, Canary Deployment, A/B Testing, Traffic Mirroring, Fault Injection, Blue-Green, xDS, Pilot, Istiod, Kubernetes Gateway API, HTTPRoute, East-West Traffic, North-South Traffic, Circuit Breaker, Weighted Routing, Subset, istio-system, istio-ingress, Gateway Namespace, selector, Least Privilege, Shared Gateway, Dedicated Gateway, istioctl analyze, mesh, 트래픽 라우팅, 카나리 배포, 장애 주입, 트래픽 미러링
+- VirtualService와 트래픽 라우팅를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
-**TL;DR**
-- VirtualService
-- DestinationRule
-- Gateway
+## 1. 개념
+VirtualService, DestinationRule, Gateway, Istio, Service Mesh, Envoy, Traffic Routing, Canary Deployment, A/B Testing, Traffic Mirroring, Fault Injection, Blue-Green, xDS, Pilot, Istiod, Kubernetes Gateway API, HTTPRoute, East-West Traffic, North-South Traffic, Circuit Breaker, Weighted Routing, Subset, istio-system, istio-ingress, Gateway Namespace, selector, Least Privilege, Shared Gateway, Dedicated Gateway, istioctl analyze, mesh, 트래픽 라우팅, 카나리 배포, 장애 주입, 트래픽 미러링
 
-## 1. Concept
-VirtualService와 트래픽 라우팅의 핵심 개념과 범위를 간단히 정의하고, 왜 이 문서가 필요한지 요점을 잡습니다.
+## 2. 배경
+VirtualService와 트래픽 라우팅가 등장한 배경과 문제 상황을 이해하는 데 도움이 된다.
 
-## 2. Background
-이 주제가 등장하게 된 배경과 문제 상황, 기술적 맥락을 짚습니다.
+## 3. 이유
+VirtualService와 트래픽 라우팅를 알아두면 설계 판단과 구현 선택을 더 분명하게 할 수 있다.
 
-## 3. Reason
-왜 이 접근이 필요한지, 기존 대안의 한계나 목표를 설명합니다.
+## 4. 특징
+VirtualService와 트래픽 라우팅의 특징, 장단점, 적용 포인트를 원문에서 자세히 확인할 수 있다.
 
-## 4. Features
-문서에서 다루는 주요 구성요소와 실전 적용 포인트를 정리합니다.
-
-## 5. Detailed Notes
+## 5. 상세 내용
 
 # VirtualService와 트래픽 라우팅
 
-> **작성일**: 2026-03-03
-> **카테고리**: Cloud / Kubernetes / Istio / Traffic Management
-> **포함 내용**: VirtualService, DestinationRule, Gateway, Traffic Routing, Canary, A/B Testing, Fault Injection, Traffic Mirroring, Kubernetes Gateway API
 
----
 
 # 1. VirtualService란?
 
@@ -1777,4 +1772,3 @@ spec:
 ## 관련 키워드
 
 `VirtualService`, `DestinationRule`, `Gateway`, `Istio`, `Service Mesh`, `Envoy`, `Traffic Routing`, `Canary Deployment`, `A/B Testing`, `Traffic Mirroring`, `Fault Injection`, `Blue-Green`, `xDS`, `Pilot`, `Istiod`, `Kubernetes Gateway API`, `HTTPRoute`, `East-West Traffic`, `North-South Traffic`, `Circuit Breaker`, `Weighted Routing`, `Subset`, `istio-system`, `istio-ingress`, `Gateway Namespace`, `selector`, `Least Privilege`, `Shared Gateway`, `Dedicated Gateway`, `istioctl analyze`, `mesh`, `트래픽 라우팅`, `카나리 배포`, `장애 주입`, `트래픽 미러링`
-

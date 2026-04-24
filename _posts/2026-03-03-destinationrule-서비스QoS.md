@@ -1,41 +1,36 @@
 ---
 layout: single
 title: "DestinationRule과 서비스 QoS"
-date: 2026-03-03 23:00:00 +0900
-categories: infra
-tags: [infra, network, web, proxy]
-excerpt: "리버스 프록시는 외부 요청을 중재해 보안과 확장성을 높이는 핵심 인프라 컴포넌트다."
+date: 2026-04-24 23:00:00 +0900
+categories: cloud
+excerpt: "DestinationRule은 Istio 서비스 메시에서 라우팅이 결정된 이후 트래픽이 목적지에 어떻게 도달할지를 정의하는 CRD(Custom Resource Definition)이다."
+toc: true
+toc_sticky: true
+tags: [cloud, destinationrule, qos]
 source: "/home/dwkim/dwkim/docs/cloud/destinationrule-서비스QoS.md"
-
-
 ---
+TL;DR
+- DestinationRule은 Istio 서비스 메시에서 라우팅이 결정된 이후 트래픽이 목적지에 어떻게 도달할지를 정의하는 CRD(Custom Resource Definition)이다.
+- VirtualService가 "어디로 보낼 것인가"를 결정한다면,
+- 원문 전체는 아래 상세 내용에 그대로 포함했다.
 
-**TL;DR**
-- DestinationRule
-- Service QoS
-- Load Balancing
+## 1. 개념
+DestinationRule은 Istio 서비스 메시에서 라우팅이 결정된 이후 트래픽이 목적지에 어떻게 도달할지를 정의하는 CRD(Custom Resource Definition)이다.
 
-## 1. Concept
-DestinationRule과 서비스 QoS의 핵심 개념과 범위를 간단히 정의하고, 왜 이 문서가 필요한지 요점을 잡습니다.
+## 2. 배경
+어떻게 도달할지를 정의하는 CRD(Custom Resource Definition)이다.
 
-## 2. Background
-이 주제가 등장하게 된 배경과 문제 상황, 기술적 맥락을 짚습니다.
+## 3. 이유
+VirtualService가 "어디로 보낼 것인가"를 결정한다면,
 
-## 3. Reason
-왜 이 접근이 필요한지, 기존 대안의 한계나 목표를 설명합니다.
+## 4. 특징
+DestinationRule은 "어떻게 보낼 것인가"를 결정한다.
 
-## 4. Features
-문서에서 다루는 주요 구성요소와 실전 적용 포인트를 정리합니다.
-
-## 5. Detailed Notes
+## 5. 상세 내용
 
 # DestinationRule과 서비스 QoS
 
-> **작성일**: 2026-03-03
-> **카테고리**: Cloud / Kubernetes / Istio / Traffic Management
-> **포함 내용**: DestinationRule, Service QoS, Load Balancing, Circuit Breaker, Outlier Detection, Connection Pool, TLS, Subset, Envoy Cluster, Netflix Hystrix 비교, Cascading Failure
 
----
 
 # 1. DestinationRule이란?
 
@@ -1762,4 +1757,3 @@ DestinationRule이 제공하는 기능을 다른 기술과 비교한다.
 ---
 
 **키워드**: DestinationRule, Service QoS, Circuit Breaker, Cascading Failure, Outlier Detection, Connection Pool, Bulkhead Pattern, Netflix Hystrix, Load Balancing, Consistent Hash, Session Affinity, TLS, ISTIO_MUTUAL, Subset, Envoy Cluster, xDS, Make-Before-Break, Panic Threshold, gRPC, Canary Deployment
-
