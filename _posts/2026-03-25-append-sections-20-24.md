@@ -6,7 +6,7 @@ categories: backend
 excerpt: "Java/Spring 생태계 밖에서도 Resilience 패턴은 필수이다."
 toc: true
 toc_sticky: true
-tags: [backend, append, sections, 20, 24, resilience]
+tags: [backend, append, resilience, multilang, section20, section24]
 source: "/home/dwkim/dwkim/docs/backend/_append_sections_20_24.md"
 ---
 TL;DR

@@ -6,7 +6,7 @@ categories: backend
 excerpt: "이 문서에서는 현대 웹/모바일 애플리케이션의 인증/인가 표준인 OAuth 2.0과 OpenID Connect(OIDC), 그리고 이를 구현한 오픈소스 IAM 솔루션 Keycloak에 대해 상세..."
 toc: true
 toc_sticky: true
-tags: [backend, oauth2, keycloak, oauth, 2, 0]
+tags: [backend, oauth2, keycloak, oauth20, oidc, iam]
 source: "/home/dwkim/dwkim/docs/backend/oauth2-keycloak.md"
 ---
 TL;DR

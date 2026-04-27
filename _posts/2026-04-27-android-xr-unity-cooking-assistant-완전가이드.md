@@ -6,7 +6,7 @@ categories: android
 excerpt: "Android XR과 Unity 앱에서 manifest, runtime permission, OpenXR runtime, scene/prefab, MRTemplate tutorial object를 분리해서 디버깅하는 기준을 정리한다."
 toc: true
 toc_sticky: true
-tags: [android, androidxr, unity, openxr, xr, manifest, permission, mri, debugging]
+tags: [android, androidxr, unity, openxr, permission, debugging]
 source: "/Users/sampling/til/research/android-xr-unity-cooking-assistant-2026-04-27.md"
 ---
 
