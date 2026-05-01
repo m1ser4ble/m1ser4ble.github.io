@@ -2,11 +2,12 @@
 layout: single
 title: "Android OS 시스템 특성 완전가이드"
 date: 2026-04-29 23:26:00 +0900
-categories: mobile
+categories: frontend
 excerpt: "Android OS는 Linux 커널 위에 Binder, ART, HAL, 보안·전원 관리 계층을 얹어 모바일 환경에 최적화한 운영체제 구조를 설명한다."
 toc: true
 toc_sticky: true
 tags: [android, aosp, binder, art, hal, linux]
+source: "/home/dwkim/dwkim/docs/mobile/android-os-시스템특성.md"
 ---
 
 TL;DR
