@@ -1,4 +1,4 @@
-# TIL 2026-05-16: Cilium L2 VIP, Wi-Fi ARP, and Kubernetes ingress exposure
+# TIL 2026-05-16: Cilium L2 VIP, Wi-Fi ARP, and dev HTTPS
 
 ## Context
 
@@ -262,3 +262,261 @@ VIP to the same MAC even if another node takes the Cilium lease.
 - Wi-Fi-only Raspberry Pi clusters are a poor fit for ARP-based L2 VIPs.
 - For stable Kubernetes-style ingress, use wired ingress nodes and let Cilium
   move the VIP between eligible nodes.
+
+## Cert-manager and Let's Encrypt HTTP-01
+
+After the VIP was reachable through wired LAN, the next issue was HTTPS.
+
+HTTP worked:
+
+```text
+curl http://api.ca.samplingcloud.top/v1/recipe-extractions
+=> HTTP/1.1 405 Method Not Allowed
+server: envoy
+```
+
+The `405` was not an ingress failure. It only meant that the request reached
+Envoy/backend, but `GET /v1/recipe-extractions` is not the API method. The real
+route is `POST /v1/recipe-extractions`.
+
+HTTPS failed before cert-manager was configured:
+
+```text
+curl https://api.ca.samplingcloud.top/v1/recipe-extractions
+=> Recv failure: Connection reset by peer
+```
+
+The live Ingress referenced:
+
+```yaml
+tls:
+  - hosts:
+      - api.ca.samplingcloud.top
+    secretName: api-ca-samplingcloud-top-tls
+```
+
+but the secret did not exist yet:
+
+```text
+kubectl -n cooking-assistant-dev get secret api-ca-samplingcloud-top-tls
+=> NotFound
+```
+
+### Installation
+
+cert-manager was installed with Helm using the OCI chart:
+
+```bash
+helm install \
+  cert-manager oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.20.2 \
+  --namespace cert-manager \
+  --create-namespace \
+  --set crds.enabled=true
+```
+
+`oci://` means Helm pulls the chart from an OCI/container registry, similar to
+pulling an image from `quay.io`, instead of using a legacy Helm chart repo URL.
+
+Install verification:
+
+```text
+cert-manager                 Running
+cert-manager-cainjector      Running
+cert-manager-webhook         Running
+```
+
+The cert-manager CRDs appeared:
+
+```text
+certificates.cert-manager.io
+clusterissuers.cert-manager.io
+orders.acme.cert-manager.io
+challenges.acme.cert-manager.io
+```
+
+### Issuers
+
+Two `ClusterIssuer`s were used for the same dev domain:
+
+```text
+letsencrypt-dev-staging
+letsencrypt-dev-prod
+```
+
+These names do not mean there are separate application environments. They mean:
+
+- `staging`: Let's Encrypt test CA, useful for checking HTTP-01 without real
+  certificate/rate-limit risk.
+- `prod`: Let's Encrypt real CA, trusted by browsers and Android.
+
+Both use HTTP-01 through Cilium Ingress:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-dev-prod
+spec:
+  acme:
+    email: <acme-account-email>
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-dev-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: cilium
+```
+
+### Argo CD ownership
+
+cert-manager itself was installed by Helm. The project-specific issuers are
+better stored in GitOps.
+
+An Argo CD `Application` for `deploy/cert-manager` means:
+
+```text
+Read manifests from GitHub main/deploy/cert-manager
+Apply them to this Kubernetes cluster
+Continuously reconcile drift
+```
+
+The destination:
+
+```yaml
+destination:
+  server: https://kubernetes.default.svc
+  namespace: cert-manager
+```
+
+means "apply to the same cluster Argo CD is running in; use `cert-manager` as
+the default namespace for namespace-scoped resources." `ClusterIssuer` itself is
+cluster-scoped, so it does not live inside that namespace.
+
+The AppProject also needs to allow the cluster-scoped cert-manager resource:
+
+```yaml
+clusterResourceWhitelist:
+  - group: cert-manager.io
+    kind: ClusterIssuer
+```
+
+### HTTP-01 failure mode
+
+cert-manager created the solver resources correctly:
+
+```text
+cm-acme-http-solver-* Ingress  class=cilium  host=api.ca.samplingcloud.top
+cm-acme-http-solver-* Service
+cm-acme-http-solver-* Pod      Running
+```
+
+But the challenge stayed pending. The important `Challenge` reason was:
+
+```text
+Waiting for HTTP-01 challenge propagation:
+failed to perform self check GET request
+'http://api.ca.samplingcloud.top/.well-known/acme-challenge/...':
+Get "https://api.ca.samplingcloud.top/.well-known/acme-challenge/...":
+read: connection reset by peer
+```
+
+The clue is that cert-manager started with `http://...` but the actual request
+became `https://...`. Cilium Ingress was forcing HTTP to HTTPS because the
+Ingress had TLS configured, but HTTPS could not work yet because the TLS secret
+was exactly what cert-manager was trying to create. That made a bootstrap loop:
+
+```text
+HTTP-01 challenge needs HTTP
+-> Cilium redirects HTTP to HTTPS
+-> HTTPS has no valid secret yet
+-> connection reset
+-> challenge self-check fails
+```
+
+The fix was to disable Cilium's forced HTTPS redirect on this dev Ingress:
+
+```yaml
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-dev-prod
+    ingress.cilium.io/force-https: disabled
+```
+
+After adding the annotation, staging issuance completed:
+
+```text
+Certificate api-ca-samplingcloud-top-tls  READY=True
+Order                                     valid
+```
+
+Then the Ingress was switched to `letsencrypt-dev-prod`, the staging-issued TLS
+secret was removed, and prod issuance completed:
+
+```text
+Certificate: api-ca-samplingcloud-top-tls
+Issuer:      letsencrypt-dev-prod
+Ready:       True
+Secret:      kubernetes.io/tls
+```
+
+HTTPS then reached the backend:
+
+```text
+curl https://api.ca.samplingcloud.top/v1/recipe-extractions
+=> HTTP/1.1 405 Method Not Allowed
+server: envoy
+```
+
+Again, `405` only proves transport/ingress/backend reachability for a GET
+request. The real functional smoke test is a POST:
+
+```bash
+curl -i https://api.ca.samplingcloud.top/v1/recipe-extractions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "sourceUrl": "https://www.youtube.com/watch?v=Zh92ofOGAqY",
+    "videoId": "Zh92ofOGAqY",
+    "clientRequestId": "https-cert-manager-smoke",
+    "languageHint": "ko"
+  }'
+```
+
+That returned:
+
+```text
+HTTP/1.1 200 OK
+x-envoy-upstream-service-time: 61123
+```
+
+The response contained a Unity-compatible recipe for the Sung Si Kyung boiled
+pork video, with ingredients, six steps, media cues, and warnings:
+
+```text
+youtube_transcript_auto_generated
+gemini_cli_recipe_structuring
+```
+
+### Long-running extraction note
+
+The successful POST took about 61 seconds. Unity coroutine use prevents the main
+thread from blocking, but it does not remove HTTP timeout limits. The current
+client transport default was 12 seconds, so long-running extraction can still
+time out even though it is coroutine-based.
+
+Short-term fix:
+
+```text
+Increase the backend extraction client timeout for dev validation.
+```
+
+Long-term shape:
+
+```text
+POST /v1/recipe-extractions       -> 202 Accepted + jobId
+GET  /v1/recipe-extractions/{id}  -> queued/running/completed/failed
+```
+
+That avoids holding one HTTP request open for the entire Gemini/YouTube
+processing duration.
