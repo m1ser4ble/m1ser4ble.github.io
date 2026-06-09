@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Manifest Android Interview 3편: Jetpack과 Business Logic 독해 가이드"
-date: 2026-06-09 10:20:00 +0900
+date: 2026-06-09 09:03:00 +0900
 categories: android
 excerpt: "Jetpack과 Business Logic 파트는 UI 상태, 의존성, 백그라운드 작업, 네트워크, 저장소를 분리해 Android 앱을 운영 가능한 구조로 만드는 법을 다룬다."
 toc: true

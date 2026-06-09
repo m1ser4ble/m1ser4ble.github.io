@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Manifest Android Interview 4편: Compose Foundation과 Runtime 독해 가이드"
-date: 2026-06-09 10:21:00 +0900
+date: 2026-06-09 09:04:00 +0900
 categories: android
 excerpt: "Compose Foundation과 Runtime 파트는 @Composable 코드가 compiler와 runtime을 거쳐 state-driven UI로 실행되는 방식을 설명한다."
 toc: true

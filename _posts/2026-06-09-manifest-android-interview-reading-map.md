@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Manifest Android Interview 독해 지도"
-date: 2026-06-09 10:06:00 +0900
+date: 2026-06-09 09:00:00 +0900
 categories: android
 excerpt: "Manifest Android Interview는 Android Framework와 Jetpack Compose 면접 준비를 Q&A로 압축한 책이며, 이 글은 책을 1회독 전에 훑기 위한 독해 지도다."
 toc: true

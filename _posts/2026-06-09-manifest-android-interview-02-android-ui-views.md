@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Manifest Android Interview 2편: Android UI - Views 독해 가이드"
-date: 2026-06-09 10:19:00 +0900
+date: 2026-06-09 09:02:00 +0900
 categories: android
 excerpt: "Android View 시스템 파트는 전통 UI가 View tree, measure/layout/draw, invalidation, RecyclerView 재사용으로 화면을 갱신하는 방식을 설명한다."
 toc: true

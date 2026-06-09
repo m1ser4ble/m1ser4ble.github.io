@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Manifest Android Interview 5편: Compose UI와 Testing 독해 가이드"
-date: 2026-06-09 10:22:00 +0900
+date: 2026-06-09 09:05:00 +0900
 categories: android
 excerpt: "Compose UI 파트는 Modifier, layout, lazy components, drawing, animation, navigation, preview, test, semantics를 통해 Compose 화면을 실제 제품 UI로 만드는 방법을 다룬다."
 toc: true

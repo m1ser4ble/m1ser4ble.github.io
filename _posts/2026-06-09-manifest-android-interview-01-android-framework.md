@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Manifest Android Interview 1편: Android Framework 독해 가이드"
-date: 2026-06-09 10:18:00 +0900
+date: 2026-06-09 09:01:00 +0900
 categories: android
 excerpt: "Android Framework 파트는 앱이 OS와 맺는 계약을 설명하는 구간이다. Activity, Fragment, Service, Intent, Context, Manifest, permission, threading을 하나의 실행 모델로 묶어 읽는다."
 toc: true
