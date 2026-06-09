@@ -227,7 +227,7 @@ flowchart LR
     Producer[UI event / background callback / system event]
     Handler[Handler]
     Queue[MessageQueue]
-    Looper[Looper.loop()]
+    Looper["Looper.loop()"]
     Dispatch[dispatchMessage]
     Callback[Runnable / handleMessage]
     UI[UI update on owning thread]
@@ -372,16 +372,16 @@ State hoisting은 단지 코드 스타일이 아니다. 면접에서는 다음 �
 
 <div class="mermaid">
 flowchart LR
-    A[Modifier.clickable()]
-    B[.padding(21.dp)]
-    C[.fillMaxWidth()]
+    A["Modifier.clickable()"]
+    B[".padding(21.dp)"]
+    C[".fillMaxWidth()"]
     Result1[padding area also clickable]
 
     A --> B --> C --> Result1
 
-    D[Modifier.padding(21.dp)]
-    E[.clickable()]
-    F[.fillMaxWidth()]
+    D["Modifier.padding(21.dp)"]
+    E[".clickable()"]
+    F[".fillMaxWidth()"]
     Result2[only padded content clickable]
 
     D --> E --> F --> Result2
