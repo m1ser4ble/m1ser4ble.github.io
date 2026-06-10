@@ -1,9 +1,9 @@
 ---
 layout: single
-title: "Manifest Android Interview 1편: Android Framework 답변 지도"
+title: "Manifest Android Interview 1편: Android Framework 독해와 답변 지도"
 date: 2026-06-09 09:01:00 +0900
 categories: android
-excerpt: "Android Framework 파트의 33개 면접 질문을 원문 순서대로 따라가며, 각 질문에 대한 답변 골격과 주의점을 정리한다."
+excerpt: "Android Framework 파트를 플랫폼, 컴포넌트, 생명주기, 스레딩, 리소스와 빌드 모델로 읽고 33개 질문의 답변 골격까지 정리한다."
 toc: true
 toc_sticky: true
 tags: [android, interview, framework, lifecycle, intent, reading-guide]
@@ -17,137 +17,154 @@ source: "Manifest Android Interview: The Ultimate Guide, Jaewoong Eum, 2025 PDF"
 
 ## TL;DR
 
-- 이 글은 원문 p.12~120, `Category 0: The Android Framework`의 **답변 지도**다.
-- 이전 글처럼 "무엇을 물어봐야 하는가"만 남기면 이 책의 Q&A 기능이 사라진다. 그래서 이번 버전은 원문 numbered question 33개를 전부 답변 capsule로 정리한다.
-- 답변 capsule은 원문을 베끼지 않고, 면접에서 말해야 할 핵심만 재구성한다.
-- Android Framework 답변의 공통 패턴은 `정의 -> OS와의 계약 -> lifecycle/thread/process/resource 제약 -> 실무 주의점`이다.
+- 이 글은 원문 p.12~120, `Category 0: The Android Framework`를 사람이 먼저 이해할 수 있도록 다시 배열한 독해 지도다.
+- 원문의 질문 순서는 유지하되, 질문을 바로 외우지 않는다. 먼저 Android Framework를 `플랫폼 구조`, `컴포넌트 진입`, `상태와 생명주기`, `스레드와 프로세스`, `리소스/보안/빌드`라는 다섯 모델로 이해한다.
+- 원문 numbered question 33개는 모두 답변 capsule로 다룬다. Practical question은 별도 질문 목록으로 방치하지 않고 각 답변의 `면접 포인트`와 `주의점`에 흡수했다.
+- Android Framework 면접 답변의 공통 형식은 `정의 -> OS와의 계약 -> lifecycle/thread/process/resource 제약 -> 실무에서의 선택 기준`이다.
 
 ## 이 글이 답하려는 질문
 
-> Android Framework 면접 질문을 받았을 때, 각 개념을 어떤 한 줄 답과 근거로 설명해야 하는가?
+> Android Framework 질문을 받았을 때, 개념을 외운 티가 아니라 Android가 앱을 어떻게 실행하고 통제하는지 이해한 사람처럼 설명하려면 무엇을 말해야 하는가?
 
-이 파트는 Android를 "API 목록"으로 외우게 만드는 구간이 아니다. 원문은 질문마다 정의, 동작 방식, 사용 사례, summary, practical question을 제공한다. 따라서 독해 목표도 단순하다.
+원문은 Android Framework를 API 사전처럼 나열하지 않는다. 각 질문은 "무엇인가?"로 시작하지만 실제 답은 대부분 다음 구조로 끝난다.
 
-- 질문을 들으면 어떤 Android 계층의 문제인지 분류한다.
-- 한 줄 답으로 개념의 목적을 먼저 말한다.
-- lifecycle, process, permission, thread, resource 관점의 근거를 붙인다.
-- 마지막에 실무에서의 함정이나 선택 기준을 덧붙인다.
+- 누가 이 객체나 컴포넌트를 만든다: 앱 코드인가, framework인가, system service인가.
+- 언제 살아 있고 언제 사라진다: Activity, Fragment, Service, process, Context의 수명 경계가 무엇인가.
+- 어떤 thread에서 실행된다: main thread, Looper, Handler, Binder callback, background 작업의 경계가 무엇인가.
+- 어떤 데이터를 어디까지 넘길 수 있다: Intent extra, Bundle, Parcelable, ContentProvider, file, permission의 경계가 무엇인가.
+- 무엇을 잘못하면 장애가 되는가: ANR, memory leak, lost state, wrong Context, exported component, oversized APK 같은 실패 패턴이 무엇인가.
+
+따라서 이 글의 목표는 질문을 더 많이 만드는 것이 아니다. 질문이 가리키는 메커니즘을 먼저 설명하고, 그 뒤에 면접에서 바로 말할 수 있는 답변 골격을 붙이는 것이다.
 
 ## 읽기 전에 알아야 할 것
 
-Android 앱은 OS가 lifecycle과 process를 강하게 관리하는 event-driven 프로그램이다. 앱은 `main()`에서 시작해 모든 흐름을 직접 통제하지 않는다. Manifest에 컴포넌트를 선언하고, Intent로 진입하고, Activity/Fragment/Service lifecycle 안에서 UI와 작업을 처리한다.
+Android 앱은 `main()`에서 시작해 개발자가 모든 흐름을 직접 끌고 가는 프로그램이 아니다. 앱은 OS가 관리하는 component 집합이고, 각 component는 framework가 정한 진입점과 lifecycle 안에서 호출된다. 이 차이를 잡지 못하면 Intent, Activity, Service, BroadcastReceiver, ContentProvider, Context, Bundle, Handler가 전부 별개의 암기 항목처럼 보인다.
+
+첫 번째 mental model은 이것이다.
 
 <div class="mermaid">
 flowchart TD
-    App[App package]
-    Manifest[AndroidManifest.xml]
-    Component[Activity / Service / Receiver / Provider]
-    Intent[Intent / PendingIntent]
-    Lifecycle[Lifecycle callback]
-    Thread[Main thread / Looper / Handler]
-    Resource[Permission / file / memory / process]
-    System[Android Framework services]
+    Kernel["Linux Kernel<br/>process, memory, drivers"]
+    HAL["HAL<br/>hardware abstraction"]
+    ART["ART<br/>DEX, AOT/JIT, GC"]
+    Native["Native libraries<br/>SQLite, SSL, media"]
+    Framework["Application Framework<br/>ActivityManager, PackageManager, WindowManager"]
+    App["App components<br/>Activity, Service, Receiver, Provider"]
+    State["State boundaries<br/>Bundle, ViewModel, storage"]
+    Thread["Threading model<br/>main thread, Looper, Handler"]
 
-    App --> Manifest
-    Manifest --> Component
-    Intent --> Component
-    Component --> Lifecycle
-    Component --> Thread
-    Component --> Resource
-    System --> Component
-    Resource --> System
+    Kernel --> HAL
+    Kernel --> ART
+    Kernel --> Native
+    HAL --> Framework
+    ART --> Framework
+    Native --> Framework
+    Framework --> App
+    App --> State
+    App --> Thread
 </div>
 
-원문 p.13, p.37, p.42, p.53, p.94의 도식들을 하나의 답변 지도로 재구성한 것이다.
+원문 p.12~14의 플랫폼 설명, p.36~42의 Activity/Fragment lifecycle, p.47~59의 component 설명, p.94~120의 runtime/process 설명을 하나의 독해 모델로 재구성한 것이다. 핵심은 "앱이 OS 위에서 돈다"가 아니라 "앱의 화면, 작업, 데이터, 권한, 프로세스 생존이 모두 framework와 계약을 맺고 돈다"는 점이다.
 
 ## 용어 사전
 
-| 용어 | 한 줄 의미 | 답변할 때 붙일 관점 |
-|------|------------|--------------------|
-| Android Framework | 앱이 OS 기능을 사용하는 API와 실행 계약 | Linux kernel, ART, system service, app component |
+| 용어 | 먼저 기억할 의미 | 면접 답변에서 붙일 관점 |
+|------|------------------|--------------------------|
+| Android Framework | 앱이 OS 기능을 쓰도록 제공되는 API와 실행 계약 | system service, component lifecycle, resource access |
 | Activity | 사용자가 상호작용하는 화면 단위 | lifecycle, task, back stack, configuration change |
-| Fragment | Activity 안의 재사용 가능한 UI/lifecycle 단위 | Fragment lifecycle과 View lifecycle 분리 |
+| Fragment | Activity 안에서 재사용되는 UI/lifecycle 단위 | Fragment lifecycle과 View lifecycle 분리 |
 | Service | UI 없이 작업을 수행하는 component | started, bound, foreground, background 제한 |
-| BroadcastReceiver | system/app broadcast에 반응하는 component | manifest 등록, runtime 등록, background 제한 |
-| ContentProvider | 구조화 데이터를 URI로 공유하는 component | authority, URI, ContentResolver, permission |
-| Intent | 작업 요청과 component 통신을 표현하는 message object | explicit, implicit, action, data, category |
-| PendingIntent | 다른 앱/시스템이 나중에 내 권한으로 실행하는 Intent wrapper | notification, alarm, immutable flag |
-| Context | resource, system service, app environment 접근 핸들 | Application Context와 Activity Context 수명 차이 |
+| BroadcastReceiver | system/app broadcast에 반응하는 component | manifest 등록, runtime 등록, 짧은 실행 시간 |
+| ContentProvider | 구조화 데이터를 URI로 공유하는 component | authority, ContentResolver, permission |
+| Intent | 작업 요청과 component 통신을 표현하는 message object | explicit, implicit, action, data, category, extras |
+| PendingIntent | 다른 앱이나 system이 나중에 내 권한으로 실행하는 Intent wrapper | notification, alarm, immutable/update flag |
+| Context | resource, system service, app environment에 접근하는 핸들 | Application Context와 Activity Context의 수명 차이 |
 | Bundle | 작은 key-value 상태 전달/복원 컨테이너 | Intent extra, Fragment arguments, saved state |
 | Looper/Handler | thread별 message queue와 작업 전달 도구 | main thread, worker thread, HandlerThread |
-| ART/Dalvik/Dex | Android 앱 bytecode 실행/컴파일 환경 | AOT, JIT, DEX 변환, startup/runtime trade-off |
+| ART/Dalvik/Dex | Android 앱 bytecode 실행/컴파일 환경 | DEX, AOT, JIT, GC, startup/runtime trade-off |
+| APK/AAB/R8 | 배포 산출물과 최적화 도구 | device-specific delivery, shrinking, obfuscation |
 
 ## 등장 배경과 이유
 
-Android Framework 질문은 대부분 모바일 OS의 제약에서 나온다. 모바일 기기는 메모리, 배터리, 화면 전환, 프로세스 생존, 권한 모델이 강하게 제한된다. 그래서 Android 앱은 다음 질문을 계속 받는다.
+Android Framework 질문은 모바일 OS의 제약에서 나온다. 데스크톱 서버 프로그램처럼 긴 process를 전제로 마음대로 메모리를 잡고, 화면을 직접 관리하고, background에서 계속 실행하는 모델이 아니다. 모바일 기기는 배터리, 메모리, 화면 회전, 앱 전환, 권한, 프로세스 회수 압력이 강하다. 그래서 Android는 앱을 다음 방식으로 제한하고 대신 안정적인 계약을 제공한다.
 
-- 누가 component를 만들고 호출하는가?
-- 화면과 View는 언제 살아 있고 언제 정리되는가?
-- 프로세스가 죽거나 configuration이 바뀌면 상태는 어디에 남는가?
-- UI thread를 막지 않으면서 작업을 어떻게 처리하는가?
-- 앱 간 데이터 공유와 권한 위임을 어떻게 안전하게 다루는가?
+- 화면은 Activity/Fragment lifecycle 안에서 다룬다.
+- 앱 진입점은 Manifest와 Intent로 공개한다.
+- 오래 걸리는 일은 main thread에서 빼고, system이 허용하는 background 실행 모델을 따른다.
+- 사용자의 민감한 자원은 permission과 scoped storage 같은 정책을 통과한다.
+- process는 언제든 system에 의해 죽을 수 있으므로 상태는 적절한 계층에 저장한다.
 
-원문의 각 Q&A는 이 문제들을 API 이름별로 나눈 것이다.
+이 관점으로 읽으면 원문 p.12~120의 33개 질문은 넓어 보이지만 하나의 질문으로 모인다. "Android는 제한된 모바일 환경에서 앱을 어떻게 발견하고, 실행하고, 중단하고, 복원하고, 최적화하는가?"
 
 ## 역사적 기원
 
-Android 1.0 시절부터 Activity, Intent, Service, BroadcastReceiver, ContentProvider, Manifest는 앱 실행 모델의 중심이었다. 이후 Fragment, runtime permission, background execution limit, Jetpack ViewModel, App Bundle, R8 같은 도구가 추가되었지만, 면접에서 여전히 묻는 기본 질문은 같다.
+Android 초기부터 중심에는 `Activity`, `Service`, `BroadcastReceiver`, `ContentProvider`, `Intent`, `AndroidManifest.xml`가 있었다. 이들은 앱이 OS와 연결되는 네 개의 component와 그 component를 찾아 호출하는 선언/메시지 모델이다. 이후 Fragment, runtime permission, background execution limit, App Bundle, R8, ART의 JIT/AOT 조합처럼 새로운 도구가 추가됐지만 면접에서 묻는 기본 질문은 여전히 이 초기 구조 위에 놓인다.
 
-| 흐름 | 면접에서 남는 질문 |
-|------|-------------------|
-| 초기 Android component model | 앱이 OS와 어떤 계약으로 실행되는가 |
-| Fragment와 다양한 form factor | UI 조각과 View lifecycle을 어떻게 관리하는가 |
-| Android 6 runtime permission | 민감 권한을 언제, 왜, 어떻게 요청하는가 |
-| background 제한 강화 | Service, WorkManager, foreground service를 어떻게 구분하는가 |
-| ART, AAB, R8 | runtime/build/distribution 최적화를 어떻게 설명하는가 |
+| 흐름 | 왜 생겼는가 | 이 파트에서 이어지는 질문 |
+|------|-------------|----------------------------|
+| Manifest/component model | 앱을 설치 시점에 system이 발견하고 권한/진입점을 관리하기 위해 | Q1, Q5, Q6, Q9~Q11 |
+| Activity/task model | 화면 전환과 뒤로 가기 경험을 OS 차원에서 일관되게 만들기 위해 | Q7, Q15, Q16, Q19 |
+| Fragment/View lifecycle | 큰 화면, 재사용 UI, 화면 내부 상태 관리를 위해 | Q8, Q18 |
+| Runtime permission | 민감 자원 접근을 설치 시점이 아니라 사용 맥락에서 제어하기 위해 | Q22 |
+| ART/AAB/R8 | 다양한 기기에서 실행 성능과 배포 크기를 동시에 관리하기 위해 | Q28~Q31 |
 
 ## 학술적/이론적 배경
 
-| 배경 | Android에서의 표현 | 답변 포인트 |
-|------|-------------------|-------------|
-| Event-driven architecture | Intent, BroadcastReceiver, lifecycle callback | 호출자는 내 코드가 아니라 OS일 수 있다 |
-| State machine | Activity/Fragment/Service lifecycle | 현재 state에서 허용되는 작업을 말해야 한다 |
-| Capability delegation | PendingIntent, permission | 권한을 위임하거나 제한하는 방식이 핵심이다 |
-| Message queue | Looper, Handler, HandlerThread | thread는 queue를 통해 순차적으로 작업을 처리한다 |
-| Process isolation | UID, sandbox, process priority | 보안과 메모리 회수의 기본 단위다 |
-| Serialization | Bundle, Parcelable, Serializable | component boundary를 넘기 위한 데이터 flattening이다 |
-| Build-time optimization | R8, build variant, AAB | 앱 크기와 배포 산출물도 성능의 일부다 |
+이 파트는 Android API 설명처럼 보이지만, 밑에는 몇 가지 컴퓨팅 모델이 깔려 있다.
+
+- Event-driven programming: 앱은 사용자의 입력, lifecycle event, broadcast, binder callback, message queue event에 반응한다.
+- Component-based architecture: 앱 기능은 Activity/Service/Receiver/Provider로 나뉘고, 각 component는 system이 이해할 수 있는 계약을 갖는다.
+- Capability/security model: permission, URI grant, PendingIntent, exported component는 "누가 어떤 권한으로 무엇을 실행할 수 있는가"를 제어한다.
+- State machine: Activity와 Fragment는 상태 전이를 갖고, 각 callback은 어느 자원을 잡고 놓아야 하는지에 대한 의미를 가진다.
+- Queueing/concurrency model: main thread의 Looper는 message를 순차 처리한다. 오래 걸리는 작업은 queue를 막고 ANR로 이어진다.
+- Resource-constrained runtime: process priority, GC, shrinking, bundle delivery는 배터리/메모리/저장공간/기기 다양성 문제의 답이다.
 
 ## 연대표
 
-| 시기 | 변화 | 이 파트에서 연결되는 질문 |
-|------|------|--------------------------|
-| 2008 | Android 앱 component model 정착 | Android, Intent, Activity, Manifest |
-| Android 3.x~4.x | Fragment와 다양한 화면 대응 확대 | Fragment lifecycle, configuration changes |
-| Android 4.4~5.0 | ART 도입과 Dalvik 대체 | ART, Dalvik, Dex |
-| Android 6.0 | runtime permission 도입 | runtime permission |
-| Android 8.0 이후 | background execution 제한 강화 | Service, BroadcastReceiver, WorkManager 선택 |
-| Android App Bundle 시대 | device-specific delivery 강화 | APK vs AAB, app size |
-| 현대 Android Gradle Plugin | R8 기본화 | shrinking, optimization, obfuscation |
+| 시기 | 변화 | 이 파트에서 읽을 의미 |
+|------|------|------------------------|
+| Android 초기 | 4대 component, Manifest, Intent 중심 모델 | 앱은 OS가 발견하고 호출하는 component 집합 |
+| Android 3.x~4.x | Fragment와 tablet 대응이 중요해짐 | Activity 내부 UI와 View lifecycle을 분리해서 봐야 함 |
+| Android 5.x 이후 | ART가 기본 runtime이 됨 | DEX 실행, AOT/JIT, GC 설명이 면접 주제가 됨 |
+| Android 6.0 | runtime permission 도입 | permission은 manifest 선언만으로 끝나지 않음 |
+| Android 8.0 이후 | background execution 제한 강화 | Service/BroadcastReceiver 답변에서 foreground/background 제약이 필수 |
+| Android App Bundle 시대 | AAB와 dynamic delivery 확산 | APK와 AAB 차이, 앱 크기 최적화가 실무 질문이 됨 |
 
 ## 동작 메커니즘
 
-### Component entry
+### 1. 플랫폼 구조: Android는 "앱 API"가 아니라 실행 환경이다
+
+원문 첫 질문은 Android의 정의를 묻지만, 답은 단순히 "모바일 OS"가 아니다. Android는 Linux kernel 위에 하드웨어 추상화, runtime, native library, framework service, app component 모델을 얹은 platform이다. 이 구조 때문에 앱 개발자는 camera driver를 직접 다루지 않고 framework API를 호출하며, process와 memory는 kernel/system service가 관리하고, Kotlin/Java 코드는 DEX로 변환되어 ART 위에서 실행된다.
+
+면접에서 이 계층을 말해야 하는 이유는 이후 질문이 모두 여기에 매달리기 때문이다. ActivityManager는 component와 process를 관리하고, PackageManager는 Manifest와 설치 정보를 이해하고, WindowManager는 화면을 관리하며, ART는 DEX 실행과 GC를 담당한다. 그래서 Q0, Q20, Q28, Q32는 서로 떨어진 질문이 아니라 같은 구조의 다른 층을 묻는 질문이다.
+
+### 2. 컴포넌트 진입 모델: 앱은 Manifest와 Intent로 발견된다
+
+Android component는 단순한 class가 아니다. system이 알고 호출할 수 있는 진입점이다. Activity, Service, BroadcastReceiver, ContentProvider는 Manifest에 선언되거나 runtime에 등록되고, Intent나 URI를 통해 호출된다.
 
 <div class="mermaid">
 flowchart LR
-    Manifest[Manifest declaration]
-    Intent[Intent or system event]
-    Resolver[System resolver]
-    Component[Activity / Service / Receiver / Provider]
-    Lifecycle[Lifecycle callbacks]
-    Work[UI / data / background work]
+    Caller["caller<br/>app or system"]
+    Intent["Intent<br/>action, data, category, extras"]
+    Resolver["PackageManager<br/>intent resolution"]
+    Manifest["AndroidManifest.xml<br/>declared components"]
+    System["framework service<br/>ActivityManager etc."]
+    Target["target component<br/>lifecycle callback"]
+    Permission["permission/exported check"]
 
-    Manifest --> Resolver
+    Caller --> Intent
     Intent --> Resolver
-    Resolver --> Component
-    Component --> Lifecycle
-    Lifecycle --> Work
+    Manifest --> Resolver
+    Resolver --> Permission
+    Permission --> System
+    System --> Target
 </div>
 
-Manifest는 OS가 앱 component를 발견하게 해주는 선언이고, Intent는 실행 요청이다. explicit Intent는 대상 component를 직접 지정하고, implicit Intent는 action/data/category를 보고 시스템이 대상 component를 찾는다.
+이 모델을 알면 Intent, PendingIntent, Manifest, Service, BroadcastReceiver, ContentProvider 질문이 한 번에 정리된다. Intent는 "무엇을 하라"는 요청이고, Manifest는 "이 앱에는 어떤 진입점과 권한이 있다"는 선언이며, system service는 두 정보를 조합해 적절한 component를 실행한다. PendingIntent는 여기서 한 단계 더 나아가, 다른 앱이나 system이 나중에 내 앱의 권한으로 특정 Intent를 실행할 수 있게 하는 token이다.
 
-### Lifecycle boundary
+### 3. 상태와 생명주기 모델: 화면은 언제든 멈추고 다시 만들어질 수 있다
+
+Activity와 Fragment 질문은 callback 이름을 외우는 문제가 아니다. 화면과 View가 언제 생성되고, 언제 사용자와 상호작용하고, 언제 일시 중지되고, 언제 제거되는지에 따라 자원과 상태를 어디에 둬야 하는지 판단하는 문제다.
 
 <div class="mermaid">
 stateDiagram-v2
@@ -155,157 +172,372 @@ stateDiagram-v2
     Created --> Started: onStart
     Started --> Resumed: onResume
     Resumed --> Paused: onPause
-    Paused --> Resumed: focus returns
-    Paused --> Stopped: fully hidden
+    Paused --> Stopped: onStop
     Stopped --> Started: onRestart
     Stopped --> Destroyed: onDestroy
     Destroyed --> [*]
+    Resumed --> Recreated: configuration_change
+    Recreated --> Created: new_instance
 </div>
 
-Activity 답변은 callback 이름을 외우는 데서 끝나면 약하다. `visible resource`는 `onStart/onStop`, foreground interaction은 `onResume/onPause`, 최종 정리는 `onDestroy`, 임시 UI 상태 복원은 `onSaveInstanceState`와 ViewModel로 나눠 설명해야 한다.
+configuration change를 예로 들면, 회전이나 locale 변경으로 Activity가 destroy/recreate될 수 있다. 이때 UI에 즉시 다시 그릴 작은 상태는 `onSaveInstanceState()`의 Bundle에, 화면 로직과 일시적 UI data는 ViewModel에, process death 이후에도 살아야 하는 data는 database/file/remote source에 둔다. Fragment는 여기서 한 번 더 조심해야 한다. Fragment instance의 lifecycle과 Fragment가 가진 View의 lifecycle이 다르므로, View binding이나 observer는 View lifecycle에 맞춰 정리해야 leak과 stale reference를 피할 수 있다.
 
-### Thread and process
+### 4. 스레드와 프로세스 모델: main thread를 막으면 앱 전체가 멈춘다
+
+Android UI는 main thread에서 처리된다. main thread에는 Looper가 있고, Looper는 message queue에서 작업을 꺼내 Handler를 통해 dispatch한다. 입력 처리, lifecycle callback, UI drawing 관련 작업이 같은 흐름을 공유하므로 오래 걸리는 IO, network, database, bitmap 처리, lock 대기는 ANR로 이어진다.
 
 <div class="mermaid">
 flowchart TD
-    Process[App process]
-    Main[Main thread]
-    Queue[MessageQueue]
-    Looper[Looper]
-    Handler[Handler]
-    UI[UI work]
-    Worker[Worker thread / HandlerThread]
-    Background[IO / CPU / scheduled work]
+    Event["input, lifecycle, binder callback"]
+    Main["main thread"]
+    Queue["Looper message queue"]
+    Handler["Handler dispatch"]
+    Fast["short UI work"]
+    Slow["long blocking work"]
+    ANR["ANR risk"]
+    Worker["worker thread<br/>HandlerThread, executor, WorkManager"]
+    Result["post result<br/>back to main thread"]
 
-    Process --> Main
-    Main --> Queue --> Looper --> UI
-    Handler --> Queue
-    Process --> Worker --> Background
+    Event --> Queue
+    Queue --> Main
+    Main --> Handler
+    Handler --> Fast
+    Handler --> Slow
+    Slow --> ANR
+    Main --> Worker
+    Worker --> Result
+    Result --> Queue
 </div>
 
-Android의 UI는 main thread 중심이다. ANR, Handler, HandlerThread, WorkManager, process priority 질문은 모두 이 모델에서 이어진다.
+process management도 같은 맥락이다. Android는 메모리가 부족하면 중요도가 낮은 process를 종료할 수 있다. foreground Activity, visible component, foreground Service가 있는 process는 우선순위가 높고, cached/background process는 낮다. 따라서 "process가 죽지 않는다"는 전제 대신 "다시 시작될 수 있다"는 전제로 상태와 작업을 설계해야 한다.
 
-## 책의 전체 구조에서 이 파트의 위치
+### 5. 리소스, 보안, 빌드 모델: 앱은 기기와 사용자 정책에 맞춰 작아지고 제한된다
 
-1편은 뒤의 View, Jetpack, Business Logic, Compose 파트를 받치는 바닥 지식이다. View는 Activity/Window 위에서 돌고, Jetpack ViewModel은 configuration change 문제를 완화하며, Compose도 결국 Activity와 lifecycle 위에서 시작된다. 따라서 이 파트를 건너뛰면 뒷부분의 API가 왜 필요한지 설명하기 어렵다.
+Context, permission, file system, accessibility, APK/AAB/R8 질문은 얼핏 흩어져 보이지만 모두 resource boundary를 다룬다. Context는 resource와 system service 접근 경로이고, permission은 민감 resource 접근 권한이며, file system은 앱 private/public/shared storage의 경계이고, accessibility는 사용자가 앱을 이해하고 조작할 수 있게 만드는 UI contract다. APK/AAB/R8은 앱을 어떻게 packaging하고, 기기별로 전달하고, 불필요한 code/resource를 줄일지에 대한 배포 단계의 resource model이다.
+
+## 책의 전체 구조
+
+이 책은 Android 면접 질문을 category별로 묶는 방식으로 진행된다. 1편인 `The Android Framework`는 뒤에서 나올 UI, Jetpack, architecture, performance 질문의 바닥을 깐다. 그래서 이 파트는 독립 암기보다 "나중 질문을 읽기 위한 운영체제 지도"로 읽는 편이 좋다.
+
+이번 포스트는 원문 p.12~120만 다룬다. 책 전체를 page 수로 기계적으로 나누지 않고, 원문의 category 경계를 따라 시리즈화한다. 이유는 category 하나가 하나의 면접 사고 단위를 이루기 때문이다. 1편은 Android 앱이 system과 맺는 기본 계약을 다루고, 이후 편은 그 계약 위에서 UI, Jetpack, architecture, performance 같은 세부 주제로 내려가는 방식이 자연스럽다.
 
 ## 장별 독해 가이드
 
-원문 순서를 유지하되, 1회독에서는 다음 묶음으로 읽으면 답변 구조가 보인다.
+원문 순서를 그대로 읽되, 머릿속에는 아래 다섯 묶음을 유지한다.
 
-| 묶음 | 원문 질문 | 읽는 목적 |
-|------|-----------|-----------|
-| 플랫폼 구조 | Q0, Q28, Q32 | Android가 어떤 runtime/process 위에서 앱을 실행하는지 이해 |
-| component 계약 | Q1, Q2, Q5, Q6, Q9, Q10, Q11 | OS가 앱 component를 발견하고 호출하는 방식 이해 |
-| UI lifecycle/state | Q7, Q8, Q12, Q17, Q18, Q19 | 화면, View, 상태 복원, 데이터 전달 경계 이해 |
-| resource/permission/storage | Q4, Q13, Q22, Q26, Q27 | Context, memory, permission, accessibility, file system 이해 |
-| threading/performance/build | Q14, Q20, Q21, Q23, Q24, Q25, Q29, Q30, Q31 | ANR, diagnostics, optimization, distribution 설명 |
-| navigation | Q15, Q16 | deep link, task, back stack 설명 |
+| 독해 묶음 | 원문 질문 | 읽는 목적 |
+|-----------|-----------|-----------|
+| 플랫폼 구조 | Q0, Q20, Q28, Q32 | Android가 어떤 runtime/process/service 위에서 앱을 실행하는지 이해 |
+| 컴포넌트 진입 | Q1, Q2, Q5, Q6, Q9, Q10, Q11, Q15, Q16 | 앱 component가 어떻게 발견되고 호출되는지 이해 |
+| 상태와 생명주기 | Q7, Q8, Q12, Q17, Q18, Q19 | 화면과 상태가 언제 사라지고 어디에 보관돼야 하는지 이해 |
+| 리소스와 보안 | Q3, Q4, Q13, Q21, Q22, Q26, Q27 | data 전달, Context, memory, permission, storage, accessibility 경계 이해 |
+| 스레딩과 배포 | Q14, Q23, Q24, Q25, Q29, Q30, Q31 | ANR, diagnostics, build variant, package optimization 이해 |
+
+읽는 순서는 원문을 따르는 것이 좋다. 다만 처음 읽을 때 Q7 lifecycle, Q23 Looper/Handler, Q32 process management는 표시해두고 여러 번 돌아오는 anchor로 삼는다. 뒤의 질문들이 이 셋을 계속 전제하기 때문이다.
 
 ## 질문별 답변 지도
 
-아래 표는 원문 numbered question 33개를 모두 포함한다. `한 줄 답`은 면접에서 첫 문장으로 말할 수 있는 수준이고, `핵심 근거`는 그 뒤에 붙일 설명이다.
+아래 답변 capsule은 원문 numbered question 33개를 모두 포함한다. 표 하나에 압축하지 않고, 위에서 설명한 다섯 개념군 아래에 배치했다. 각 capsule은 원문을 복제하지 않고 면접 답변의 뼈대만 남긴 것이다.
 
-| No | 원문 질문 | 한 줄 답 | 핵심 근거 | 주의점 | 원문 |
-|----|-----------|----------|-----------|--------|------|
-| 0 | What is Android? | Android는 Linux kernel 기반의 open-source mobile OS이자 app framework다. | Linux kernel, HAL, ART, native libraries, framework API, apps 계층으로 구성된다. SDK와 Android Studio로 Java/Kotlin 앱을 만든다. | 단순 OS라고만 답하지 말고 layered architecture와 app framework를 같이 말한다. | p.12 |
-| 1 | What is Intent? | Intent는 component 간 작업 요청을 표현하는 messaging object다. | Activity 시작, Service 시작, broadcast 전송, data 전달에 쓰인다. explicit은 대상 component를 직접 지정하고, implicit은 action/data/category로 system resolver가 대상을 찾는다. | implicit Intent는 처리 앱이 없거나 여러 개일 수 있으므로 resolver/chooser 상황을 설명한다. | p.15 |
-| 2 | What is PendingIntent? | PendingIntent는 다른 앱이나 system service가 나중에 내 앱 권한으로 Intent를 실행하게 하는 wrapper다. | notification tap, alarm, widget처럼 앱 lifecycle 밖에서 실행될 작업에 쓰인다. Activity, Service, Broadcast 형태로 만들 수 있다. | Android 12 이후 immutable/mutable flag를 명확히 지정해야 하고, 기본은 `FLAG_IMMUTABLE`을 선호한다. | p.17 |
-| 3 | Serializable vs Parcelable | 둘 다 component 간 데이터 전달용 serialization이지만, Android에서는 Parcelable이 성능상 유리하다. | Serializable은 Java 표준이고 reflection 기반이라 느리고 garbage가 많다. Parcelable은 Android IPC에 맞게 flattening을 직접/컴파일러가 처리한다. | Parcelable은 persistent storage 포맷이 아니라 component/IPC 전달용으로 이해한다. | p.19 |
-| 4 | What is Context? | Context는 resource, system service, app environment에 접근하는 핸들이다. | Application Context는 app lifetime에 묶이고, Activity Context는 UI theme/window/lifecycle에 묶인다. layout inflate, Toast, resource, service 접근에 사용된다. | Activity Context를 singleton이나 long-lived object에 보관하면 memory leak이 난다. | p.23 |
-| 5 | What is Application class? | Application class는 app process 전체의 전역 초기화와 상태를 담당하는 base class다. | process 생성 시 먼저 초기화되고, dependency, analytics, library setup처럼 app-wide resource 준비에 쓴다. Manifest에 custom Application을 등록한다. | 무거운 작업을 `onCreate`에 몰아 startup을 늦추면 안 된다. UI lifecycle과도 다르다. | p.31 |
-| 6 | AndroidManifest purpose | Manifest는 OS가 앱의 component, permission, feature, metadata를 알 수 있게 하는 선언 파일이다. | Activity, Service, Receiver, Provider 등록, permission 선언, intent filter, min/target SDK, theme 등을 담는다. | component가 Manifest에 없으면 system이 진입할 수 없는 경우가 있다. exported component는 보안 검토가 필요하다. | p.34 |
-| 7 | Activity lifecycle | Activity lifecycle은 화면 component가 생성, 표시, foreground, background, 종료로 이동하는 state machine이다. | `onCreate`, `onStart`, `onResume`, `onPause`, `onStop`, `onDestroy`, `onRestart` 단계마다 resource 처리 위치가 다르다. | `onPause`는 짧고 빠르게 처리한다. 무거운 저장/정리는 lifecycle 단계별 책임을 나눠야 한다. | p.36 |
-| 8 | Fragment lifecycle | Fragment는 Activity와 별도 lifecycle을 가지며, 특히 Fragment instance와 Fragment View lifecycle이 분리된다. | `onAttach`, `onCreate`, `onCreateView`, `onViewCreated`, `onDestroyView`, `onDestroy` 흐름을 가진다. View 관련 observer/binding은 View lifecycle에 묶는다. | `viewLifecycleOwner` 없이 observe하거나 binding을 늦게 정리하면 leak과 crash가 난다. | p.41 |
-| 9 | What is Service? | Service는 UI 없이 long-running work를 수행하는 app component다. | started service는 명시적으로 stop될 때까지 작업하고, bound service는 client와 연결되어 상호작용한다. foreground service는 사용자에게 notification을 보여주며 중요 작업을 수행한다. | 현대 Android에서는 background 제한이 강하므로 WorkManager/foreground service 선택 기준을 말해야 한다. | p.47 |
-| 10 | BroadcastReceiver | BroadcastReceiver는 system 또는 app broadcast event를 수신해 짧은 작업을 수행하는 component다. | system broadcast, custom broadcast를 받을 수 있고, manifest 등록 또는 runtime 등록이 가능하다. | 오래 실행되는 작업을 receiver에서 직접 하지 말고 work를 위임한다. background broadcast 제한도 언급한다. | p.56 |
-| 11 | ContentProvider | ContentProvider는 URI 기반으로 구조화 데이터를 안전하게 공유하는 component다. | authority와 path로 data endpoint를 노출하고, ContentResolver가 query/insert/update/delete를 호출한다. permission으로 접근을 통제할 수 있다. | DB 구조를 직접 노출하는 것이 아니라 data access boundary를 제공한다고 설명한다. | p.59 |
-| 12 | Configuration changes | configuration change는 Activity recreation을 유발할 수 있으므로 UI 상태와 data 상태를 분리해 보존해야 한다. | 기본 동작은 destroy/recreate다. `onSaveInstanceState`는 transient UI state, ViewModel은 UI-related data, persistent data는 storage가 맡는다. | `android:configChanges`로 recreation을 막는 것은 제한적으로만 쓴다. resource 갱신 책임이 앱으로 넘어온다. | p.64 |
-| 13 | Memory management and leaks | Android는 GC와 process management로 memory를 관리하지만, lifecycle을 넘는 reference가 leak을 만든다. | ART/Dalvik runtime이 unreachable object를 회수하고, low memory 상황에서는 background process를 종료한다. leak 원인은 static reference, Context 보관, listener 미해제 등이다. | GC가 있다고 memory leak이 없는 것은 아니다. 참조가 남아 있으면 회수되지 않는다. | p.66 |
-| 14 | ANR causes/prevention | ANR은 main thread가 오래 막혀 input, broadcast, service 처리 시간 제한을 넘을 때 발생한다. | network, DB, file IO, heavy computation을 main thread에서 수행하면 위험하다. coroutine, executor, WorkManager, profiling으로 대응한다. | "background thread를 쓰면 끝"이 아니라 cancellation, timeout, trace 분석까지 말하면 좋다. | p.68 |
-| 15 | Deep links | Deep link는 외부 URL/intent에서 앱의 특정 화면으로 진입시키는 navigation contract다. | Manifest intent filter로 scheme/host/path를 선언하고, Activity에서 incoming Intent의 data를 파싱해 destination으로 이동한다. adb로 테스트할 수 있다. | App Links와 일반 deep link, 검증된 domain, 잘못된 parameter 처리와 보안을 구분한다. | p.69 |
-| 16 | Tasks and back stack | Task는 사용자가 목표를 수행하는 Activity 묶음이고, back stack은 Activity navigation history다. | Activity launch 시 stack에 push되고 back 시 pop된다. launch mode와 intent flag가 task/back stack 동작을 바꾼다. | `singleTask`, `singleTop`, `singleInstance`는 UX와 deep link 동작에 영향을 주므로 남용하지 않는다. | p.72 |
-| 17 | Bundle purpose | Bundle은 component 간 작은 key-value data 전달과 transient state 저장에 쓰는 container다. | Intent extras, Fragment arguments, `onSaveInstanceState`에서 사용된다. OS가 serialize 가능한 형태로 관리한다. | 큰 객체나 장기 data 저장소로 쓰면 안 된다. size limit과 serialization 비용을 고려한다. | p.74 |
-| 18 | Passing data between Activities/Fragments | Activity 간에는 Intent extras, Fragment 간에는 arguments, shared ViewModel, Fragment Result API, Navigation Safe Args를 상황에 맞게 쓴다. | 일회성 navigation data는 Bundle/arguments, 같은 Activity 안 Fragment 공유 상태는 shared ViewModel, type-safe navigation은 Safe Args가 적합하다. | Fragment끼리 직접 reference로 통신하면 coupling과 lifecycle 문제가 생긴다. | p.77 |
-| 19 | Activity during configuration changes | configuration change가 발생하면 Activity가 destroy/recreate되어 새 configuration resource를 반영한다. | `onPause`, `onStop`, `onDestroy` 후 `onCreate`로 재생성된다. state는 saved instance state, ViewModel, persistent storage로 나눠 복원한다. | configuration change와 process death를 같은 문제로 답하면 안 된다. ViewModel은 process death를 보장하지 않는다. | p.84 |
-| 20 | ActivityManager | ActivityManager는 task, process, memory 상태 같은 system-level 정보를 제공하는 Android system service다. | running process/task 정보, memory info, debugging/diagnostics에 쓸 수 있다. low memory 상황을 감지해 app behavior를 조정할 수 있다. | 최신 Android에서는 privacy/background 제한 때문에 과거처럼 모든 process 정보를 자유롭게 얻는 모델이 아니다. | p.86 |
-| 21 | SparseArray advantages | SparseArray는 int key에 최적화된 Android collection으로, 작은/중간 규모 mapping에서 memory overhead를 줄인다. | `HashMap<Integer, T>`의 boxing과 entry object overhead를 피한다. integer key만 쓰며 null key는 없다. | 매우 큰 dataset이나 일반 Map API가 필요한 경우에는 HashMap이 더 적합할 수 있다. | p.89 |
-| 22 | Runtime permissions | runtime permission은 민감 권한을 설치 시점이 아니라 기능 사용 시점에 요청하는 privacy model이다. | Manifest에 선언하고, 실행 중 grant 여부를 확인하며, 필요할 때 rationale과 함께 요청한다. denial과 "don't ask again"도 UX로 처리한다. | 권한은 기능 맥락에서 요청해야 한다. 앱 시작 시 한꺼번에 요청하면 신뢰와 승인율이 떨어진다. | p.91 |
-| 23 | Looper, Handler, HandlerThread | Looper는 thread의 message loop, Handler는 queue에 작업을 넣는 API, HandlerThread는 Looper를 가진 worker thread다. | main thread는 기본 Looper를 갖는다. worker thread는 `Looper.prepare`/`loop`가 필요하고, HandlerThread는 이를 쉽게 만든다. | Handler는 단순 delay 도구가 아니라 thread-affinity와 message queue를 설명하는 핵심 개념이다. | p.94 |
-| 24 | Exception tracing | Android exception 추적은 development의 Logcat/stack trace와 production의 crash reporting을 나눠 접근한다. | Logcat은 crash type, message, call stack, line을 보여준다. try-catch는 복구 가능한 경계에 쓰고, Crashlytics 같은 도구는 production crash context를 수집한다. | 예외를 무조건 catch해서 삼키면 원인 추적이 어려워진다. logging과 user impact를 같이 고려한다. | p.97 |
-| 25 | Build variants and flavors | build variant는 build type과 product flavor 조합으로 만들어지는 앱 산출물 구성이다. | debug/release 같은 build type과 free/paid/dev/prod 같은 flavor를 조합해 다른 app id, resource, endpoint, signing을 관리한다. | flavor는 제품/환경 차이 관리 도구이고, runtime feature flag와 역할이 다르다. | p.100 |
-| 26 | Accessibility | accessibility는 TalkBack, dynamic font, focus navigation, contrast 등을 통해 더 많은 사용자가 앱을 사용할 수 있게 하는 품질 요구다. | content description, `sp` text size, focus order, touch target, semantic labels, accessibility scanner를 활용한다. | decorative image에는 description을 넣지 않는 등 "많이 넣는 것"보다 의미를 정확히 드러내는 것이 중요하다. | p.102 |
-| 27 | Android file system | Android file system은 Linux 기반 storage 구조 위에 app sandbox와 shared storage 정책을 적용한 저장 모델이다. | `/system`, `/data`, cache, external/shared storage가 역할을 나눈다. app private data는 UID/sandbox로 보호된다. | scoped storage 이후 shared storage 접근은 권한과 API 정책을 함께 고려해야 한다. | p.105 |
-| 28 | ART, Dalvik, Dex Compiler | Android 앱은 JVM bytecode를 DEX로 바꾸고 ART/Dalvik runtime에서 실행한다. 현대 Android는 ART가 중심이다. | Dalvik은 과거 JIT 중심 VM이고, ART는 AOT/JIT와 개선된 GC/profiling으로 성능을 높인다. Dex compiler는 class bytecode를 Android runtime 형식으로 변환한다. | "ART는 무조건 AOT만 한다"처럼 단순화하지 말고 현대 ART의 profile-guided/JIT 조합을 염두에 둔다. | p.107 |
-| 29 | APK vs AAB | APK는 install 가능한 완성 package이고, AAB는 Google Play가 device-specific APK를 생성하기 위한 publishing format이다. | APK는 모든 resource/config를 포함하기 쉬워 커질 수 있다. AAB는 language, density, ABI, dynamic feature delivery를 최적화한다. | AAB는 사용자가 직접 설치하는 파일이 아니라 배포 입력물에 가깝다. sideload에는 APK가 필요하다. | p.109 |
-| 30 | R8 optimization | R8은 Android build에서 code shrinking, optimization, obfuscation, resource shrinking을 수행하는 도구다. | unused code 제거, method inlining, class/member renaming, ProGuard rule 처리로 size와 reverse engineering resistance를 개선한다. | reflection, serialization, DI, JNI, keep rule이 필요한 코드를 잘못 줄이면 runtime crash가 난다. | p.111 |
-| 31 | Reducing application size | 앱 크기는 resource, code, native library, asset, delivery 전략을 함께 줄여야 한다. | unused resource 제거, `shrinkResources`, R8, image compression/WebP, vector drawable, language/resource split, dynamic feature를 사용한다. | 무조건 압축만 하면 품질이나 startup이 나빠질 수 있다. measurement와 trade-off가 필요하다. | p.113 |
-| 32 | Android process management | Android process는 app component가 실행되는 격리된 execution environment이며, OS가 priority와 memory pressure에 따라 관리한다. | 기본적으로 같은 app component는 같은 process/main thread에서 실행된다. UID sandbox, ART instance, process priority, low-memory killer가 관여한다. | multi-process는 isolation 이점이 있지만 IPC 비용, state sync, debugging 복잡도가 커진다. | p.117 |
+### A. 플랫폼과 실행 환경
+
+#### Q0. Android란 무엇인가? (p.12)
+
+- 한 줄 답: Android는 Linux kernel 위에서 runtime, framework API, system service, app component 모델을 제공하는 open-source mobile platform이다.
+- 핵심 근거: kernel은 process, memory, driver 같은 저수준 자원을 관리하고, ART는 DEX bytecode 실행을 담당하며, framework는 ActivityManager/PackageManager 같은 service를 통해 앱 lifecycle과 resource 접근을 중재한다.
+- 면접 포인트: "OS"라고만 답하지 말고, 앱 개발자가 만지는 Activity/Intent/Context가 하위 계층의 resource 관리와 연결된다는 점까지 말한다.
+- 주의점: Android Framework와 Android Platform을 섞어 말할 수는 있지만, framework는 app-facing API/service 계층이라는 식으로 범위를 좁혀 설명하면 답이 선명해진다.
+
+#### Q20. ActivityManager란 무엇인가? (p.86)
+
+- 한 줄 답: ActivityManager는 running app process, task, Activity 상태 같은 실행 정보를 다루는 framework service 접근점이다.
+- 핵심 근거: Android는 component 실행과 process 중요도를 system 차원에서 관리하므로, ActivityManager 계열 API는 app/task/process 상태를 관찰하거나 일부 제어하는 데 쓰인다.
+- 면접 포인트: 현대 앱에서는 직접 process를 통제하기보다 lifecycle-aware component와 WorkManager/foreground service 같은 정책 친화적 API를 우선 쓴다고 말하는 편이 안전하다.
+- 주의점: ActivityManager를 "Activity를 만드는 class"처럼 설명하면 틀린다. 앱 component 실행을 system service 관점에서 다루는 API라고 봐야 한다.
+
+#### Q28. ART, Dalvik, Dex compiler는 무엇인가? (p.107)
+
+- 한 줄 답: Java/Kotlin 코드는 DEX bytecode로 변환되고, Dalvik 또는 ART 같은 Android runtime이 이를 실행한다. 현대 Android의 기본 runtime은 ART다.
+- 핵심 근거: Dalvik은 과거 VM이고, ART는 AOT/JIT와 GC를 통해 startup, runtime 성능, memory 사용을 조정한다. Dex compiler는 JVM bytecode를 Android가 이해하는 DEX 형식으로 바꾼다.
+- 면접 포인트: "JVM에서 그대로 돈다"가 아니라 Android 전용 bytecode/runtime 경로를 거친다고 설명한다.
+- 주의점: ART가 있다고 해서 모든 code가 설치 시점에 전부 native로 고정 컴파일된다고 단순화하면 안 된다. Android 버전별로 AOT/JIT/profile guided 흐름이 섞인다.
+
+#### Q32. Android process와 process management를 설명하라. (p.117)
+
+- 한 줄 답: Android는 앱 component의 중요도에 따라 process 우선순위를 매기고, 메모리가 부족하면 낮은 우선순위 process를 종료할 수 있다.
+- 핵심 근거: foreground/visible/service/cached process처럼 사용자 영향도가 높은 process일수록 오래 유지되고, background cached process는 회수 대상이 된다.
+- 면접 포인트: process death를 예외 상황이 아니라 정상 운영 조건으로 보고, UI state, persistent data, background work를 각각 적절한 저장소와 scheduler에 맡긴다고 말한다.
+- 주의점: singleton이나 static cache에 중요한 상태만 두면 process death 뒤 복원되지 않는다.
+
+### B. 컴포넌트 진입과 앱 간 통신
+
+#### Q1. Intent란 무엇인가? (p.15)
+
+- 한 줄 답: Intent는 component 실행 또는 앱 간 작업 요청을 표현하는 message object다.
+- 핵심 근거: explicit Intent는 특정 component를 직접 지정하고, implicit Intent는 action/data/category를 보고 system이 처리 가능한 component를 찾는다. extras는 부가 data를 전달한다.
+- 면접 포인트: Intent는 단순 data container가 아니라 Android component model의 routing 언어라고 설명하면 좋다.
+- 주의점: implicit Intent는 받을 수 있는 app이 없거나 여러 개인 상황을 고려해야 하고, 민감 data를 아무 component에나 노출하지 않도록 주의해야 한다.
+
+#### Q2. PendingIntent란 무엇인가? (p.17)
+
+- 한 줄 답: PendingIntent는 다른 앱이나 system service가 나중에 내 앱의 권한으로 Intent를 실행할 수 있게 하는 token이다.
+- 핵심 근거: notification click, alarm, widget처럼 현재 내 process가 직접 실행하지 않는 순간에도 사전에 정의한 작업을 system이 수행해야 할 때 사용한다.
+- 면접 포인트: "Intent를 나중에 실행"보다 "권한과 identity를 위임한 실행 token"이라고 말해야 보안 의미가 살아난다.
+- 주의점: mutable/immutable flag, requestCode, update/cancel flag 선택이 보안과 동작에 영향을 준다.
+
+#### Q5. Application class의 목적은 무엇인가? (p.31)
+
+- 한 줄 답: Application class는 process 안에서 앱 전역 초기화와 앱 수준 상태를 다루는 진입점이다.
+- 핵심 근거: process가 시작될 때 만들어지고 Activity보다 수명이 길어서 DI, logging, analytics, global library 초기화 같은 작업에 쓰인다.
+- 면접 포인트: Application은 전역 상태를 둘 수 있는 곳이지만, 무거운 초기화를 몰아넣으면 startup이 느려진다고 함께 말한다.
+- 주의점: user/session 화면 상태를 Application singleton에 기대면 process death나 testability 문제가 커진다.
+
+#### Q6. AndroidManifest의 목적은 무엇인가? (p.34)
+
+- 한 줄 답: AndroidManifest는 앱의 package 정보, component, permission, feature, intent filter를 system에 선언하는 계약서다.
+- 핵심 근거: 설치와 실행 시점에 system은 Manifest를 보고 어떤 Activity/Service/Receiver/Provider가 있는지, 어떤 권한이 필요한지, 어떤 Intent를 받을 수 있는지 판단한다.
+- 면접 포인트: Manifest는 build metadata가 아니라 runtime discovery와 security boundary에 직접 관여한다고 설명한다.
+- 주의점: exported component, permission, intent filter를 잘못 선언하면 보안 취약점이나 실행 불능 상태가 생긴다.
+
+#### Q9. Service란 무엇인가? (p.47)
+
+- 한 줄 답: Service는 UI 없이 background 또는 foreground에서 작업을 수행하는 component다.
+- 핵심 근거: started service는 명령을 받고 독립적으로 실행되고, bound service는 client와 binding되어 API를 제공하며, foreground service는 사용자에게 보이는 ongoing 작업을 알림과 함께 수행한다.
+- 면접 포인트: Service가 별도 thread를 자동 제공하지 않는다는 점을 반드시 말한다. 긴 작업은 worker thread나 적절한 scheduler가 필요하다.
+- 주의점: Android 버전이 올라갈수록 background service 제한이 강해졌으므로, 무조건 Service로 오래 도는 작업을 만들면 안 된다.
+
+#### Q10. BroadcastReceiver란 무엇인가? (p.56)
+
+- 한 줄 답: BroadcastReceiver는 system이나 app이 보내는 broadcast event를 짧게 처리하는 component다.
+- 핵심 근거: manifest에 정적으로 등록하거나 runtime에 동적으로 등록할 수 있고, system event나 app-defined event에 반응한다.
+- 면접 포인트: receiver는 긴 작업을 수행하는 장소가 아니라 작업을 예약하거나 알림을 트리거하는 가벼운 entry point라고 말한다.
+- 주의점: background 제한, implicit broadcast 제한, exported 여부, permission 보호를 함께 고려해야 한다.
+
+#### Q11. ContentProvider란 무엇인가? (p.59)
+
+- 한 줄 답: ContentProvider는 앱 data를 URI 기반 interface로 노출하고 다른 app이나 component가 ContentResolver를 통해 접근하게 하는 component다.
+- 핵심 근거: authority와 path로 data를 식별하고, query/insert/update/delete 같은 표준 operation을 제공하며, permission이나 URI grant로 접근을 제한할 수 있다.
+- 면접 포인트: app 내부 DB wrapper가 아니라 app 간 data sharing contract라고 설명한다.
+- 주의점: 외부 노출 provider는 입력 검증, permission, URI 권한 부여를 잘못하면 data leak이 된다.
+
+#### Q15. Deep link란 무엇인가? (p.69)
+
+- 한 줄 답: Deep link는 URL이나 URI를 통해 앱의 특정 화면이나 기능으로 직접 진입하게 하는 mechanism이다.
+- 핵심 근거: intent filter가 특정 scheme/host/path를 선언하면 system은 해당 link를 처리할 Activity를 찾고, app link는 domain verification을 통해 웹 도메인과 앱을 더 강하게 연결한다.
+- 면접 포인트: deep link는 navigation 기능인 동시에 외부 입력 경계다. parsing, authentication, back stack 설계를 함께 말해야 한다.
+- 주의점: deep link parameter를 신뢰하면 안 되고, 로그인 전후 흐름과 task stack 복원을 함께 설계해야 한다.
+
+#### Q16. Task와 back stack은 무엇인가? (p.72)
+
+- 한 줄 답: Task는 사용자가 하나의 작업으로 인식하는 Activity stack이고, back stack은 그 안의 Activity navigation history다.
+- 핵심 근거: Activity launch mode, Intent flag, document mode, deep link 진입 방식에 따라 어떤 task에 Activity가 쌓이는지 달라진다.
+- 면접 포인트: "뒤로 가기"는 단순 finish 호출이 아니라 task/back stack 정책의 결과라고 설명한다.
+- 주의점: launchMode나 flag를 남용하면 예측하기 어려운 navigation과 duplicated screen 문제가 생긴다.
+
+### C. 상태와 생명주기
+
+#### Q7. Activity lifecycle을 설명하라. (p.36)
+
+- 한 줄 답: Activity lifecycle은 화면 instance가 생성, 표시, 상호작용, 일시중지, 중지, 재시작, 소멸되는 상태 전이와 callback 계약이다.
+- 핵심 근거: `onCreate()`는 초기화, `onStart()`는 화면 표시 준비, `onResume()`은 상호작용 가능 상태, `onPause()`/`onStop()`은 포커스 상실과 비가시 상태, `onDestroy()`는 정리 시점이다.
+- 면접 포인트: callback 이름보다 각 상태에서 잡고 놓아야 할 resource를 말한다. 예를 들어 sensor/camera/listener는 visible/resumed 상태에 맞춰 등록/해제한다.
+- 주의점: `onDestroy()`가 항상 정상 저장 기회라고 믿으면 안 된다. 중요한 상태는 더 이른 시점과 persistent storage를 고려해야 한다.
+
+#### Q8. Fragment lifecycle을 설명하라. (p.41)
+
+- 한 줄 답: Fragment lifecycle은 Fragment instance의 생명주기와 Fragment가 생성한 View의 생명주기를 함께 가진다.
+- 핵심 근거: Fragment는 Activity에 attach되고, View는 `onCreateView()`에서 만들어져 `onDestroyView()`에서 사라진다. Fragment instance는 남아 있어도 View는 없어질 수 있다.
+- 면접 포인트: LiveData/Flow observation, ViewBinding 정리, adapter reference는 viewLifecycleOwner 기준으로 처리한다고 말하면 실무성이 드러난다.
+- 주의점: Fragment lifecycle만 보고 View reference를 오래 들고 있으면 memory leak이나 crash가 난다.
+
+#### Q12. Configuration change란 무엇인가? (p.64)
+
+- 한 줄 답: Configuration change는 rotation, locale, theme, font scale처럼 resource configuration이 바뀌어 Activity가 재생성될 수 있는 상황이다.
+- 핵심 근거: system은 새 configuration에 맞는 resource를 적용하기 위해 Activity를 destroy/recreate하고, 개발자는 state를 저장/복원하거나 특정 change를 직접 처리할 수 있다.
+- 면접 포인트: UI state는 saved state/ViewModel/persistent storage로 역할을 나누어 보존한다고 설명한다.
+- 주의점: manifest의 `configChanges`로 재생성을 막는 것은 일반 해법이 아니다. 직접 처리 책임이 커진다.
+
+#### Q17. Bundle의 목적은 무엇인가? (p.74)
+
+- 한 줄 답: Bundle은 작은 key-value data를 component 간 전달하거나 instance state 저장에 쓰는 container다.
+- 핵심 근거: Intent extras, Fragment arguments, `onSaveInstanceState()`에서 흔히 쓰이며, Parcelable/Serializable 같은 형태의 data를 담는다.
+- 면접 포인트: Bundle은 작은 상태와 parameter 전달용이고, 큰 object나 장기 data 저장소가 아니라고 말한다.
+- 주의점: Binder transaction size, serialization 비용, process death 복원 가능성을 고려해야 한다.
+
+#### Q18. Activity와 Fragment 사이에서 data를 전달하는 방법은 무엇인가? (p.77)
+
+- 한 줄 답: Activity 간에는 Intent extra, Fragment 생성 시에는 arguments Bundle, 화면 간 결과에는 Activity Result API나 Fragment result API, 공유 상태에는 ViewModel 같은 lifecycle-aware holder를 사용한다.
+- 핵심 근거: 전달 방식은 data의 수명과 소유자가 누구인지에 따라 달라진다. 한 번 넘기는 parameter와 여러 화면이 공유하는 mutable state는 다른 도구를 써야 한다.
+- 면접 포인트: "그냥 singleton"이 아니라 lifecycle과 process death를 기준으로 선택한다고 말한다.
+- 주의점: Fragment constructor parameter에 runtime data를 넣으면 재생성 시 깨질 수 있다. arguments를 사용해야 한다.
+
+#### Q19. Configuration change 동안 Activity에는 어떤 일이 일어나는가? (p.84)
+
+- 한 줄 답: 기본적으로 Activity는 현재 instance가 종료되고 새 configuration에 맞는 새 instance로 다시 생성된다.
+- 핵심 근거: 기존 Activity는 save state callback을 거친 뒤 destroy될 수 있고, 새 Activity는 saved state와 ViewModelStore 같은 mechanism을 통해 필요한 상태를 이어받는다.
+- 면접 포인트: "회전하면 onCreate가 다시 불린다"에서 멈추지 말고, 어떤 data가 Bundle, ViewModel, repository에 있어야 하는지 구분한다.
+- 주의점: ViewModel은 configuration change에는 살아남지만 process death에는 살아남지 않는다.
+
+### D. 리소스, 보안, data 경계
+
+#### Q3. Serializable과 Parcelable의 차이는 무엇인가? (p.19)
+
+- 한 줄 답: Serializable은 Java reflection 기반 직렬화이고, Parcelable은 Android IPC/Bundle 전달에 맞춰 더 명시적이고 효율적으로 설계된 직렬화 방식이다.
+- 핵심 근거: Parcelable은 작성 비용이 있지만 Android component 간 data 전달에서 성능과 control이 좋고, Serializable은 간단하지만 overhead가 크다.
+- 면접 포인트: Android에서는 Intent/Bundle 전달에 Parcelable을 선호하고, Kotlin에서는 `@Parcelize`로 보일러플레이트를 줄일 수 있다고 말한다.
+- 주의점: 어느 쪽이든 큰 object 전달에 쓰는 도구가 아니다. 큰 data는 id/reference를 넘기고 저장소에서 다시 읽는 편이 낫다.
+
+#### Q4. Context란 무엇인가? (p.23)
+
+- 한 줄 답: Context는 앱 environment, resource, system service, package 정보에 접근하는 interface다.
+- 핵심 근거: Activity Context는 화면 lifecycle과 theme/window에 연결되고, Application Context는 process 수준의 긴 수명을 가진다.
+- 면접 포인트: UI inflation, dialog, startActivity 같은 화면 작업은 Activity Context가 필요할 수 있고, 오래 사는 object에는 Activity Context를 잡아두면 leak이 된다고 설명한다.
+- 주의점: "Application Context가 항상 안전하다"도 틀리다. theme나 UI owner가 필요한 작업에는 부적절하다.
+
+#### Q13. Memory leak은 어떻게 발생하고 어떻게 관리하는가? (p.66)
+
+- 한 줄 답: 더 이상 필요 없는 Activity/View/Context가 static reference, listener, callback, coroutine, thread 등에 붙잡혀 GC되지 못할 때 leak이 발생한다.
+- 핵심 근거: Android 객체는 lifecycle이 짧은데, 오래 사는 object가 짧은 lifecycle owner를 참조하면 release 시점이 어긋난다.
+- 면접 포인트: lifecycle-aware observer, weak reference보다 명시적 해제, ViewBinding null 처리, coroutine scope 분리, LeakCanary 같은 도구를 말한다.
+- 주의점: leak 해결을 GC 호출로 설명하면 안 된다. 참조 구조와 lifecycle 정리가 핵심이다.
+
+#### Q21. SparseArray는 무엇이고 언제 쓰는가? (p.89)
+
+- 한 줄 답: SparseArray는 integer key를 object에 매핑하는 Android 특화 collection으로, 일부 상황에서 HashMap<Integer, T>보다 boxing overhead를 줄인다.
+- 핵심 근거: primitive int key를 직접 다뤄 memory overhead를 낮추도록 설계되어 resource id나 view id mapping 같은 곳에 쓰일 수 있다.
+- 면접 포인트: 성능 최적화 도구지만 무조건 HashMap보다 빠르다고 말하지 말고 data size와 접근 패턴에 따라 판단한다고 설명한다.
+- 주의점: 현대 런타임과 collection 개선 때문에 micro-optimization으로 남용하면 code readability가 나빠질 수 있다.
+
+#### Q22. Runtime permission은 무엇인가? (p.91)
+
+- 한 줄 답: Runtime permission은 민감한 권한을 설치 시점이 아니라 사용 맥락에서 사용자에게 요청하고 결과를 처리하는 모델이다.
+- 핵심 근거: camera, location, contacts 같은 dangerous permission은 manifest 선언만으로 사용할 수 없고, 실행 중 권한 상태를 확인하고 요청해야 한다.
+- 면접 포인트: 권한 요청 전 rationale, 거부/영구 거부 처리, 기능 degradation, Activity Result API 기반 요청 흐름을 함께 말한다.
+- 주의점: 권한을 받았다고 data 사용 목적이 무제한 허용되는 것은 아니다. privacy와 platform policy를 함께 고려해야 한다.
+
+#### Q26. Accessibility를 어떻게 보장하는가? (p.102)
+
+- 한 줄 답: Accessibility는 screen reader, keyboard/switch navigation, contrast, touch target, semantic label 등을 통해 다양한 사용자가 앱을 조작할 수 있게 만드는 UI contract다.
+- 핵심 근거: contentDescription, focus order, role/semantics, dynamic content announcement, 충분한 text size와 contrast가 핵심이다.
+- 면접 포인트: 접근성은 사후 polish가 아니라 component 설계와 test의 일부라고 말한다.
+- 주의점: 모든 이미지에 contentDescription을 넣는 것이 답은 아니다. 장식 이미지는 숨기고 의미 있는 control에는 정확한 label을 제공해야 한다.
+
+#### Q27. Android file system을 설명하라. (p.105)
+
+- 한 줄 답: Android storage는 app private storage, shared/media storage, cache, external storage 같은 경계를 갖고 permission과 scoped storage 정책의 영향을 받는다.
+- 핵심 근거: app private file은 기본적으로 해당 앱만 접근하고, 공유 media나 문서는 system picker, MediaStore, SAF 같은 API를 통해 접근한다.
+- 면접 포인트: 파일 위치를 말할 때 "누가 접근해야 하는가", "앱 삭제 시 남아야 하는가", "백업 대상인가", "사용자에게 보이는가"를 기준으로 선택한다고 설명한다.
+- 주의점: external storage를 모든 앱이 마음대로 읽고 쓰는 공간으로 생각하면 최신 Android storage 정책과 맞지 않는다.
+
+### E. 스레딩, 진단, 빌드와 배포
+
+#### Q14. ANR은 무엇이고 어떻게 피하는가? (p.68)
+
+- 한 줄 답: ANR은 main thread가 입력, broadcast, service 같은 system timeout 안에 응답하지 못해 앱이 멈춘 것으로 판단되는 상태다.
+- 핵심 근거: main thread에서 network, disk IO, 긴 computation, lock wait를 수행하면 Looper queue 처리가 막히고 system은 응답 없음 dialog를 표시할 수 있다.
+- 면접 포인트: 긴 작업을 worker로 옮기고, coroutine/WorkManager/thread pool을 목적에 맞게 쓰며, trace와 StrictMode로 원인을 찾는다고 말한다.
+- 주의점: background thread를 쓰는 것만으로 충분하지 않다. 결과를 main thread에 안전하게 전달하고 lifecycle cancellation도 고려해야 한다.
+
+#### Q23. Looper, Handler, HandlerThread는 무엇인가? (p.94)
+
+- 한 줄 답: Looper는 thread의 message loop, Handler는 그 queue에 message/runnable을 넣고 처리하는 도구, HandlerThread는 Looper를 가진 background thread다.
+- 핵심 근거: main thread는 기본 Looper를 갖고 UI 작업을 처리하며, Handler는 특정 thread에 작업을 schedule하거나 thread 간 결과를 전달하는 데 쓰인다.
+- 면접 포인트: "Handler는 thread가 아니다"를 분명히 말한다. Handler는 Looper가 있는 thread에 붙어 queue 작업을 다룬다.
+- 주의점: 오래 사는 Handler가 Activity를 암묵적으로 참조하면 leak이 될 수 있고, 현대 code에서는 coroutine/Executor 등과 함께 비교해 선택한다.
+
+#### Q24. Exception을 어떻게 추적하는가? (p.97)
+
+- 한 줄 답: stack trace, logcat, crash reporting, debugger, analytics, reproducer, symbol/mapping file을 조합해 exception의 발생 지점과 사용자 영향을 추적한다.
+- 핵심 근거: Android crash는 device/OS/API level/thread/state에 따라 재현성이 달라서 단순 stack trace 외에도 breadcrumbs와 release mapping이 중요하다.
+- 면접 포인트: R8 obfuscation을 쓰면 mapping file 관리가 필요하고, non-fatal exception과 ANR도 함께 관찰해야 한다고 말한다.
+- 주의점: catch로 삼키는 것은 추적이 아니다. recovery 가능성, logging, user impact를 구분해야 한다.
+
+#### Q25. Build variants와 product flavors는 무엇인가? (p.100)
+
+- 한 줄 답: Build variant는 build type과 product flavor 조합으로 만들어지는 앱 빌드 조합이고, flavor는 제품/환경별 source, resource, config를 나누는 단위다.
+- 핵심 근거: debug/release 같은 build type은 debuggable, signing, minify 설정을 바꾸고, free/paid/dev/prod 같은 flavor는 applicationId, endpoint, resource를 바꿀 수 있다.
+- 면접 포인트: variant matrix가 커지면 CI 시간과 설정 복잡도가 증가하므로 필요한 축만 유지한다고 말한다.
+- 주의점: secret을 flavor resource에 평문으로 넣는 것은 보안 해법이 아니다.
+
+#### Q29. APK와 AAB의 차이는 무엇인가? (p.109)
+
+- 한 줄 답: APK는 기기에 설치되는 완성 package이고, AAB는 Play가 기기별 APK를 생성할 수 있게 하는 publishing format이다.
+- 핵심 근거: AAB는 language, density, ABI 등 device configuration에 맞춰 필요한 code/resource만 전달하는 split delivery를 가능하게 한다.
+- 면접 포인트: 사용자는 결국 APK를 설치하지만, 개발자는 Play 배포에서 AAB를 제출해 app size와 delivery를 최적화한다고 설명한다.
+- 주의점: AAB는 모든 배포 채널에서 APK를 대체하는 단일 설치 파일이 아니다. sideload나 non-Play 배포에서는 전략이 달라질 수 있다.
+
+#### Q30. R8은 무엇인가? (p.111)
+
+- 한 줄 답: R8은 Android build에서 code shrinking, optimization, obfuscation, dexing을 수행하는 도구다.
+- 핵심 근거: 사용하지 않는 code를 제거하고, code를 최적화하며, 이름을 난독화하고, 최종 DEX 생성 과정에 관여해 앱 크기와 reverse engineering 난이도에 영향을 준다.
+- 면접 포인트: R8을 켜면 keep rule이 중요해지고, reflection/serialization/DI/library entry point가 제거되지 않도록 설정해야 한다고 말한다.
+- 주의점: crash stack trace 해석에는 mapping file이 필요하다.
+
+#### Q31. 앱 크기를 줄이는 방법은 무엇인가? (p.113)
+
+- 한 줄 답: code/resource shrinking, image/vector 최적화, ABI/language split, dynamic feature, dependency 정리, R8 keep rule 점검으로 앱 크기를 줄인다.
+- 핵심 근거: 앱 크기는 code뿐 아니라 resource, native library, duplicated dependency, unused asset, density별 이미지에서 커진다.
+- 면접 포인트: 먼저 Android Studio Analyzer나 build report로 큰 항목을 찾고, 측정 기반으로 줄인다고 말한다.
+- 주의점: 무리한 shrinking은 runtime crash를 만들 수 있으므로 release test와 mapping/keep rule 검증이 필요하다.
 
 ## 핵심 주장과 근거
 
-Android Framework 파트의 핵심 주장은 다음이다.
+이 파트의 핵심 주장은 하나다. Android Framework는 "API 이름 묶음"이 아니라 "모바일 OS가 앱을 통제 가능하게 실행하기 위한 계약 묶음"이다.
 
-> Android 앱 개발자는 UI 코드 작성자이기 전에 OS lifecycle, component contract, process/thread/resource boundary를 다루는 개발자다.
+근거는 질문 분포에서 보인다.
 
-근거는 질문 분포에서 보인다. 33개 질문 중 상당수가 "무엇인가"로 시작하지만, 답은 대부분 "누가 호출하는가", "언제 살아 있는가", "어떤 thread/process에서 실행되는가", "어떤 data를 어디까지 전달할 수 있는가", "어떤 resource를 언제 정리해야 하는가"로 끝난다.
+- Q1~Q2, Q5~Q6, Q9~Q11, Q15~Q16은 앱이 system에 발견되고 호출되는 방식이다.
+- Q7~Q8, Q12, Q17~Q19는 화면과 상태가 언제 사라지고 다시 만들어지는지에 대한 방식이다.
+- Q14, Q23, Q32는 main thread와 process가 system 자원 제약 속에서 어떻게 관리되는지 묻는다.
+- Q3~Q4, Q13, Q21~Q22, Q26~Q27은 data/resource/security boundary를 묻는다.
+- Q24~Q31은 진단, build, runtime, 배포 최적화가 이 계약 위에서 어떻게 이어지는지 묻는다.
+
+이 구조를 잡으면 개별 질문을 외울 때보다 답변이 덜 흔들린다. 예를 들어 Context 질문은 memory leak 질문과 연결되고, Bundle 질문은 configuration change와 process death 질문으로 이어지며, Service 질문은 main thread와 background execution limit 질문으로 이어진다.
 
 ## 실무 적용 / 생각해볼 질문
 
-여기서는 질문만 던지지 않고, 기대 답변의 골격까지 같이 적는다.
+아래 질문은 원문 practical question의 성격을 답변형으로 바꾼 것이다. 혼자 읽을 때는 먼저 답해보고, 위의 capsule로 다시 확인하면 된다.
 
-| 상황 | 기대 답변 |
-|------|-----------|
-| Activity Context를 singleton에 넣었다 | Activity 수명보다 singleton이 오래 살아서 Activity와 View tree가 GC되지 않을 수 있다. Application Context로 충분한 작업인지 재검토한다. |
-| Fragment에서 binding을 `onDestroy`에 정리했다 | Fragment View는 `onDestroyView`에서 사라질 수 있으므로 View binding과 View-bound observer는 `onDestroyView`에서 정리한다. |
-| notification tap으로 특정 화면을 열어야 한다 | PendingIntent로 Activity Intent를 감싸고 immutable flag와 back stack UX를 함께 설계한다. |
-| 화면 회전 후 입력값이 사라진다 | transient UI state는 saved instance state, screen data는 ViewModel, 장기 data는 persistent storage로 분리한다. |
-| 리스트에 int key mapping이 많다 | 작은/중간 규모 Android collection에서는 SparseArray가 boxing overhead를 줄일 수 있지만, 일반 Map API와 대규모 성능 요구는 별도 측정한다. |
-| APK 크기가 너무 크다 | R8, resource shrink, image format, language/density split, AAB, dynamic feature를 측정 기반으로 적용한다. |
+| 상황 | 실무에서의 답변 방향 |
+|------|----------------------|
+| 알림을 눌렀을 때 특정 화면으로 보내야 한다 | PendingIntent로 실행 권한을 system에 맡기고, deep link/task stack을 함께 설계한다. mutable/immutable flag도 확인한다. |
+| 회전 후 입력 중이던 값이 사라진다 | 즉시 복원할 UI state는 saved state/Bundle, 화면 logic state는 ViewModel, 장기 data는 repository/storage로 나눈다. |
+| 화면을 닫았는데 Activity가 GC되지 않는다 | 오래 사는 object가 Activity/View/Context를 잡고 있는지 본다. listener, Handler, coroutine, adapter, binding을 lifecycle에 맞춰 해제한다. |
+| 특정 기기에서만 crash가 난다 | stack trace와 device/API level, R8 mapping, feature/resource split, permission/storage 정책 차이를 함께 본다. |
+| 앱 크기가 너무 크다 | APK/AAB analyzer로 code, resource, native library, asset, dependency 비중을 측정한 뒤 R8, resource shrinking, image/vector, split delivery를 적용한다. |
 
 ## 오해하기 쉬운 부분
 
-| 오해 | 교정 |
-|------|------|
-| Intent는 화면 전환 API다 | 화면 전환뿐 아니라 service, broadcast, data/action 전달을 포함하는 component messaging model이다 |
-| PendingIntent는 Intent를 저장해두는 객체다 | 핵심은 나중에 다른 주체가 내 권한으로 실행할 수 있는 delegation이다 |
-| Activity와 Fragment lifecycle은 비슷하니 같은 방식으로 observer를 붙이면 된다 | Fragment는 View lifecycle이 따로 있어서 `viewLifecycleOwner`가 중요하다 |
-| Service는 background에서 자유롭게 오래 실행된다 | 현대 Android는 background 제한이 강하고 foreground service/WorkManager 선택이 필요하다 |
-| Bundle은 아무 data나 담아 넘기는 편한 map이다 | 작고 serialize 가능한 transient data용이다. 큰 객체나 영속 data 저장소가 아니다 |
-| ViewModel은 모든 state 복원을 해결한다 | configuration change에는 강하지만 process death 복원은 SavedStateHandle이나 persistent storage를 함께 봐야 한다 |
-| Handler는 deprecated된 옛 API라 몰라도 된다 | Android main thread와 message queue 모델을 설명하는 핵심 개념이다 |
-| R8은 obfuscation 도구다 | shrinking, optimization, obfuscation, resource 처리까지 포함하는 build optimization 도구다 |
+- `Service`는 자동으로 background thread가 아니다. Service callback도 main thread에서 실행될 수 있으므로 긴 작업은 따로 분리해야 한다.
+- `Application Context`가 모든 Context 문제의 답은 아니다. UI theme, window, lifecycle owner가 필요한 곳에는 Activity Context가 맞다.
+- `Bundle`은 큰 object 저장소가 아니다. 작은 상태와 parameter 전달에 맞는 도구다.
+- `ViewModel`은 configuration change에는 살아남지만 process death에는 기본적으로 살아남지 않는다.
+- `onDestroy()`는 항상 호출되는 저장 hook이 아니다. 중요한 data는 더 안정적인 저장 경로를 가져야 한다.
+- `AAB`는 사용자가 직접 설치하는 하나의 APK와 같은 개념이 아니다. Play가 기기별 APK를 생성할 수 있게 하는 publishing artifact다.
+- `R8`은 단순 난독화 도구가 아니다. shrink, optimize, obfuscate, dexing까지 build output에 영향을 준다.
 
 ## 한 장 요약
 
-```text
-Android Framework 답변 공식
+1편을 한 문장으로 줄이면 이렇다.
 
-1. 정의
-   이 API/component가 무엇인가?
+> Android 앱은 component로 system에 등록되고, Intent/URI로 호출되며, lifecycle과 main thread/process 제약 안에서 상태와 resource를 관리하고, runtime/build 도구를 통해 다양한 기기에 배포된다.
 
-2. OS와의 계약
-   Manifest, Intent, permission, process, lifecycle 중 어디에 걸리는가?
+암기 순서는 다음이 좋다.
 
-3. 동작 경계
-   언제 생성되고, 어느 thread/process에서 실행되고, 누가 소유하는가?
+1. Android platform 계층을 그린다: Linux kernel, HAL, ART, native library, framework service, app component.
+2. 앱 진입을 그린다: Manifest, Intent, PackageManager, ActivityManager, component lifecycle.
+3. 화면 상태를 그린다: Activity/Fragment lifecycle, configuration change, Bundle/ViewModel/storage.
+4. 실행 제약을 그린다: main thread, Looper/Handler, ANR, process priority.
+5. resource boundary를 그린다: Context, permission, file system, accessibility.
+6. 배포와 최적화를 그린다: DEX/ART, APK/AAB, R8, app size.
 
-4. 실무 주의점
-   memory leak, ANR, permission UX, background limit, state loss를 어떻게 피하는가?
-
-5. 선택 기준
-   Intent vs PendingIntent
-   Service vs WorkManager
-   Bundle vs ViewModel vs storage
-   APK vs AAB
-   Serializable vs Parcelable
-```
+이 여섯 줄을 먼저 말할 수 있으면, 원문 33개 질문은 서로 다른 암기 카드가 아니라 하나의 시스템 설명으로 연결된다.
 
 ## 참고자료
 
-- 원문: *Manifest Android Interview*, Category 0: The Android Framework, p.12~120.
-- Android Developers, Platform architecture: <https://developer.android.com/guide/platform>
-- Android Developers, App fundamentals: <https://developer.android.com/guide/components/fundamentals>
-- Android Developers, Activity lifecycle: <https://developer.android.com/guide/components/activities/activity-lifecycle>
-- Android Developers, Intents and intent filters: <https://developer.android.com/guide/components/intents-filters>
-- Android Developers, Processes and app lifecycle: <https://developer.android.com/guide/components/activities/process-lifecycle>
+- 원문: Jaewoong Eum, `Manifest Android Interview: The Ultimate Guide`, Category 0: The Android Framework, p.12~120.
+- Android Developers, App fundamentals.
+- Android Developers, Activity lifecycle.
+- Android Developers, Intents and intent filters.
+- Android Developers, Processes and app lifecycle.
+- Android Developers, App Bundles and R8.
