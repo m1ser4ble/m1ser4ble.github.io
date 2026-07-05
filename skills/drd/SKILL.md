@@ -183,8 +183,13 @@ Requirements:
 - Render into inline SVG, not canvas, so the output remains crisp and selectable.
 - Include at least one meaningful interaction when D3 is used: tabs, hover,
   toggles, comparison modes, or progressive reveal.
-- Place visuals immediately after the section that introduces the concept, and
-  verify the final post contains the expected `<script`, `<svg`, and root `id`.
+- Place visuals immediately after the section that introduces the concept;
+  avoid dumping visuals only in a front overview. If multiple later sections
+  contain shape transformations, state changes, comparisons, or formulas that
+  readers must mentally simulate, add local D3 panels at those sections too.
+- Before finishing, scan the article for ASCII/code-block diagrams and shape
+  examples that should be upgraded to D3, then verify the final post contains
+  the expected `<script`, `<svg`, and root `id` values.
 - Keep text fallback around the visual; the article must still make sense if
   JavaScript is blocked.
 - Avoid loading D3 multiple times in the same post. If several D3 panels are

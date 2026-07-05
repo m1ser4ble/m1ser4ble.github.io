@@ -572,6 +572,107 @@ hidden_dim = 토큰 하나가 몇 차원인가
 head_dim   = attention head 하나가 몇 차원인가
 ```
 
+
+아래 D3 패널은 `hidden_dim`이 head 축으로 어떻게 잘리는지 바로 보여준다. 버튼을 바꾸면 `num_heads`가 바뀌고, 같은 `hidden_dim = 768`이 더 얇은 `head_dim` 조각들로 나뉜다.
+
+<style>
+.drd-mini-d3 {
+  --bg: #07110f;
+  --ink: #e8fff6;
+  --muted: #a4c7ba;
+  --green: #63e6be;
+  --amber: #ffd166;
+  --blue: #74c0fc;
+  --pink: #f783ac;
+  margin: 1.2rem 0 1.8rem;
+  padding: .9rem;
+  border: 1px solid rgba(99,230,190,.24);
+  border-radius: 16px;
+  color: var(--ink);
+  background: linear-gradient(135deg, rgba(7,17,15,.96), rgba(12,31,26,.96));
+  box-shadow: 0 12px 34px rgba(0,0,0,.24);
+}
+.drd-mini-d3 .mini-head {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: .65rem;
+}
+.drd-mini-d3 .mini-title { font-weight: 800; letter-spacing: .01em; }
+.drd-mini-d3 .mini-note { color: var(--muted); font-size: .82rem; margin-top: .2rem; }
+.drd-mini-d3 .mini-tabs { display: flex; flex-wrap: wrap; gap: .35rem; }
+.drd-mini-d3 button {
+  border: 1px solid rgba(232,255,246,.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  color: var(--ink);
+  padding: .32rem .62rem;
+  font-size: .75rem;
+  cursor: pointer;
+}
+.drd-mini-d3 button.active {
+  border-color: rgba(99,230,190,.72);
+  background: rgba(99,230,190,.18);
+}
+.drd-mini-d3 svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  background: rgba(2,8,7,.36);
+}
+</style>
+
+<div id="d3-head-split-local" class="drd-mini-d3">
+  <div class="mini-head">
+    <div>
+      <div class="mini-title">Hidden dimension -> attention heads</div>
+      <div class="mini-note">같은 C=768을 H개 head로 쪼개면 head_dim = C / H가 된다.</div>
+    </div>
+    <div class="mini-tabs" aria-label="head count">
+      <button type="button" data-heads="6">6 heads</button>
+      <button type="button" data-heads="12" class="active">12 heads</button>
+      <button type="button" data-heads="24">24 heads</button>
+    </div>
+  </div>
+  <svg viewBox="0 0 980 300" role="img" aria-label="Hidden dimension split into attention heads"></svg>
+</div>
+<script>
+(function () {
+  const root = document.querySelector('#d3-head-split-local');
+  if (!root || !window.d3) return;
+  const svg = d3.select(root).select('svg');
+  const C = 768;
+  function draw(heads) {
+    const D = C / heads;
+    svg.selectAll('*').remove();
+    svg.append('text').attr('x', 34).attr('y', 42).attr('fill', '#e8fff6').attr('font-size', 20).attr('font-weight', 800)
+      .text(`x: [B, T, ${C}]  ->  q: [B, ${heads}, T, ${D}]`);
+    svg.append('rect').attr('x', 42).attr('y', 82).attr('width', 896).attr('height', 62).attr('rx', 12)
+      .attr('fill', 'rgba(99,230,190,.12)').attr('stroke', '#63e6be');
+    const cellW = 896 / heads;
+    const data = d3.range(heads);
+    const g = svg.selectAll('g.head').data(data).enter().append('g').attr('transform', d => `translate(${42 + d*cellW},82)`);
+    g.append('rect').attr('width', cellW - 2).attr('height', 62).attr('rx', 8)
+      .attr('fill', (d) => d % 2 ? 'rgba(116,192,252,.22)' : 'rgba(255,209,102,.20)')
+      .attr('stroke', 'rgba(232,255,246,.22)');
+    g.filter((d) => heads <= 12 || d % 2 === 0).append('text').attr('x', cellW/2).attr('y', 37).attr('text-anchor', 'middle')
+      .attr('fill', '#e8fff6').attr('font-size', heads > 12 ? 11 : 13).text(d => `h${d}`);
+    svg.append('text').attr('x', 42).attr('y', 190).attr('fill', '#a4c7ba').attr('font-size', 15)
+      .text(`각 head는 ${D}차원 q/k/v 공간에서 attention을 계산한다. token 수 T와는 다른 축이다.`);
+    svg.append('text').attr('x', 42).attr('y', 224).attr('fill', '#a4c7ba').attr('font-size', 15)
+      .text(`공식: hidden_dim(${C}) = num_heads(${heads}) * head_dim(${D})`);
+  }
+  root.querySelectorAll('button[data-heads]').forEach(btn => btn.addEventListener('click', () => {
+    root.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+    draw(+btn.dataset.heads);
+  }));
+  draw(12);
+})();
+</script>
+
 ## BatchNorm과 LayerNorm은 어느 축으로 normalize하나?
 
 Transformer hidden state를 다시 보자.
@@ -627,6 +728,63 @@ mu_c = (1 / (B T)) sum_b sum_t x_{b,t,c}
 | LLM 사용 | 거의 안 씀 | 많이 씀 |
 
 Transformer/LLM에서는 batch size가 작거나 variable length/padding/autoregressive generation이 중요하므로 BatchNorm보다 LayerNorm/RMSNorm 계열이 잘 맞는다.
+
+
+아래 D3 패널은 `[B,T,C]` 큐브에서 어느 축으로 통계를 내는지 강조한다. LayerNorm은 token 하나의 `C` 방향, BatchNorm은 같은 channel의 `B/T` 방향, RMSNorm은 LayerNorm처럼 `C` 방향을 보되 평균 제거 없이 scale만 맞춘다.
+
+<div id="d3-norm-axis-local" class="drd-mini-d3">
+  <div class="mini-head">
+    <div>
+      <div class="mini-title">Normalization axis on [B, T, C]</div>
+      <div class="mini-note">정규화는 값 자체보다 “어느 축의 통계인가”가 핵심이다.</div>
+    </div>
+    <div class="mini-tabs" aria-label="normalization mode">
+      <button type="button" data-mode="layer" class="active">LayerNorm</button>
+      <button type="button" data-mode="batch">BatchNorm</button>
+      <button type="button" data-mode="rms">RMSNorm</button>
+    </div>
+  </div>
+  <svg viewBox="0 0 980 330" role="img" aria-label="Normalization axes for BatchNorm, LayerNorm, and RMSNorm"></svg>
+</div>
+<script>
+(function () {
+  const root = document.querySelector('#d3-norm-axis-local');
+  if (!root || !window.d3) return;
+  const svg = d3.select(root).select('svg');
+  const modes = {
+    layer: {title:'LayerNorm: x[b,t,:]', note:'각 token마다 C 방향 평균/분산을 낸다.', color:'#63e6be'},
+    batch: {title:'BatchNorm: x[:,:,c]', note:'같은 channel c에 대해 B/T 방향 통계를 낸다.', color:'#ffd166'},
+    rms: {title:'RMSNorm: x[b,t,:] scale only', note:'LayerNorm처럼 C 방향을 보지만 mean subtraction 없이 RMS로 scale만 맞춘다.', color:'#f783ac'}
+  };
+  function draw(mode) {
+    const m = modes[mode];
+    svg.selectAll('*').remove();
+    svg.append('text').attr('x',34).attr('y',40).attr('fill','#e8fff6').attr('font-size',20).attr('font-weight',800).text(m.title);
+    svg.append('text').attr('x',34).attr('y',68).attr('fill','#a4c7ba').attr('font-size',15).text(m.note);
+    const x0=120, y0=120, cell=34, gap=10;
+    const cells=[];
+    for (let b=0;b<3;b++) for (let t=0;t<5;t++) for (let c=0;c<6;c++) cells.push({b,t,c});
+    function pos(d) { return {x:x0 + d.t*cell + d.c*5 + d.b*210, y:y0 + d.c*7}; }
+    svg.selectAll('rect.cube').data(cells).enter().append('rect')
+      .attr('x', d => pos(d).x).attr('y', d => pos(d).y).attr('width', cell-5).attr('height', 22).attr('rx', 5)
+      .attr('fill', d => {
+        if (mode === 'batch') return d.c === 2 ? m.color + 'cc' : 'rgba(232,255,246,.08)';
+        if (mode === 'layer' || mode === 'rms') return d.b === 1 && d.t === 2 ? m.color + 'cc' : 'rgba(232,255,246,.08)';
+      })
+      .attr('stroke', 'rgba(232,255,246,.18)');
+    svg.selectAll('text.b').data([0,1,2]).enter().append('text')
+      .attr('x', d => x0 + d*210 + 62).attr('y', 255).attr('text-anchor','middle')
+      .attr('fill','#a4c7ba').attr('font-size',14).text(d => `batch ${d}`);
+    svg.append('text').attr('x',34).attr('y',300).attr('fill','#a4c7ba').attr('font-size',15)
+      .text(mode === 'batch' ? '노란 줄: 여러 batch/token의 같은 channel 값들' : '강조된 묶음: 한 token의 hidden vector 전체');
+  }
+  root.querySelectorAll('button[data-mode]').forEach(btn => btn.addEventListener('click', () => {
+    root.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+    draw(btn.dataset.mode);
+  }));
+  draw('layer');
+})();
+</script>
 
 ## RMSNorm은 LayerNorm과 뭐가 다른가?
 
@@ -693,6 +851,65 @@ x -> up_proj ------------/
 ```
 
 하나는 gate를 만들고, 하나는 value candidate를 만든 뒤 곱해서 다시 hidden size로 줄인다.
+
+
+아래 D3 패널은 GPT-2/nanoGPT MLP와 LLaMA SwiGLU MLP를 비교한다. 둘 다 token별 FFN이지만, LLaMA는 `gate_proj`와 `up_proj`를 곱하는 gating 경로가 추가된다.
+
+<div id="d3-mlp-local" class="drd-mini-d3">
+  <div class="mini-head">
+    <div>
+      <div class="mini-title">MLP / FFN path comparison</div>
+      <div class="mini-note">Attention은 token을 섞고, MLP는 각 token의 feature를 가공한다.</div>
+    </div>
+    <div class="mini-tabs" aria-label="MLP mode">
+      <button type="button" data-mode="gpt" class="active">GPT-2 / nanoGPT</button>
+      <button type="button" data-mode="llama">LLaMA SwiGLU</button>
+    </div>
+  </div>
+  <svg viewBox="0 0 980 330" role="img" aria-label="GPT-2 MLP versus LLaMA SwiGLU MLP"></svg>
+</div>
+<script>
+(function () {
+  const root = document.querySelector('#d3-mlp-local');
+  if (!root || !window.d3) return;
+  const svg = d3.select(root).select('svg');
+  function box(x,y,w,h,label,color) {
+    const g=svg.append('g').attr('transform',`translate(${x},${y})`);
+    g.append('rect').attr('width',w).attr('height',h).attr('rx',14).attr('fill',color+'24').attr('stroke',color);
+    label.split('\n').forEach((line,i)=>g.append('text').attr('x',w/2).attr('y',h/2-8+i*20).attr('text-anchor','middle').attr('fill','#e8fff6').attr('font-size',15).attr('font-weight',700).text(line));
+  }
+  function link(x1,y1,x2,y2) {
+    svg.append('path').attr('d',`M${x1},${y1} C${(x1+x2)/2},${y1} ${(x1+x2)/2},${y2} ${x2},${y2}`).attr('fill','none').attr('stroke','rgba(232,255,246,.45)').attr('stroke-width',2);
+  }
+  function draw(mode) {
+    svg.selectAll('*').remove();
+    svg.append('text').attr('x',34).attr('y',42).attr('fill','#e8fff6').attr('font-size',20).attr('font-weight',800)
+      .text(mode === 'gpt' ? 'GPT-2/nanoGPT: Linear -> GELU -> Linear' : 'LLaMA: SwiGLU gate path');
+    if (mode === 'gpt') {
+      box(70,135,150,75,'x\n[B,T,C]','#63e6be');
+      box(300,125,170,95,'c_fc\nC -> 4C','#ffd166');
+      box(545,135,135,75,'GELU','#74c0fc');
+      box(750,125,165,95,'c_proj\n4C -> C','#f783ac');
+      link(220,172,300,172); link(470,172,545,172); link(680,172,750,172);
+      svg.append('text').attr('x',70).attr('y',270).attr('fill','#a4c7ba').attr('font-size',15).text('각 token position마다 같은 FFN을 독립 적용한다. token끼리 섞지는 않는다.');
+    } else {
+      box(70,135,150,75,'x\n[B,T,C]','#63e6be');
+      box(300,85,170,75,'gate_proj\nC -> I','#ffd166');
+      box(300,205,170,75,'up_proj\nC -> I','#74c0fc');
+      box(535,85,130,75,'SiLU','#ffd166');
+      box(710,145,90,70,'*','#f783ac');
+      box(850,135,100,90,'down\nI -> C','#63e6be');
+      link(220,172,300,122); link(220,172,300,242); link(470,122,535,122); link(665,122,710,170); link(470,242,710,180); link(800,180,850,180);
+      svg.append('text').attr('x',70).attr('y',305).attr('fill','#a4c7ba').attr('font-size',15).text('gate가 value candidate를 조절한 뒤 down_proj로 hidden size C에 되돌린다.');
+    }
+  }
+  root.querySelectorAll('button[data-mode]').forEach(btn => btn.addEventListener('click', () => {
+    root.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+    draw(btn.dataset.mode);
+  }));
+  draw('gpt');
+})();
+</script>
 
 ## seq_len은 config 값인가?
 
