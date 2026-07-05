@@ -50,6 +50,278 @@ Expert Parallelism:
   -> ...
 ```
 
+## D3 인터랙티브 시각화
+
+아래 시각화는 이 글의 핵심 축을 먼저 눈으로 잡기 위한 인터랙티브 D3 패널이다. `Overview`, `Prefill vs Decode`, `Context Parallelism`, `MoE / Expert Parallel`을 눌러가며 CP와 EP가 서로 다른 축을 자른다는 점을 비교하면 된다.
+
+<style>
+.d3-parallel-lab {
+  --bg: #071014;
+  --panel: #0d1b22;
+  --panel2: #102530;
+  --ink: #d7f6ff;
+  --muted: #8fb6c2;
+  --cp: #5eead4;
+  --ep: #f59e0b;
+  --pink: #f472b6;
+  --blue: #60a5fa;
+  --red: #fb7185;
+  margin: 1.5rem 0 2rem;
+  padding: 1rem;
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(94, 234, 212, 0.14), transparent 28%),
+    radial-gradient(circle at 82% 0%, rgba(245, 158, 11, 0.12), transparent 24%),
+    linear-gradient(135deg, #061016, #0a151c 55%, #071014);
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+  color: var(--ink);
+  overflow: hidden;
+}
+.d3-parallel-lab .viz-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .75rem;
+}
+.d3-parallel-lab .viz-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.d3-parallel-lab .viz-subtitle {
+  margin-top: .25rem;
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+.d3-parallel-lab .viz-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  justify-content: flex-end;
+}
+.d3-parallel-lab button {
+  border: 1px solid rgba(215,246,255,.18);
+  background: rgba(255,255,255,.04);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: .38rem .7rem;
+  font-size: .78rem;
+  cursor: pointer;
+}
+.d3-parallel-lab button.active {
+  background: linear-gradient(135deg, rgba(94,234,212,.22), rgba(245,158,11,.22));
+  border-color: rgba(94,234,212,.55);
+}
+.d3-parallel-lab svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+  background: rgba(2, 8, 12, .38);
+}
+.d3-parallel-lab .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-top: .75rem;
+  color: var(--muted);
+  font-size: .78rem;
+}
+.d3-parallel-lab .legend span::before {
+  content: "";
+  display: inline-block;
+  width: .72rem;
+  height: .72rem;
+  border-radius: 999px;
+  margin-right: .35rem;
+  vertical-align: -0.08rem;
+  background: var(--dot);
+}
+@media (max-width: 720px) {
+  .d3-parallel-lab { padding: .75rem; }
+  .d3-parallel-lab .viz-header { display: block; }
+  .d3-parallel-lab .viz-tabs { justify-content: flex-start; margin-top: .75rem; }
+}
+</style>
+
+<div id="parallel-d3-lab" class="d3-parallel-lab">
+  <div class="viz-header">
+    <div>
+      <div class="viz-title">Parallelism Visual Lab</div>
+      <div class="viz-subtitle">CP는 token/context 축을 자르고, EP는 expert 축을 자른다. 버튼을 눌러 같은 모델이 어떤 축으로 분해되는지 비교한다.</div>
+    </div>
+    <div class="viz-tabs" aria-label="visualization mode">
+      <button data-mode="overview" class="active">Overview</button>
+      <button data-mode="attention">Prefill vs Decode</button>
+      <button data-mode="cp">Context Parallelism</button>
+      <button data-mode="moe">MoE / Expert Parallel</button>
+    </div>
+  </div>
+  <svg viewBox="0 0 980 560" role="img" aria-label="D3 visualization for context parallelism and expert parallelism"></svg>
+  <div class="legend">
+    <span style="--dot: var(--cp)">Context / token shard</span>
+    <span style="--dot: var(--ep)">Expert shard</span>
+    <span style="--dot: var(--blue)">KV / attention data</span>
+    <span style="--dot: var(--pink)">Router decision</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>
+(function () {
+  const root = document.querySelector('#parallel-d3-lab');
+  if (!root || !window.d3) return;
+  const svg = d3.select(root).select('svg');
+  const W = 980, H = 560;
+  const colors = {
+    bg: '#071014', panel: '#0d1b22', ink: '#d7f6ff', muted: '#8fb6c2',
+    cp: '#5eead4', ep: '#f59e0b', pink: '#f472b6', blue: '#60a5fa', red: '#fb7185', green: '#a3e635'
+  };
+
+  function clear(title, note) {
+    svg.selectAll('*').remove();
+    svg.append('text').attr('x', 34).attr('y', 44).attr('fill', colors.ink)
+      .attr('font-size', 24).attr('font-weight', 800).text(title);
+    svg.append('text').attr('x', 34).attr('y', 72).attr('fill', colors.muted)
+      .attr('font-size', 13).text(note);
+    svg.append('defs').html(`
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#8fb6c2"></path>
+      </marker>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    `);
+  }
+  function line(x1, y1, x2, y2, color = colors.muted, width = 2, dash = null) {
+    const l = svg.append('line').attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2)
+      .attr('stroke', color).attr('stroke-width', width).attr('marker-end', 'url(#arrow)').attr('opacity', .88);
+    if (dash) l.attr('stroke-dasharray', dash);
+    return l;
+  }
+  function rect(x, y, w, h, fill, stroke, r = 12) {
+    return svg.append('rect').attr('x', x).attr('y', y).attr('width', w).attr('height', h).attr('rx', r)
+      .attr('fill', fill).attr('stroke', stroke || 'rgba(255,255,255,.18)').attr('stroke-width', 1.2);
+  }
+  function label(text, x, y, size = 13, fill = colors.ink, weight = 600, anchor = 'middle') {
+    return svg.append('text').attr('x', x).attr('y', y).attr('text-anchor', anchor)
+      .attr('fill', fill).attr('font-size', size).attr('font-weight', weight).text(text);
+  }
+  function small(text, x, y, anchor = 'middle') { return label(text, x, y, 11, colors.muted, 500, anchor); }
+
+  function drawOverview() {
+    clear('CP vs EP: two orthogonal cuts', '같은 거대 모델이라도 CP는 sequence 길이를, EP는 MoE expert pool을 분해한다.');
+    rect(65, 125, 380, 300, 'rgba(94,234,212,.06)', 'rgba(94,234,212,.35)');
+    label('Context Parallelism', 255, 158, 20, colors.cp, 800);
+    small('Long sequence is sliced across GPUs', 255, 182);
+    const seqX = 105, seqY = 230, segW = 76, segH = 72;
+    d3.range(4).forEach(i => {
+      rect(seqX + i * segW, seqY, segW - 8, segH, d3.interpolateRgb('#0f2530', colors.cp)(0.18 + i * .12), colors.cp, 8);
+      label(`T${i}`, seqX + i * segW + 34, seqY + 42, 16, colors.ink);
+      small(`GPU${i}`, seqX + i * segW + 34, seqY + 98);
+    });
+    line(145, 340, 365, 340, colors.blue, 3, '6 5');
+    label('KV exchange for attention', 255, 382, 13, colors.blue);
+
+    rect(535, 125, 380, 300, 'rgba(245,158,11,.06)', 'rgba(245,158,11,.35)');
+    label('Expert Parallelism', 725, 158, 20, colors.ep, 800);
+    small('MoE experts are placed on different GPUs', 725, 182);
+    const centers = [[620,245],[710,225],[805,245],[645,330],[765,332],[840,315]];
+    centers.forEach((c, i) => {
+      svg.append('circle').attr('cx', c[0]).attr('cy', c[1]).attr('r', 31)
+        .attr('fill', i < 4 ? 'rgba(245,158,11,.24)' : 'rgba(244,114,182,.2)').attr('stroke', i < 4 ? colors.ep : colors.pink);
+      label(`E${i}`, c[0], c[1] + 5, 15, colors.ink);
+    });
+    label('Router', 575, 345, 14, colors.pink, 800);
+    line(600, 338, 680, 250, colors.pink, 2);
+    line(600, 345, 740, 326, colors.pink, 2);
+    small('top-k dispatch + all-to-all', 725, 382);
+  }
+
+  function drawAttention() {
+    clear('Training/Prefill vs Decode attention shape', 'Prefill은 Q 전체 x K 전체, decode는 q_new 하나 x K_cache 전체다.');
+    rect(58, 115, 395, 350, 'rgba(96,165,250,.06)', 'rgba(96,165,250,.35)');
+    label('Training / Prefill', 255, 150, 20, colors.blue, 800);
+    small('QK^T = [T,d] @ [d,T] = [T,T]', 255, 174);
+    const cell = 21, startX = 150, startY = 220;
+    d3.range(9).forEach(r => d3.range(9).forEach(c => {
+      svg.append('rect').attr('x', startX + c * cell).attr('y', startY + r * cell).attr('width', cell - 2).attr('height', cell - 2)
+        .attr('fill', c <= r ? d3.interpolateRgb('#102a3a', colors.blue)((r+c)/18) : 'rgba(255,255,255,.035)')
+        .attr('stroke', 'rgba(255,255,255,.05)');
+    }));
+    small('causal mask: lower triangle is valid', 255, 438);
+
+    rect(528, 115, 395, 350, 'rgba(94,234,212,.06)', 'rgba(94,234,212,.35)');
+    label('Autoregressive Decode', 725, 150, 20, colors.cp, 800);
+    small('q_new K_cache^T = [1,d] @ [d,T] = [1,T]', 725, 174);
+    rect(610, 254, 52, 58, 'rgba(244,114,182,.24)', colors.pink, 10);
+    label('q', 636, 290, 22, colors.ink);
+    d3.range(9).forEach(i => {
+      rect(710 + i * 19, 250, 16, 66, 'rgba(96,165,250,.22)', colors.blue, 4);
+      small(`k${i+1}`, 718 + i * 19, 335);
+    });
+    line(665, 282, 705, 282, colors.muted, 2);
+    rect(700, 382, 205, 28, 'rgba(96,165,250,.16)', colors.blue, 999);
+    label('[1, T] attention weights', 802, 401, 12, colors.blue);
+  }
+
+  function drawCP() {
+    clear('Context Parallelism: sequence shards plus KV movement', '각 GPU는 자기 token chunk를 계산하지만 attention을 위해 다른 chunk의 K/V도 필요하다.');
+    const y = 148, h = 72, x = 90, w = 190;
+    d3.range(4).forEach(i => {
+      rect(x + i * (w + 26), y, w, h, 'rgba(94,234,212,.14)', colors.cp, 10);
+      label(`GPU${i}`, x + i*(w+26)+w/2, y + 30, 15, colors.ink);
+      small(`tokens ${i*16}K-${(i+1)*16}K`, x + i*(w+26)+w/2, y + 52);
+    });
+    label('Local token-wise work: Linear / LayerNorm / MLP', W/2, 275, 16, colors.cp, 800);
+    d3.range(4).forEach(i => line(x + i*(w+26)+w/2, 230, x + i*(w+26)+w/2, 305, colors.cp, 2));
+    const ring = [[220,390],[390,340],[590,340],[760,390],[590,455],[390,455]];
+    svg.append('path').attr('d', d3.line().curve(d3.curveCardinalClosed.tension(.45))(ring))
+      .attr('fill','none').attr('stroke',colors.blue).attr('stroke-width',4).attr('stroke-dasharray','10 8').attr('opacity',.85);
+    ring.slice(0,4).forEach((p,i)=>{ svg.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',24).attr('fill','rgba(96,165,250,.18)').attr('stroke',colors.blue); label(`KV${i}`,p[0],p[1]+5,12,colors.ink); });
+    label('Attention needs full-sequence K/V', W/2, 520, 15, colors.blue, 800);
+  }
+
+  function drawMoE() {
+    clear('MoE / Expert Parallelism: router decides, all-to-all moves tokens', 'Selected experts는 token마다 고르는 top-k이고, shared experts는 항상 통과하는 공통 expert다.');
+    const tokenY = 138;
+    d3.range(8).forEach(i => {
+      svg.append('circle').attr('cx', 85 + i*42).attr('cy', tokenY).attr('r', 16).attr('fill','rgba(215,246,255,.13)').attr('stroke',colors.ink);
+      label(`t${i}`,85+i*42,tokenY+4,10,colors.ink);
+    });
+    rect(440, 104, 120, 68, 'rgba(244,114,182,.18)', colors.pink, 12);
+    label('Router', 500, 133, 17, colors.pink, 800);
+    small('linear + top-k', 500, 153);
+    line(420, tokenY, 438, tokenY, colors.pink, 3);
+
+    const ex = d3.range(8).map(i => ({x: 165 + (i%4)*180, y: 285 + Math.floor(i/4)*105, id:i}));
+    ex.forEach(d => {
+      rect(d.x, d.y, 96, 58, 'rgba(245,158,11,.18)', colors.ep, 11);
+      label(`Expert ${d.id}`, d.x+48, d.y+35, 13, colors.ink);
+      small(`rank ${Math.floor(d.id/2)}`, d.x+48, d.y+76);
+    });
+    const routes = [[500,172,213,285],[500,172,573,285],[500,172,393,390],[500,172,753,390]];
+    routes.forEach((r,i)=> line(r[0],r[1],r[2],r[3], i%2 ? colors.pink : colors.ep, 2, i%2 ? '5 5' : null));
+    rect(120, 475, 310, 42, 'rgba(96,165,250,.1)', colors.blue, 12);
+    label('Dispatch all-to-all: token -> expert rank', 275, 502, 13, colors.blue);
+    rect(550, 475, 310, 42, 'rgba(96,165,250,.1)', colors.blue, 12);
+    label('Combine all-to-all: output -> original order', 705, 502, 13, colors.blue);
+  }
+
+  const render = { overview: drawOverview, attention: drawAttention, cp: drawCP, moe: drawMoE };
+  root.querySelectorAll('button[data-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      root.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render[btn.dataset.mode]();
+    });
+  });
+  drawOverview();
+})();
+</script>
+
+
 ## 2. 용어 사전
 
 | 용어 | 의미 | 헷갈리기 쉬운 점 |
