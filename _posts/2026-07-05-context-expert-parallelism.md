@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Context Parallelism과 Expert Parallelism: Long Context와 MoE를 쪼개는 두 축"
-date: 2026-07-05 13:25:00 +0900
+date: 2026-07-05 00:00:00 +0900
 categories: mlops
 excerpt: "Context Parallelism은 sequence/context length 축을 나눠 long-context attention의 activation/KV 부담을 줄이고, Expert Parallelism은 MoE expert 축을 나눠 sparse FFN 계산을 여러 GPU로 분산한다."
 toc: true
