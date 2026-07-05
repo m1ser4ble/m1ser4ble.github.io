@@ -42,10 +42,20 @@ normal Codex behavior instead.
    - Use parallel tool calls or subagents when available; otherwise run the
      dimensions sequentially.
 4. Synthesize in Korean, preserving English technical terms.
-5. Enrich the document.
+5. Design embedded visuals when they improve understanding.
+   - Add visuals for concepts that are hard to hold in prose: multi-step
+     processes, component relationships, data movement, state changes,
+     timelines, trade-offs, comparisons, or decision criteria.
+   - Place visuals near the section where the concept is explained, not only at
+     the top of the document.
+   - Prefer embedded D3.js SVG panels for high-value visuals that benefit from
+     interaction, layered comparison, multiple modes, or progressive reveal.
+   - Use Mermaid for simple static flowcharts when D3 would add needless weight;
+     use tables/ASCII only for small comparisons or script-hostile targets.
+6. Enrich the document.
    - For existing docs, add missing sections without rewriting unrelated
      existing content.
-   - Match existing Markdown style, tables, headings, and ASCII diagrams when
+   - Match existing Markdown style, tables, headings, and diagram style when
      present.
    - Include source URLs in a references section or inline citations.
 
@@ -82,6 +92,22 @@ When the topic is substantial, split the work across these tracks:
 
 Write the final result in Korean with English technical terms preserved.
 
+For posts in `m1ser4ble.github.io`, use the repository's Jekyll post format:
+
+```yaml
+---
+layout: single
+title: "<Korean title>"
+date: YYYY-MM-DD HH:MM:SS +0900
+categories: <category>
+excerpt: "<one-sentence summary>"
+toc: true
+toc_sticky: true
+tags: [tag1, tag2]
+source: "<source context>"
+---
+```
+
 For a full document or substantial enrichment, include these sections:
 
 ```markdown
@@ -117,13 +143,58 @@ For a full document or substantial enrichment, include these sections:
 For smaller requests, keep the answer shorter but still include terminology,
 background, alternatives, best choice by scenario, and references.
 
+## Visualization Rules
+
+When writing or enriching technical posts, treat visualization as part of the
+explanation, not decoration.
+
+| Use | Preferred Form |
+|-----|----------------|
+| Multi-step process, component relationship, data movement, state change, timeline, trade-off, comparison, or decision tree | Embedded D3.js SVG panel |
+| Simple static sequence or dependency graph | Mermaid |
+| Small taxonomy or comparison | Markdown table |
+| CLI-only / script-hostile target | ASCII diagram |
+
+### D3.js Embedding Contract
+
+Use D3 when the concept benefits from interaction or multiple views. Keep the
+visual self-contained inside the post:
+
+```html
+<div id="<unique-id>" class="drd-d3-panel">
+  <svg viewBox="0 0 980 560" role="img" aria-label="..."></svg>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>
+(function () {
+  const root = document.querySelector('#<unique-id>');
+  if (!root || !window.d3) return;
+  // Render with D3 into the local SVG only.
+})();
+</script>
+```
+
+Requirements:
+
+- Use a unique root `id` per visual and scope all selectors under that root.
+- Render into inline SVG, not canvas, so the output remains crisp and selectable.
+- Include at least one meaningful interaction when D3 is used: tabs, hover,
+  toggles, comparison modes, or progressive reveal.
+- Place visuals immediately after the section that introduces the concept.
+- Keep text fallback around the visual; the article must still make sense if
+  JavaScript is blocked.
+- Avoid loading D3 multiple times in the same post. If several D3 panels are
+  needed, include one CDN script before the first panel and reuse it.
+- Prefer D3 only for high-value visuals. If a static Mermaid diagram explains
+  the point equally well, use Mermaid.
+
 ## Style Rules
 
 - Korean prose is required; keep English names, APIs, identifiers, and terms in
   English.
 - Prefer Markdown tables for terminology, timelines, and comparisons.
-- Use ASCII/box diagrams only when they clarify architecture or match an
-  existing document's style.
+- Use D3/Mermaid diagrams when they clarify multi-step processes,
+  relationships, state changes, timelines, comparisons, or trade-offs.
 - Make selection criteria explicit instead of saying "it depends".
 - Include concrete version/date context when the topic is time-sensitive.
 - Separate sourced facts from inference; label inference when combining sources.
