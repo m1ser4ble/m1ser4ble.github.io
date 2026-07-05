@@ -18,6 +18,234 @@ source: "Discord thread: nanoGPT와 LLaMA 구조 차이, RoPE, hidden dimension,
 - RoPE는 position vector를 hidden state에 더하는 방식이 아니라, attention 안의 `q`, `k`를 위치에 따라 회전시켜 내적값에 상대 위치 정보를 넣는다.
 - KV cache는 `seq_len^2`짜리 attention score matrix를 저장하지 않는다. 과거 토큰들의 `K`, `V` 벡터를 저장하므로 메모리는 보통 `seq_len`에 선형으로 증가한다.
 
+
+## D3 인터랙티브 시각화: shape와 cache가 갈라지는 지점
+
+아래 패널은 이 글에서 계속 나오는 `B`, `T`, `C`, `H`, `D` 축을 한 화면에 묶은 것이다. `Embedding`, `Attention`, `RoPE`, `KV Cache`, `Decode`를 눌러보면 `seq_len^2`가 어디서 생기고, KV cache가 왜 `seq_len`에 선형인지 비교할 수 있다. JavaScript가 꺼져 있어도 바로 아래의 shape 표와 본문 설명으로 같은 내용을 따라갈 수 있다.
+
+<style>
+.d3-transformer-shape-lab {
+  --bg: #07110f;
+  --panel: #0d1f1a;
+  --ink: #e8fff6;
+  --muted: #a4c7ba;
+  --green: #63e6be;
+  --amber: #ffd166;
+  --blue: #74c0fc;
+  --pink: #f783ac;
+  margin: 1.5rem 0 2rem;
+  padding: 1rem;
+  border: 1px solid rgba(99, 230, 190, .28);
+  border-radius: 18px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 16% 8%, rgba(99, 230, 190, .16), transparent 28%),
+    radial-gradient(circle at 86% 20%, rgba(255, 209, 102, .12), transparent 25%),
+    linear-gradient(135deg, #06100d, #0a1715 58%, #06100d);
+  box-shadow: 0 18px 48px rgba(0,0,0,.32);
+  overflow: hidden;
+}
+.d3-transformer-shape-lab .viz-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-bottom: .85rem;
+}
+.d3-transformer-shape-lab .viz-title {
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.d3-transformer-shape-lab .viz-note {
+  color: var(--muted);
+  font-size: .84rem;
+  line-height: 1.45;
+  margin-top: .25rem;
+}
+.d3-transformer-shape-lab .viz-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  justify-content: flex-end;
+}
+.d3-transformer-shape-lab button {
+  border: 1px solid rgba(232,255,246,.18);
+  color: var(--ink);
+  background: rgba(255,255,255,.05);
+  border-radius: 999px;
+  padding: .38rem .72rem;
+  font-size: .78rem;
+  cursor: pointer;
+}
+.d3-transformer-shape-lab button.active {
+  border-color: rgba(99,230,190,.72);
+  background: linear-gradient(135deg, rgba(99,230,190,.24), rgba(255,209,102,.16));
+}
+.d3-transformer-shape-lab svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: rgba(2, 8, 7, .42);
+  border-radius: 14px;
+}
+.d3-transformer-shape-lab .caption {
+  margin-top: .75rem;
+  color: var(--muted);
+  font-size: .85rem;
+}
+@media (max-width: 640px) {
+  .d3-transformer-shape-lab { padding: .75rem; }
+  .d3-transformer-shape-lab button { font-size: .72rem; padding: .34rem .58rem; }
+}
+</style>
+
+<div id="d3-transformer-shape-lab" class="d3-transformer-shape-lab">
+  <div class="viz-head">
+    <div>
+      <div class="viz-title">Transformer Shape Lab</div>
+      <div class="viz-note">축을 바꾸면 병목도 바뀐다: hidden width, attention score, KV cache, decode step.</div>
+    </div>
+    <div class="viz-tabs" role="tablist" aria-label="Transformer shape views">
+      <button type="button" data-view="embedding" class="active">Embedding</button>
+      <button type="button" data-view="attention">Attention</button>
+      <button type="button" data-view="rope">RoPE</button>
+      <button type="button" data-view="cache">KV Cache</button>
+      <button type="button" data-view="decode">Decode</button>
+    </div>
+  </div>
+  <svg viewBox="0 0 980 560" role="img" aria-label="Interactive diagram of Transformer tensor shapes, RoPE, and KV cache"></svg>
+  <div class="caption">핵심: `score`만 `[T,T]`이고, KV cache는 `K/V` 벡터를 `[T,D]` 방향으로 저장한다.</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>
+(function () {
+  const root = document.querySelector('#d3-transformer-shape-lab');
+  if (!root || !window.d3) return;
+  const svg = d3.select(root).select('svg');
+  const buttons = root.querySelectorAll('button[data-view]');
+  const colors = {
+    green: '#63e6be', amber: '#ffd166', blue: '#74c0fc', pink: '#f783ac',
+    ink: '#e8fff6', muted: '#a4c7ba', panel: '#0d1f1a'
+  };
+
+  const views = {
+    embedding: {
+      title: '1. Embedding: x는 [B, T, C]로 시작한다',
+      subtitle: 'T는 토큰 개수, C는 토큰 하나의 hidden width다. 둘은 같은 숫자 축이 아니다.',
+      nodes: [
+        {id:'ids', x:70, y:230, w:135, h:72, label:'token ids\n[B, T]', color:colors.amber},
+        {id:'wte', x:275, y:160, w:180, h:86, label:'token embedding\nwte: [V, C]', color:colors.green},
+        {id:'wpe', x:275, y:305, w:180, h:86, label:'position embedding\nwpe: [T, C]', color:colors.blue},
+        {id:'x', x:560, y:225, w:245, h:92, label:'hidden states x\n[B, T, C]', color:colors.pink}
+      ],
+      links: [['ids','wte'], ['wte','x'], ['wpe','x']],
+      notes: ['nanoGPT/GPT-2: token embedding과 learned position embedding을 입력에서 더한다.', 'LLaMA: 이 wpe 더하기 대신 attention 안에서 RoPE를 q/k에 적용한다.']
+    },
+    attention: {
+      title: '2. Attention: seq_len^2는 score matrix에서 생긴다',
+      subtitle: 'Q와 K를 내적하면 각 query token이 모든 key token을 보는 [T,T] score가 나온다.',
+      nodes: [
+        {id:'x', x:65, y:225, w:140, h:80, label:'x\n[B,T,C]', color:colors.green},
+        {id:'qkv', x:275, y:215, w:170, h:100, label:'q/k/v projection\n[B,H,T,D]', color:colors.amber},
+        {id:'score', x:535, y:130, w:210, h:105, label:'score = QK^T\n[B,H,T,T]\nO(T^2)', color:colors.pink},
+        {id:'out', x:535, y:325, w:210, h:95, label:'attn @ V\n[B,H,T,D]', color:colors.blue},
+        {id:'proj', x:805, y:245, w:120, h:75, label:'output\n[B,T,C]', color:colors.green}
+      ],
+      links: [['x','qkv'], ['qkv','score'], ['score','out'], ['qkv','out'], ['out','proj']],
+      notes: ['Full prefill/training에서는 score가 [T,T]라서 context가 길수록 급격히 커진다.', 'Causal mask는 미래 token 쪽 score를 막는다.']
+    },
+    rope: {
+      title: '3. RoPE: position vector를 더하지 않고 q/k를 회전한다',
+      subtitle: '위치 i, j만큼 회전한 뒤 내적하면 R_i^T R_j = R_{j-i}라서 상대 위치가 들어간다.',
+      nodes: [
+        {id:'q', x:85, y:155, w:145, h:80, label:'q_i\nhead pair', color:colors.green},
+        {id:'k', x:85, y:325, w:145, h:80, label:'k_j\nhead pair', color:colors.blue},
+        {id:'rq', x:345, y:155, w:170, h:80, label:'R_i q_i\nrotate by i', color:colors.amber},
+        {id:'rk', x:345, y:325, w:170, h:80, label:'R_j k_j\nrotate by j', color:colors.amber},
+        {id:'dot', x:635, y:240, w:245, h:100, label:'(R_i q)^T(R_j k)\n= q^T R_{j-i} k', color:colors.pink}
+      ],
+      links: [['q','rq'], ['k','rk'], ['rq','dot'], ['rk','dot']],
+      notes: ['cos/sin은 더하는 embedding이 아니라 회전 행렬을 구현하는 값이다.', 'RoPE 비용은 대개 O(TD)라서 O(T^2D) attention score보다 작다.']
+    },
+    cache: {
+      title: '4. KV Cache: 저장하는 것은 score가 아니라 K/V 벡터다',
+      subtitle: 'cache shape은 layer별로 대략 [2, B, H_kv, T, D]. 그래서 메모리는 T에 선형이다.',
+      nodes: [
+        {id:'past', x:70, y:215, w:170, h:100, label:'past tokens\nA B C D E', color:colors.green},
+        {id:'kv', x:330, y:145, w:230, h:120, label:'K cache\n[B,H_kv,T,D]', color:colors.blue},
+        {id:'vv', x:330, y:320, w:230, h:120, label:'V cache\n[B,H_kv,T,D]', color:colors.amber},
+        {id:'no', x:665, y:215, w:240, h:100, label:'not cached:\nscore [B,H,T,T]\nsoftmax output', color:colors.pink}
+      ],
+      links: [['past','kv'], ['past','vv']],
+      notes: ['KV cache는 q·k 내적 결과를 들고 있지 않다.', 'GQA/MQA는 H_kv를 줄여 cache memory를 줄이는 방향의 설계다.']
+    },
+    decode: {
+      title: '5. Decode: cache가 있어도 새 query의 내적은 매번 한다',
+      subtitle: '새 token F의 q_F는 이전 step에 없었으므로 q_F @ K_cache^T는 새로 계산해야 한다.',
+      nodes: [
+        {id:'new', x:70, y:230, w:155, h:85, label:'new token F\nq_new,k_new,v_new', color:colors.green},
+        {id:'cache', x:315, y:145, w:215, h:115, label:'K/V cache\nA..E already stored', color:colors.blue},
+        {id:'score', x:610, y:160, w:220, h:95, label:'q_new @ K_cache^T\n[B,H,1,T]', color:colors.pink},
+        {id:'sum', x:610, y:325, w:220, h:95, label:'weights @ V_cache\nnew hidden', color:colors.amber},
+        {id:'append', x:315, y:335, w:215, h:85, label:'append F\nK/V grows by 1', color:colors.green}
+      ],
+      links: [['new','score'], ['cache','score'], ['score','sum'], ['cache','sum'], ['new','append']],
+      notes: ['cache가 줄이는 것은 과거 prefix를 다시 forward하는 비용이다.', '한 step attention은 O(T), 긴 생성을 계속하면 누적 비용은 여전히 커진다.']
+    }
+  };
+
+  function draw(viewName) {
+    const view = views[viewName];
+    svg.selectAll('*').remove();
+    svg.append('text').attr('x', 42).attr('y', 48).attr('fill', colors.ink)
+      .attr('font-size', 24).attr('font-weight', 800).text(view.title);
+    svg.append('text').attr('x', 42).attr('y', 78).attr('fill', colors.muted)
+      .attr('font-size', 15).text(view.subtitle);
+
+    const nodeById = new Map(view.nodes.map(d => [d.id, d]));
+    svg.append('defs').append('marker')
+      .attr('id', 'arrow-shape-lab').attr('viewBox', '0 -5 10 10').attr('refX', 10).attr('refY', 0)
+      .attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto')
+      .append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', 'rgba(232,255,246,.72)');
+
+    svg.selectAll('path.link').data(view.links).enter().append('path')
+      .attr('class', 'link')
+      .attr('d', d => {
+        const a = nodeById.get(d[0]);
+        const b = nodeById.get(d[1]);
+        const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+        const x2 = b.x, y2 = b.y + b.h / 2;
+        const mid = (x1 + x2) / 2;
+        return `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}`;
+      })
+      .attr('fill', 'none').attr('stroke', 'rgba(232,255,246,.42)').attr('stroke-width', 2)
+      .attr('marker-end', 'url(#arrow-shape-lab)');
+
+    const g = svg.selectAll('g.node').data(view.nodes).enter().append('g')
+      .attr('class', 'node').attr('transform', d => `translate(${d.x},${d.y})`);
+    g.append('rect').attr('width', d => d.w).attr('height', d => d.h).attr('rx', 16)
+      .attr('fill', d => d.color + '22').attr('stroke', d => d.color).attr('stroke-width', 1.5);
+    g.each(function(d) {
+      const lines = d.label.split('\n');
+      const t = d3.select(this).append('text').attr('x', d.w/2).attr('y', d.h/2 - (lines.length-1)*10)
+        .attr('text-anchor', 'middle').attr('fill', colors.ink).attr('font-size', 15).attr('font-weight', 700);
+      lines.forEach((line, i) => t.append('tspan').attr('x', d.w/2).attr('dy', i ? 20 : 0).text(line));
+    });
+
+    svg.selectAll('text.note').data(view.notes).enter().append('text')
+      .attr('class', 'note').attr('x', 54).attr('y', (d, i) => 485 + i * 26)
+      .attr('fill', colors.muted).attr('font-size', 15).text(d => '• ' + d);
+  }
+
+  buttons.forEach(btn => btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.toggle('active', b === btn));
+    draw(btn.dataset.view);
+  }));
+  draw('embedding');
+})();
+</script>
+
 ## 이 글이 답하려는 질문
 
 이 글은 한 Discord thread에서 나온 질문을 기준으로 정리한 noob-friendly Transformer 구조 노트다. 질문의 흐름은 대략 이랬다.

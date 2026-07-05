@@ -176,11 +176,15 @@ visual self-contained inside the post:
 
 Requirements:
 
+- For substantial DRD blog posts, include at least one D3 panel unless the target
+  platform forbids inline HTML/JavaScript or the subject has no useful
+  multi-step, comparison, shape, timeline, or decision visual.
 - Use a unique root `id` per visual and scope all selectors under that root.
 - Render into inline SVG, not canvas, so the output remains crisp and selectable.
 - Include at least one meaningful interaction when D3 is used: tabs, hover,
   toggles, comparison modes, or progressive reveal.
-- Place visuals immediately after the section that introduces the concept.
+- Place visuals immediately after the section that introduces the concept, and
+  verify the final post contains the expected `<script`, `<svg`, and root `id`.
 - Keep text fallback around the visual; the article must still make sense if
   JavaScript is blocked.
 - Avoid loading D3 multiple times in the same post. If several D3 panels are
