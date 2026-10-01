@@ -1,0 +1,7 @@
+flowchart TD
+  P[Before connection: provision credentials and trust] --> DH[IKE_SA_INIT: exchange public DH values and nonces]
+  DH --> K[Compute Z and derive provisional IKE keys]
+  K --> AUTH[IKE_AUTH: verify identity bound to this exchange]
+  AUTH --> OK{Authentication and Child SA setup succeed?}
+  OK -->|No| STOP[Abort: do not accept this as a trusted data connection]
+  OK -->|Yes| ESP[Use authenticated ESP SA pair]

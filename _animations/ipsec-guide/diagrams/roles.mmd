@@ -1,0 +1,8 @@
+flowchart TD
+  A[Gateway A] <-->|IKE negotiation and management| B[Gateway B]
+  I[IKE SA: one bidirectional control association]
+  A --- I
+  I --> AB[ESP SA_AB: A to B]
+  I --> BA[ESP SA_BA: B to A]
+  AB --> D[Protected IP traffic]
+  BA --> D

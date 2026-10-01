@@ -1,0 +1,9 @@
+flowchart TD
+  KEY[Client generates local private key and public key] --> REQ[Enrollment request: public key plus login context]
+  LOGIN[Google OIDC login] --> TOKEN[ID token sent over authenticated HTTPS]
+  TOKEN --> CHECK[Company service validates token and VPN authorization]
+  REQ --> CHECK
+  CHECK --> CA[Company CA issues certificate for approved public key]
+  CA --> CLIENT[Client has certificate, local private key, and VPN trust configuration]
+  CLIENT --> IKE[Later: IKE_SA_INIT then certificate-based IKE_AUTH]
+  IKE --> ESP[ESP traffic with DH-derived session keys]

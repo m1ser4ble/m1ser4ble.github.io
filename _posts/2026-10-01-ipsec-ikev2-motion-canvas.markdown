@@ -147,4 +147,4 @@ npm test
 [1] https://www.rfc-editor.org/rfc/rfc7296
 [2] https://www.rfc-editor.org/rfc/rfc4303
 [3] https://www.rfc-editor.org/rfc/rfc4106
-[4] https://motioncanvas.io/docs
+[4] https://motion-canvas.io/docs/quickstart/

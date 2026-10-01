@@ -1,0 +1,11 @@
+flowchart LR
+  subgraph GA[Gateway A]
+    AO[Outbound SA_AB: K_AB and send counter]
+    AI[Inbound SA_BA: K_BA and replay window]
+  end
+  subgraph GB[Gateway B]
+    BI[Inbound SA_AB: K_AB and replay window]
+    BO[Outbound SA_BA: K_BA and send counter]
+  end
+  AO -->|ESP: SPI chosen by B| BI
+  BO -->|ESP: SPI chosen by A| AI

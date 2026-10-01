@@ -1,0 +1,6 @@
+{
+  "version": 0,
+  "shared": {"background": "#090f1d", "size": {"x": 1280, "y": 720}},
+  "preview": {"fps": 30, "resolutionScale": 1},
+  "rendering": {"fps": 30, "resolutionScale": 1}
+}
