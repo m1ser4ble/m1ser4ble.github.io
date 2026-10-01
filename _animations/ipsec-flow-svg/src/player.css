@@ -1,0 +1,21 @@
+*{box-sizing:border-box}
+:root{--paper:#f7f3e9;--ink:#292834;--muted:#686575;--line:#dad4c8;--violet:#6b47bd;--violet-light:#eee6fa;--teal:#16796f;--teal-light:#e2f1ea;--red:#b3423f}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Noto Sans KR",sans-serif}
+main{max-width:720px;margin:auto;padding:22px 20px 16px;outline:none}main:focus-visible{outline:2px solid var(--violet);outline-offset:-3px}
+header{padding:0 2px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;margin:0 0 6px;color:var(--violet)}h1{font-size:25px;line-height:1.35;letter-spacing:-.04em;margin:0}.subtitle{color:var(--muted);font-size:13px;margin:7px 0 14px}
+.steps{display:flex;list-style:none;padding:0;margin:0;gap:8px;font-size:11px;color:var(--muted)}.steps li{flex:1;border-top:2px solid var(--line);padding:6px 0 0}.steps li.active{color:var(--violet);border-color:var(--violet);font-weight:750}.steps li.done{border-color:var(--ink);color:var(--ink)}
+figure{margin:14px 0 0}.vector-scroll{border:1px solid var(--line);border-radius:13px;background:#fcfaf5;overflow:auto}svg{width:100%;display:block;font:14px system-ui,sans-serif}svg text{fill:var(--ink);dominant-baseline:middle}svg .label{font-size:11px;fill:var(--muted)}svg .small{font-size:12px}svg .strong{font-weight:750}svg .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}svg .panel{fill:#f6f3ec;stroke:var(--line)}svg .violet{fill:var(--violet-light);stroke:#b6a3d9}svg .teal{fill:var(--teal-light);stroke:#95beb2}svg .warn{fill:#fae9e3;stroke:#d8a09a}svg .wire{fill:none;stroke:#c4beaf;stroke-width:1.5}svg .wire.v{stroke:var(--violet)}svg .wire.t{stroke:var(--teal)}svg .wire.r{stroke:var(--red)}svg .dashed{stroke-dasharray:5 5}svg .white{fill:#fff}svg .red-text{fill:var(--red)}
+figcaption{font-size:14px;line-height:1.65;padding:12px 4px 10px;min-height:82px}figcaption b{color:var(--violet)}
+.controls{display:flex;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}button,select{font:inherit;border:1px solid var(--line);background:#fcfaf5;border-radius:7px;color:var(--ink);padding:7px 10px;min-height:42px}button{cursor:pointer;font-size:13px;font-weight:700}#play{background:var(--ink);color:#fff;border-color:var(--ink);min-width:58px}button:hover{border-color:var(--violet)}button:active{transform:translateY(1px)}button:disabled,select:disabled,input:disabled{cursor:default;opacity:.5}.controls label{font-size:11px;color:var(--muted)}.timeline{flex:1;min-width:70px}.timeline input{display:block;width:100%;margin:0;accent-color:var(--violet);height:25px}#clock{font:11px ui-monospace,monospace;white-space:nowrap}select{display:block;padding:5px 7px;font-size:12px}button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--violet);outline-offset:3px}.help{font-size:11px;color:var(--muted);margin:8px 0 11px}details{font-size:12px;line-height:1.75;border-top:1px dashed var(--line);padding-top:8px}summary{cursor:pointer;font-weight:650}details p{margin:8px 0;color:var(--muted)}
+header,figure,figcaption,.controls,details{min-width:0}h1,.subtitle,figcaption,details,.help{overflow-wrap:anywhere}
+.vector-help{display:none}.timeline input,select{min-width:0;max-width:100%}
+@media(max-width:560px){
+ main{padding:18px 12px 14px}h1{font-size:23px}.steps{gap:6px;font-size:10px}
+ .vector-scroll{width:100%;max-width:100%;overscroll-behavior-x:contain}svg{min-width:680px}
+ .vector-help{display:block;color:var(--muted);font-size:11px;margin:6px 2px 0}
+ .controls{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:6px}
+ #play{grid-column:1;grid-row:1}#restart{grid-column:2;grid-row:1}#clock{grid-column:3;grid-row:1;text-align:right;font-size:10px}
+ .controls>label:last-child{grid-column:4;grid-row:1}.timeline{grid-column:1/-1;grid-row:2;min-width:0}
+ button{padding:7px 9px}select{padding:5px 6px}.help{font-size:10px}figcaption{padding:9px 2px;min-height:100px}
+}
+@media(prefers-reduced-motion:reduce){button:active{transform:none}}

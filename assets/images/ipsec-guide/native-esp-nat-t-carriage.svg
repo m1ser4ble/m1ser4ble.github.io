@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="692" viewBox="0 0 440 692" role="img" aria-labelledby="native-esp-nat-t-carriage-title native-esp-nat-t-carriage-desc">
+<title id="native-esp-nat-t-carriage-title">Native ESP와 UDP NAT-T 운반</title>
+<desc id="native-esp-nat-t-carriage-desc">필드 순서는 위에서 아래로 읽는다. 청록색 ENC 영역만 암호화하며 보라색은 인증 관련 필드다. 개념도이며 실제 바이트 폭이 아니다.</desc>
+<style>text{font-family:"Noto Sans CJK KR",sans-serif;font-size:20px;fill:#e7eef9} .heading{font-size:23px;font-weight:700} .note{font-size:18px;fill:#b8c9df}</style>
+<rect width="440" height="692" rx="16" fill="#0b1220"/>
+<text x="22" y="35" class="heading">Native ESP와 UDP NAT-T 운반</text>
+<text x="22" y="66" class="note">필드 순서: 위 → 아래 · 폭은 비례하지 않음</text>
+<text x="22" y="116" class="heading">Native ESP · IP 프로토콜 50</text>
+<rect x="22" y="131" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="155" style="fill:#e7eef9">Outer IP · ESP AAD 아님</text>
+<rect x="22" y="170" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="194" style="fill:#ecddff">ESP · SPI / Sequence = AAD</text>
+<rect x="22" y="209" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="233" style="fill:#e7eef9">IV · ENC 밖</text>
+<rect x="22" y="248" width="396" height="34" rx="7" fill="#0d343a" stroke="#5ad5cf" stroke-width="1.5"/>
+<text x="35" y="272" style="fill:#ccfffa">Ciphertext · ENC 영역</text>
+<rect x="22" y="287" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="311" style="fill:#ecddff">Tag · ENC 밖</text>
+<text x="22" y="365" class="heading">ESP NAT-T · UDP 4500</text>
+<rect x="22" y="380" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="404" style="fill:#e7eef9">Outer IP · ESP AAD 아님</text>
+<rect x="22" y="419" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="443" style="fill:#e7eef9">UDP · NAT가 주소/포트 변경 가능</text>
+<rect x="22" y="458" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="482" style="fill:#ecddff">ESP · SPI / Sequence = AAD</text>
+<rect x="22" y="497" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="521" style="fill:#e7eef9">IV · ENC 밖</text>
+<rect x="22" y="536" width="396" height="34" rx="7" fill="#0d343a" stroke="#5ad5cf" stroke-width="1.5"/>
+<text x="35" y="560" style="fill:#ccfffa">Ciphertext · ENC 영역</text>
+<rect x="22" y="575" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="599" style="fill:#ecddff">Tag · ENC 밖</text>
+<text x="22" y="646" class="note">UDP는 ESP 운반용 · AUTH 대체 아님</text>
+<text x="22" y="671" class="note">IKE / UDP 4500에는 Non-ESP Marker</text>
+</svg>

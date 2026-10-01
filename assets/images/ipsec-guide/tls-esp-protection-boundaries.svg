@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="701" viewBox="0 0 440 701" role="img" aria-labelledby="tls-esp-protection-boundaries-title tls-esp-protection-boundaries-desc">
+<title id="tls-esp-protection-boundaries-title">TLS와 ESP의 보호 경계</title>
+<desc id="tls-esp-protection-boundaries-desc">필드 순서는 위에서 아래로 읽는다. 청록색 ENC 영역만 암호화하며 보라색은 인증 관련 필드다. 개념도이며 실제 바이트 폭이 아니다.</desc>
+<style>text{font-family:"Noto Sans CJK KR",sans-serif;font-size:20px;fill:#e7eef9} .heading{font-size:23px;font-weight:700} .note{font-size:18px;fill:#b8c9df}</style>
+<rect width="440" height="701" rx="16" fill="#0b1220"/>
+<text x="22" y="35" class="heading">TLS와 ESP의 보호 경계</text>
+<text x="22" y="66" class="note">필드 순서: 위 → 아래 · 폭은 비례하지 않음</text>
+<text x="22" y="116" class="heading">HTTPS over TCP · TLS 1.3</text>
+<rect x="22" y="131" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="155" style="fill:#e7eef9">IP</text>
+<rect x="22" y="170" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="194" style="fill:#e7eef9">TCP</text>
+<rect x="22" y="209" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="233" style="fill:#e7eef9">TLS record header</text>
+<rect x="22" y="248" width="396" height="58" rx="7" fill="#0d343a" stroke="#5ad5cf" stroke-width="1.5"/>
+<text x="35" y="272" style="fill:#ccfffa">ENC · HTTP bytes</text>
+<text x="35" y="296" style="fill:#ccfffa">+ TLS inner fields</text>
+<rect x="22" y="311" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="335" style="fill:#ecddff">Tag · ENC 밖</text>
+<text x="22" y="389" class="heading">ESP transport</text>
+<rect x="22" y="404" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="428" style="fill:#e7eef9">IP · ESP AAD 아님</text>
+<rect x="22" y="443" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="467" style="fill:#ecddff">ESP · SPI / Sequence = AAD</text>
+<rect x="22" y="482" width="396" height="34" rx="7" fill="#15243a" stroke="#6c88aa" stroke-width="1.5"/>
+<text x="35" y="506" style="fill:#e7eef9">IV · ENC 밖</text>
+<rect x="22" y="521" width="396" height="58" rx="7" fill="#0d343a" stroke="#5ad5cf" stroke-width="1.5"/>
+<text x="35" y="545" style="fill:#ccfffa">ENC · TCP header + data</text>
+<text x="35" y="569" style="fill:#ccfffa">+ ESP trailer</text>
+<rect x="22" y="584" width="396" height="34" rx="7" fill="#2b2046" stroke="#b69be8" stroke-width="1.5"/>
+<text x="35" y="608" style="fill:#ecddff">Tag · ENC 밖</text>
+<text x="22" y="655" class="note">청록 ENC: 암호화 · 보라: 인증 관련 필드</text>
+<text x="22" y="680" class="note">TLS record와 TCP segment는 1:1 아님</text>
+</svg>

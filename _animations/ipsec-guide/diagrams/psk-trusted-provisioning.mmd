@@ -1,0 +1,18 @@
+%%{init: {"theme": "base", "htmlLabels": false, "fontFamily": "Noto Sans CJK KR, sans-serif", "themeVariables": {"fontSize": "22px", "primaryColor": "#15243a", "primaryTextColor": "#e7eef9", "primaryBorderColor": "#536c8f", "lineColor": "#a2b6d3", "secondaryColor": "#172942", "tertiaryColor": "#162338", "edgeLabelBackground": "#0b1220", "clusterBkg": "#101d30", "clusterBorder": "#536c8f"}, "flowchart": {"htmlLabels": false, "nodeSpacing": 22, "rankSpacing": 32, "padding": 18, "curve": "linear", "useMaxWidth": true}}}%%
+%% Schematic only; native SVG text. Encryption: teal; peer/policy authentication: purple; keys: amber.
+flowchart TD
+P["연결 전 · 관리자
+강한 무작위 PSK 생성"]:::key --> T["IKE와 독립된 신뢰 경로
+A와 B에 같은 PSK 설정"]:::key
+T --> A["A: PSK 보관
+B: 같은 PSK 보관"]:::key
+A --> I["연결 중 · A ↔ B
+IKE 교환 / AUTH 검증"]:::auth
+I --> N["PSK 자체는
+IKE payload로 보내지 않음"]:::visible
+
+classDef visible fill:#15243a,stroke:#6c88aa,color:#e7eef9,stroke-width:2px;
+classDef key fill:#352a12,stroke:#eab860,color:#ffe1a4,stroke-width:2px;
+classDef auth fill:#2b2046,stroke:#b69be8,color:#ecddff,stroke-width:2px;
+classDef enc fill:#0d343a,stroke:#5ad5cf,color:#ccfffa,stroke-width:2px;
+classDef stop fill:#3b1c27,stroke:#ef879d,color:#ffdfE6,stroke-width:2px;

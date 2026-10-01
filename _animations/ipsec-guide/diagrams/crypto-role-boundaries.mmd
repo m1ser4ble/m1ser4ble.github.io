@@ -1,0 +1,24 @@
+%%{init: {"theme": "base", "htmlLabels": false, "fontFamily": "Noto Sans CJK KR, sans-serif", "themeVariables": {"fontSize": "22px", "primaryColor": "#15243a", "primaryTextColor": "#e7eef9", "primaryBorderColor": "#536c8f", "lineColor": "#a2b6d3", "secondaryColor": "#172942", "tertiaryColor": "#162338", "edgeLabelBackground": "#0b1220", "clusterBkg": "#101d30", "clusterBorder": "#536c8f"}, "flowchart": {"htmlLabels": false, "nodeSpacing": 22, "rankSpacing": 32, "padding": 18, "curve": "linear", "useMaxWidth": true}}}%%
+%% Schematic only; native SVG text. Encryption: teal; peer/policy authentication: purple; keys: amber.
+flowchart TD
+D["DH · 키 합의
+내 비밀 a + 상대 공개 Y
+→ 공유 비밀 Z"]:::key
+K["KDF · 키 파생
+Z + nonce + 문맥
+→ 용도별 키 재료"]:::key
+A["AUTH · 피어 증명
+인증 자격 + 교환 결합 데이터
+→ 상대가 검증할 증명"]:::auth
+E["AEAD · 메시지 보호
+대칭키 + 패킷 nonce + 평문
+→ 암호문 + tag"]:::enc
+D --> K
+K ~~~ A
+A ~~~ E
+
+classDef visible fill:#15243a,stroke:#6c88aa,color:#e7eef9,stroke-width:2px;
+classDef key fill:#352a12,stroke:#eab860,color:#ffe1a4,stroke-width:2px;
+classDef auth fill:#2b2046,stroke:#b69be8,color:#ecddff,stroke-width:2px;
+classDef enc fill:#0d343a,stroke:#5ad5cf,color:#ccfffa,stroke-width:2px;
+classDef stop fill:#3b1c27,stroke:#ef879d,color:#ffdfE6,stroke-width:2px;

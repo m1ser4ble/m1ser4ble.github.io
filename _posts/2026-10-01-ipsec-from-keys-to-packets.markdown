@@ -7,7 +7,7 @@ categories: [system]
 excerpt: "PSK와 DH 비밀은 왜 다른가, 인증은 언제 하는가, 단방향 SA는 무엇인가. 하나의 패킷을 따라 IKEv2·ESP·Linux XFRM과 VPN 자격 증명 발급까지 연결한다."
 toc: true
 toc_sticky: true
-tags: [ipsec, ikev2, esp, diffie-hellman, authentication, xfrm, vpn, motion-canvas]
+tags: [ipsec, ikev2, esp, diffie-hellman, authentication, xfrm, vpn, svg, motion-design]
 ---
 
 <link rel="stylesheet" href="{{ '/assets/css/ipsec-guide.css' | relative_url }}">
@@ -17,6 +17,10 @@ IPsec을 이해하기 어려운 이유는 암호 알고리즘 하나가 아니�
 
 이 글은 IPsec 질의응답에서 반복된 혼동을 학습 순서로 다시 구성했다. 대화의 답변을 그대로 옮기지 않고, 프로토콜 동작은 RFC 원문으로 확인했다. 원문 대화·사용자 정보·실제 장비의 비밀값은 싣지 않는다.
 
+<div class="ipsec-guide-note" data-visual-version="svg-v1" markdown="1">
+**처음 읽는 순서:** 1–6절에서 **사전 신뢰 → DH → 키 파생 → 상대 인증**을 잇고, 7–9절에서 **방향별 SA → 실제 패킷 보호**를 따라가자. HTTPS·P2P 비교는 10–11절, Linux·웹 로그인·장애 진단은 12–15절에서 필요할 때 읽으면 된다. 모션은 자동 재생하지 않으며, 재생·속도·슬라이더로 한 단계씩 확인할 수 있다.
+</div>
+
 **먼저 기억할 한 문장:**
 
 > 인증 재료는 연결 전에 준비한다. 연결에서는 DH로 아직 인증되지 않은 키 재료를 만들고, IKE_AUTH에서 그 교환의 상대를 검증한다. 성공한 연결의 데이터는 별도로 파생한 방향별 ESP 키와 SA로 보호한다.[1]
@@ -25,13 +29,14 @@ IPsec을 이해하기 어려운 이유는 암호 알고리즘 하나가 아니�
 
 다음 예시를 끝까지 사용하자. Host A의 TCP 패킷을 Host B로 보내고, 두 게이트웨이 사이의 네트워크는 신뢰하지 않는다. 주소는 설명용이며 실제 인터넷 접속 대상으로 사용하지 않는다.
 
-```text
-Host A          Gateway A          Gateway B          Host B
-10.1.0.10       192.0.2.1          198.51.100.1       10.2.0.20
-   |                |                  |                |
-   +-- original IP->|=== untrusted ===>|-- original IP->+
-                    A                  B
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/gateway-protection-topology.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="게이트웨이 사이의 보호 경계 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/gateway-protection-topology.svg' | relative_url }}" alt="게이트웨이 사이의 보호 경계" loading="lazy" style="width:100%;max-width:270.22px;height:auto;" />
+  </a>
+  <figcaption>게이트웨이 사이의 보호 경계 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+Gateway A↔Gateway B만 ESP 보호 경계다. 양쪽 LAN은 이 ESP의 암호화 범위에 들어가지 않는다.
 
 여기서 IPsec의 끝점은 **Gateway A와 Gateway B**다. 게이트웨이 사이만 ESP로 보호한다면, Host A와 Gateway A 사이의 LAN까지 자동으로 암호화되는 것은 아니다. 종단 간 애플리케이션 보호가 필요하면 TLS 같은 별도의 경계를 함께 설계해야 한다.[2][3]
 
@@ -75,15 +80,14 @@ AES-GCM은 대칭키 기반 **AEAD(Authenticated Encryption with Associated Data
 
 관리자가 충분히 예측하기 어려운 무작위 PSK를 생성하고, A와 B의 설정에 같은 값을 넣는다. 장비의 로컬 관리, 서버 신원을 검증한 SSH, 이미 신뢰하는 비밀 배포 시스템 등 **IKE 연결과 독립된 신뢰 경로**가 필요하다. 이는 배포 설계이며, IKE가 최초 PSK를 안전하게 배송해 준다는 뜻이 아니다.[1] (RFC §2.15)
 
-```text
-Before connection:
-  Administrator -- trusted provisioning --> A: PSK
-  Administrator -- trusted provisioning --> B: same PSK
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/psk-trusted-provisioning.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="연결 전 PSK 배포와 연결 중 IKE 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/psk-trusted-provisioning.svg' | relative_url }}" alt="연결 전 PSK 배포와 연결 중 IKE" loading="lazy" style="width:100%;max-width:268.07px;height:auto;" />
+  </a>
+  <figcaption>연결 전 PSK 배포와 연결 중 IKE — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
 
-During connection:
-  A <---------------- IKE ----------------> B
-  PSK itself is not transmitted as an IKE payload.
-```
+관리자는 독립된 신뢰 경로로 A와 B에 같은 PSK를 설정한다. 연결 중에는 IKE 인증 증명을 보내며 PSK 자체를 payload로 전송하지 않는다.
 
 ‘공격자는 왜 PSK를 모르는가?’의 답은 **DH가 PSK를 숨겨 주기 때문이 아니라, 사전에 안전하게 배포했고 유출되지 않았다고 가정하기 때문**이다. 배포 경로가 노출되거나 PSK가 추측 가능하면 그 전제가 무너진다. 사람이 고른 짧은 비밀번호를 PSK로 쓰는 방식은 사전 공격 위험이 있다.[1] (RFC §2.15)
 
@@ -140,29 +144,35 @@ print(X, Y, pow(Y, a, p), pow(X, b, p))
 
 ### 3.3. 어디까지가 DH이고 어디부터가 다른 작업인가
 
-```text
-DH:    private a + public Y -> Z
-KDF:   Z + nonces + context -> purpose-specific key material
-AUTH:  credential + exchange-bound data -> peer proof
-AEAD:  symmetric key + packet nonce + plaintext -> ciphertext + tag
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/crypto-role-boundaries.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="DH·KDF·AUTH·AEAD의 다른 역할 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/crypto-role-boundaries.svg' | relative_url }}" alt="DH·KDF·AUTH·AEAD의 다른 역할" loading="lazy" style="width:100%;max-width:283.62px;height:auto;" />
+  </a>
+  <figcaption>DH·KDF·AUTH·AEAD의 다른 역할 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+DH는 공유 비밀 Z를 합의하고 KDF는 용도별 키를 파생한다. AUTH는 자격을 이번 교환에 결합해 피어를 증명하고 AEAD는 대칭키와 패킷 nonce로 암호문과 tag를 만든다. AUTH와 AEAD tag는 서로 다른 검증이다.
 
 **KDF != DH**다. DH가 `Z`를 만든 뒤 PRF 기반 키 파생으로 IKE 키와 이후 ESP 키 재료를 나눈다. PSK는 `a`, `b`, `X`, `Y`, `Z` 중 어느 것도 아니다.[1] (RFC §2.14–2.17)
 
-아래 애니메이션은 ‘미리 있던 PSK’와 ‘방금 계산한 Z’를 분리하고, Z에서 용도별 키가 생기는 흐름을 보여준다. 화면을 볼 수 없어도 위 네 줄이 같은 내용을 설명한다.
+아래 애니메이션은 ‘미리 있던 PSK’와 ‘방금 계산한 Z’를 분리하고, Z에서 용도별 키가 생기는 흐름을 보여준다. 움직임 없이도 도식과 본문의 입력·출력 설명으로 같은 관계를 확인할 수 있다.
 
-<iframe class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-explainer/index.html' | relative_url }}?topic=keys" title="Motion Canvas: PSK와 DH 비밀 Z, IKE와 ESP 키의 분리" loading="lazy" style="width:100%;height:760px;border:1px solid #29415f;border-radius:16px;background:#090f1d;" allow="fullscreen"></iframe>
+<iframe class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-flow-svg/index.html' | relative_url }}?topic=keys" title="SVG 설명 모션: PSK와 DH 비밀 Z, IKE와 ESP 키의 분리" loading="lazy" style="width:100%;height:900px;border:1px solid #29415f;border-radius:16px;background:#f5f5ee;" allow="fullscreen"></iframe>
 
-[애니메이션을 별도 화면에서 열기: PSK와 DH 비밀 분리]({{ '/assets/animations/ipsec-explainer/index.html' | relative_url }}?topic=keys){: .btn .btn--primary target="_blank" rel="noopener"}
+[애니메이션을 별도 화면에서 열기: PSK와 DH 비밀 분리]({{ '/assets/animations/ipsec-flow-svg/index.html' | relative_url }}?topic=keys){: .btn .btn--primary target="_blank" rel="noopener"}
 
 ## 4. IKE_SA_INIT: 공개 교환에서 IKE 보호 키까지
 
 A를 먼저 요청하는 **initiator**, B를 **responder**라고 하자. 선택적 payload와 오류 처리를 생략한 첫 교환은 다음과 같다.[1] (RFC §1.2)
 
-```text
-A -> B: HDR, SAi1, KEi, Ni
-B -> A: HDR, SAr1, KEr, Nr
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/ike-sa-init-exchange.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="IKE_SA_INIT의 공개 교환 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/ike-sa-init-exchange.svg' | relative_url }}" alt="IKE_SA_INIT의 공개 교환" loading="lazy" style="width:100%;max-width:287.3px;height:auto;" />
+  </a>
+  <figcaption>IKE_SA_INIT의 공개 교환 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+A는 initiator, B는 responder다. SAi1/SAr1은 IKE 알고리즘 제안·선택이고 KEi/KEr와 Ni/Nr는 공개 DH 값과 nonce다. 이 평문 교환 후 양쪽이 로컬에서 Z와 IKE 키를 계산하지만 피어 인증은 아직 완료되지 않았다.
 
 - `HDR`: IKE 헤더. IKE SA를 식별하는 SPI 등의 정보가 있다.
 - `SAi1/SAr1`: IKE용 알고리즘 제안과 선택. 여기서 정하는 것은 우선 **IKE 메시지 보호 방식**이다.
@@ -212,10 +222,14 @@ ESP도 AES-GCM을 사용할 수 있으나 **IKE와 ESP는 별도로 협상한다
 
 PSK 기본 경로에서 다음 교환은 IKE 키로 보호된다. `SK{...}`는 암호화·무결성 보호되는 payload를 묶은 표기이며, 외부 IKE 헤더까지 암호화한다는 뜻은 아니다.[1] (RFC §1.2)
 
-```text
-A -> B: HDR, SK{IDi, AUTH, SAi2, TSi, TSr}
-B -> A: HDR, SK{IDr, AUTH, SAr2, TSi, TSr}
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/ike-auth-protected-payloads.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="IKE_AUTH의 보호 payload와 피어 인증 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/ike-auth-protected-payloads.svg' | relative_url }}" alt="IKE_AUTH의 보호 payload와 피어 인증" loading="lazy" style="width:100%;max-width:276.25px;height:auto;" />
+  </a>
+  <figcaption>IKE_AUTH의 보호 payload와 피어 인증 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+외부 IKE HDR은 암호화되지 않는다. SK 내부에는 ID, AUTH, Child SA 제안·선택과 TSi/TSr가 들어간다. IKE 메시지 보호의 tag와 자격 기반 AUTH 검증을 구분하며 인증과 Child SA 협상 모두 성공해야 데이터 SA를 사용할 수 있다.
 
 한 메시지 안에 두 작업이 있다. **IKE AEAD tag는 이 보호 메시지의 변조를 검출하고, AUTH는 기대한 인증 자격을 가진 피어가 이번 교환에 참여했다는 증명을 제공한다.** DH에 개입한 공격자가 자기 쪽 IKE 키를 알아도 AUTH까지 만들 수 있는 것은 아니다.[1] (RFC §2.15)[5]
 
@@ -255,11 +269,14 @@ B는 받은 `AUTH_A`를 B가 계산한 **예상 AUTH_A**와 비교한다. A의 A
 
 MITM(Man-in-the-Middle) 공격자 M이 DH 공개값을 바꿔 두 연결을 만들었다고 하자.
 
-```text
-A <----- DH leg 1 -----> M <----- DH leg 2 -----> B
-        Z_AM                      Z_MB
-        IKE keys 1                IKE keys 2
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/dh-mitm-two-legs.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="DH 두 갈래와 AUTH 실패 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/dh-mitm-two-legs.svg' | relative_url }}" alt="DH 두 갈래와 AUTH 실패" loading="lazy" style="width:100%;max-width:276.27px;height:auto;" />
+  </a>
+  <figcaption>DH 두 갈래와 AUTH 실패 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+공개값을 바꾼 M은 A↔M의 Z_AM·IKE keys 1과 M↔B의 Z_MB·IKE keys 2를 계산할 수 있다. 하지만 안전하게 배포된 PSK를 모르면 변경된 교환에 맞는 AUTH를 만들 수 없고, 복사한 증명도 교환 문맥이 달라 검증에 실패한다.
 
 M은 자기가 참여한 두 DH의 Z와 IKE 키를 계산할 수 있다. **따라서 ‘IKE_AUTH가 암호화됐으니 중간자는 아무것도 못 본다’만으로 안전성을 설명하면 틀린다.** 실제 RFC도 이런 능동적 공격자가 initiator의 신원을 볼 수 있음을 명시한다.[1] (RFC §1.2)
 
@@ -269,9 +286,9 @@ M은 자기가 참여한 두 DH의 Z와 IKE 키를 계산할 수 있다. **따�
 
 아래 장면의 핵심은 ‘DH 두 갈래’와 ‘AUTH 검증 실패’다. 인증 실패 시 연결을 중단하며, 이미 믿고 보낸 사용자 데이터를 나중에 되찾는 구조가 아니다.
 
-<iframe class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-explainer/index.html' | relative_url }}?topic=mitm" title="Motion Canvas: 인증 없는 DH 중간자 공격과 IKE_AUTH의 교환 결합" loading="lazy" style="width:100%;height:760px;border:1px solid #29415f;border-radius:16px;background:#090f1d;" allow="fullscreen"></iframe>
+<iframe class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-flow-svg/index.html' | relative_url }}?topic=mitm" title="SVG 설명 모션: 인증 없는 DH 중간자 공격과 IKE_AUTH의 교환 결합" loading="lazy" style="width:100%;height:900px;border:1px solid #29415f;border-radius:16px;background:#f5f5ee;" allow="fullscreen"></iframe>
 
-[애니메이션을 별도 화면에서 열기: DH 중간자와 인증 실패]({{ '/assets/animations/ipsec-explainer/index.html' | relative_url }}?topic=mitm){: .btn .btn--primary target="_blank" rel="noopener"}
+[애니메이션을 별도 화면에서 열기: DH 중간자와 인증 실패]({{ '/assets/animations/ipsec-flow-svg/index.html' | relative_url }}?topic=mitm){: .btn .btn--primary target="_blank" rel="noopener"}
 
 ### 5.3. 인증서 방식: 같은 비밀을 배포하지 않는다
 
@@ -290,13 +307,14 @@ EAP는 **Extensible Authentication Protocol**, 여러 인증 방법을 운반할
 
 RFC 7296 기본 EAP 경로에서는 initiator가 첫 IKE_AUTH에 AUTH를 생략해 EAP를 요청한다. responder는 **공개키 서명 기반 AUTH로 먼저 자신을 인증**하고 EAP 요청을 보낸다. 클라이언트는 서버를 검증한 뒤 선택한 EAP 대화를 수행하며, IKE_AUTH 요청/응답이 여러 번 이어질 수 있다.[1] (RFC §2.16)
 
-```text
-Client -> Server: protected IDi + Child SA proposal, no initial client AUTH
-Server -> Client: protected server ID + certificate/signature AUTH + EAP
-Client <-> Server: further protected EAP exchanges
-EAP succeeds:     key-generating method yields shared MSK
-Client <-> Server: final AUTH with MSK, then completed Child SA setup
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/eap-authentication-stages.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="기본 키 생성형 EAP의 인증 순서 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/eap-authentication-stages.svg' | relative_url }}" alt="기본 키 생성형 EAP의 인증 순서" loading="lazy" style="width:100%;max-width:282.0px;height:auto;" />
+  </a>
+  <figcaption>기본 키 생성형 EAP의 인증 순서 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+클라이언트의 첫 IKE_AUTH에는 초기 AUTH가 없다. 서버는 인증서·서명 AUTH로 먼저 인증되고 이후 보호된 EAP 대화가 이어진다. 키 생성형 EAP 성공 시 얻는 MSK로 최종 AUTH를 수행한 뒤 Child SA를 완성한다. EAP 자체가 MFA를 뜻하지는 않는다.
 
 키 생성형 EAP가 만드는 **MSK(Master Session Key)**는 최종 AUTH 계산에서 위 PSK 자리를 대신한다. 이것은 관리자가 미리 넣은 PSK도, 그대로 사용되는 ESP 암호화 키도 아니다. 이 IKE 교환에서 얻은 EAP MSK는 해당 AUTH 용도 외에 사용하지 않도록 규정되어 있다.[1] (RFC §2.15–2.16)
 
@@ -308,33 +326,24 @@ Client <-> Server: final AUTH with MSK, then completed Child SA setup
 
 이제 다음 문장을 끊기지 않고 읽을 수 있어야 한다.
 
-```text
-Preconfigured PSK -----------------------> AUTH proof
-                                               |
-IKE_SA_INIT: public DH values + nonces          |
-        |                                      |
-        v                                      |
-Z -> PRF-based derivation -> provisional IKE keys
-        |                                      |
-        v                                      v
-IKE_AUTH: protected identity + AUTH verification + first Child SA
-        |
-        v
-SK_d -> separate ESP key material -> SA_AB and SA_BA
-        |
-        v
-Original IP packet -> ESP protection -> peer verifies/decrypts
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/ike-to-esp-lifecycle.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="사전 자격에서 ESP 패킷까지 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/ike-to-esp-lifecycle.svg' | relative_url }}" alt="사전 자격에서 ESP 패킷까지" loading="lazy" style="width:100%;max-width:286.91px;height:auto;" />
+  </a>
+  <figcaption>사전 자격에서 ESP 패킷까지 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
 
-아래는 기존의 전체 연결 수립 애니메이션이다. **PSK 기본 성공 경로, 터널 모드, AES-GCM ESP**를 한 장면 흐름으로 연결한다. 실제 암호 연산이나 패킷 캡처를 재현하는 도구가 아니라 설명용 시각화이며, 오류 처리·EAP·재키잉 등의 모든 분기를 표현하지 않는다.
+미리 배포된 PSK는 AUTH 증명에 쓰이고 초기 공개 DH 값·nonce는 Z와 잠정 IKE 키를 만드는 데 쓰인다. 보호된 IKE_AUTH에서 신원 인증과 첫 Child SA 협상을 수행한 뒤 SK_d로 별도 ESP 키를 파생한다. SA_AB와 SA_BA로 원래 IP 패킷을 보호하고 피어가 검증·복호화한다.
 
-Motion Canvas는 TypeScript/JavaScript 장면과 generator로 애니메이션을 표현한다. 도구 자체가 궁금하면 공식 **Quickstart**와 **Animation flow**를 참고할 수 있다. 공식 문서 도메인은 `motion-canvas.io`다.[21][22]
+아래 설명 모션은 공개 교환부터 인증, 데이터 SA와 ESP 패킷까지 같은 객체를 따라간다. **PSK 기본 성공 경로, 터널 모드, AES-GCM ESP**를 한 장면 흐름으로 연결한다. 실제 암호 연산이나 패킷 캡처를 재현하는 도구가 아니라 설명용 시각화이며, 오류 처리·EAP·재키잉 등의 모든 분기를 표현하지 않는다.
 
-<iframe id="ipsec-motion-frame" class="ipsec-handshake-frame" src="{{ '/assets/animations/ipsec/index.html' | relative_url }}" title="Motion Canvas: IKEv2 연결 수립에서 ESP 패킷 보호까지 전체 흐름" loading="lazy" style="width:100%;height:930px;border:1px solid #29415f;border-radius:16px;background:#090f1d;" allow="fullscreen"></iframe>
+이 페이지의 모션은 로컬 HTML/SVG로 동작한다. 재생 전에는 멈춰 있으며, 단계 탐색·재생 속도·키보드 조작을 지원한다. OS의 움직임 줄이기 설정에서는 최종 정지 도식으로 표시한다. 연출은 필드의 연속성과 읽을 시간을 우선하는 motion-design 지침을 적용했다.[21]
 
-[전체 애니메이션을 별도 화면에서 열기]({{ '/assets/animations/ipsec/index.html' | relative_url }}){: .btn .btn--primary target="_blank" rel="noopener"}
+<iframe id="ipsec-flow-frame" class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-flow-svg/index.html' | relative_url }}?topic=handshake" title="SVG 설명 모션: IKEv2 연결 수립에서 ESP 패킷 보호까지 전체 흐름" loading="lazy" style="width:100%;height:900px;border:1px solid #29415f;border-radius:16px;background:#f5f5ee;" allow="fullscreen"></iframe>
 
-텍스트로 복습하고 싶다면 [기존 IKEv2 Motion Canvas 해설]({{ '/system/ipsec-ikev2-motion-canvas/' | relative_url }})도 참고할 수 있다. 이 글은 그 기본 흐름 앞뒤의 인증 재료, 모드, 운영 경계까지 확장한다.
+[전체 애니메이션을 별도 화면에서 열기]({{ '/assets/animations/ipsec-flow-svg/index.html' | relative_url }}?topic=handshake){: .btn .btn--primary target="_blank" rel="noopener"}
+
+텍스트로 복습하고 싶다면 [기존 IKEv2 Motion Canvas 해설]({{ '/system/ipsec-ikev2-motion-canvas/' | relative_url }})도 참고할 수 있다. 기존 해설의 Motion Canvas 예제는 별도 페이지에 보존하고, 이 글에서는 인증 재료·모드·운영 경계까지 확장한 SVG 설명 모션을 사용한다.
 
 ## 7. 첫 Child SA와 ESP 방향별 키는 별도로 만든다
 
@@ -385,26 +394,20 @@ SPI(Security Parameters Index)는 수신자가 SA를 찾는 식별자이고 비�
 
 Host A가 만든 패킷은 `[IP: 10.1.0.10 → 10.2.0.20][TCP][Data]`다. Gateway A는 정책으로 이 패킷이 보호 대상인지 확인하고 해당 **outbound SA_AB**를 선택한다.[2] (RFC §5.1)
 
-```text
-Original packet
-  -> policy: PROTECT
-  -> select outbound ESP SA_AB
-  -> assign sequence number and packet IV
-  -> AES-GCM with K_AB and salt_AB
-  -> transmit ESP tunnel packet
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/esp-outbound-processing.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="Gateway A의 outbound 보호 흐름 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/esp-outbound-processing.svg' | relative_url }}" alt="Gateway A의 outbound 보호 흐름" loading="lazy" style="width:100%;max-width:282.0px;height:auto;" />
+  </a>
+  <figcaption>Gateway A의 outbound 보호 흐름 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+원래 IP 패킷에 PROTECT 정책을 적용하고 outbound SA_AB를 선택한다. 순번과 패킷 IV를 정한 뒤 K_AB·salt_AB로 AES-GCM 보호하여 ESP 터널 패킷을 전송한다. 실제 커널 hook 호출 순서를 고정한 도식은 아니다.
 
 ### 8.1. AES-GCM 터널 모드의 보이는 부분과 숨는 부분
 
 다음은 기본 AES-GCM ESP 터널 패킷의 개념도다. IPv6 확장 헤더·추가 트래픽 흐름 은닉 padding 등은 생략한다.[3] (RFC §2, §3.1.2)[4] (RFC §3–6)
 
-```text
-[Outer IP: Gateway A -> Gateway B]
-[ESP: SPI, Sequence Number]
-[Explicit IV]
-[Ciphertext: Inner IP + TCP + Data + Padding + Pad Length + Next Header]
-[Authentication Tag]
-```
+패킷의 바깥부터 **게이트웨이 주소가 든 외부 IP 헤더, ESP 헤더, 공개 IV, 암호문, 인증 tag** 순서다. 원래 IP 헤더·TCP·Data와 ESP trailer는 암호문 안에 들어간다. 각 필드의 보호 여부는 다음 표와 9절의 색으로 구분한 패킷 도식에서 확인할 수 있다.
 
 | 부분 | 암호화 여부 | 의미 |
 |---|---|---|
@@ -422,15 +425,14 @@ RFC 4106의 GCM nonce는 **4바이트 SA salt + 8바이트 explicit IV**다. 동
 
 Gateway B의 수신 흐름을 개념적으로 쓰면 다음과 같다.[2] (RFC §5.2)[3] (RFC §3.4)
 
-```text
-Received ESP
-  -> find inbound SA using SPI and implementation context
-  -> optional preliminary anti-replay check
-  -> authenticate and decrypt with that SA's key material
-  -> only after integrity succeeds, commit replay state
-  -> check recovered packet against allowed selectors/policy
-  -> deliver or forward to Host B
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/esp-inbound-validation.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="Gateway B의 수신 검증 흐름 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/esp-inbound-validation.svg' | relative_url }}" alt="Gateway B의 수신 검증 흐름" loading="lazy" style="width:100%;max-width:277.52px;height:auto;" />
+  </a>
+  <figcaption>Gateway B의 수신 검증 흐름 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+수신 ESP의 SPI와 구현 문맥으로 inbound SA를 찾고 선택적으로 예비 anti-replay 검사를 한다. 해당 SA 키로 인증·복호화가 성공한 뒤에만 replay 상태를 확정하며, 복원 패킷의 허용 selector·정책을 검사한 뒤 Host B에 전달한다. 검증되지 않은 평문은 전달하지 않는다.
 
 SPI 외에 주소·프로토콜 등의 문맥을 쓰는 구현도 있다. AES-GCM 인증·복호화는 결합된 처리이며, 위 순서는 개념적 검사 관계를 나타낸다. 검증하지 않은 평문을 상위 계층에 먼저 전달해도 된다는 뜻이 아니다.[2] (RFC §4.1)[3] (RFC §3.4)[4]
 
@@ -442,24 +444,20 @@ ESP 순번은 새 SA에서 첫 패킷이 1이다. 응답은 `SA_AB`를 거꾸로
 
 ‘Original IP’는 특별한 주소 종류가 아니라 **IPsec을 적용하기 전에 있던 IP 헤더**다. 사설 주소, 공인 주소, VPN에서 할당한 주소 중 무엇이든 원래 헤더에 들어갈 수 있다.[3] (RFC §3.1)
 
-```text
-Before:
-[IP A->B][TCP][Data]
-
-ESP transport:
-[IP A->B][ESP][IV][ENC(TCP + Data + ESP trailer)][Tag]
-
-ESP tunnel:
-[IP GA->GB][ESP][IV][ENC(IP A->B + TCP + Data + ESP trailer)][Tag]
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/esp-packet-comparison.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="원본·전송·터널 패킷과 암호화·인증 경계 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/esp-packet-comparison.svg' | relative_url }}" alt="원본 패킷, ESP 전송 모드, ESP 터널 모드의 정렬된 비교. 전송은 TCP·Data·trailer, 터널은 원본 IP까지 암호화하며 IV·Tag는 암호문 밖에 있다." loading="lazy" />
+  </a>
+  <figcaption>색으로 둘러싼 영역이 암호화되는 필드다. ESP 헤더는 AAD로 인증되고, 외부 IP는 ESP 인증 범위 밖이다. 개념적 필드 묶음이며 정확한 바이트 폭이 아니다. 도식을 누르면 확대할 수 있다.</figcaption>
+</figure>
 
 **전송 모드**는 원래 주소가 든 헤더를 밖에 남긴다. ‘헤더가 그대로’라는 표현은 모든 비트가 불변이라는 뜻이 아니다. 예를 들어 IPv4 Protocol 필드는 ESP를 가리키도록 바뀐다. **터널 모드**는 원래 패킷 전체를 보호 영역에 넣고 IPsec 끝점 주소로 새 외부 헤더를 붙인다.[3] (RFC §3.1.1–3.1.2)
 
-아래 시각화는 원래 주소, 외부 주소, 암호화 범위를 나란히 보여준다. 전송 모드는 원래 헤더 한 겹, 터널 모드는 내부·외부 헤더 두 겹이라는 차이를 위 텍스트로도 확인할 수 있다.
+아래 시각화는 원래 주소, 외부 주소, 암호화 범위를 나란히 보여준다. 같은 IP·TCP·Data 필드가 어느 보호 영역으로 이동하는지 따라가 보자. 전송 모드는 원래 헤더 한 겹, 터널 모드는 내부·외부 헤더 두 겹이다. 작은 화면에서는 상세 패킷을 도식 안에서 좌우로 이동할 수 있으며, 아래의 줄바꿈 가능한 정지 구조로도 비교할 수 있다.
 
-<iframe class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-explainer/index.html' | relative_url }}?topic=modes" title="Motion Canvas: ESP 전송 모드와 터널 모드의 주소 및 보호 범위" loading="lazy" style="width:100%;height:760px;border:1px solid #29415f;border-radius:16px;background:#090f1d;" allow="fullscreen"></iframe>
+<iframe class="ipsec-explainer-frame" src="{{ '/assets/animations/ipsec-packet-svg/index.html' | relative_url }}" title="SVG 설명 모션: ESP 전송 모드와 터널 모드의 주소 및 보호 범위" loading="lazy" style="width:100%;height:900px;border:1px solid #29415f;border-radius:16px;background:#f5f5ee;" allow="fullscreen"></iframe>
 
-[애니메이션을 별도 화면에서 열기: 전송·터널 모드 비교]({{ '/assets/animations/ipsec-explainer/index.html' | relative_url }}?topic=modes){: .btn .btn--primary target="_blank" rel="noopener"}
+[애니메이션을 별도 화면에서 열기: 전송·터널 모드 비교]({{ '/assets/animations/ipsec-packet-svg/index.html' | relative_url }}){: .btn .btn--primary target="_blank" rel="noopener"}
 
 ### 전송 모드는 언제 쓰는가
 
@@ -473,15 +471,14 @@ IPsec을 직접 처리하는 두 호스트가 이미 서로 라우팅 가능하�
 
 비교 범위를 **인증서 기반 (EC)DHE TLS 1.3의 일반 연결**로 고정하자. PSK 재개·0-RTT·HTTP/3는 여기서 설명하는 기본 그림에 포함하지 않는다.[6] (RFC §2)
 
-```text
-Browser -> Server: ClientHello + ephemeral key_share
-Server -> Browser: ServerHello + ephemeral key_share
-Both:              derive handshake protection keys
-Server -> Browser: protected Certificate + CertificateVerify + Finished
-Browser:           validate certificate/service identity and signature
-Browser -> Server: Finished
-Then:              application data protected with TLS traffic keys
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/tls13-certificate-handshake.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="인증서 기반 TLS 1.3의 기본 연결 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/tls13-certificate-handshake.svg' | relative_url }}" alt="인증서 기반 TLS 1.3의 기본 연결" loading="lazy" style="width:100%;max-width:281.19px;height:auto;" />
+  </a>
+  <figcaption>인증서 기반 TLS 1.3의 기본 연결 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+브라우저와 서버는 ClientHello·ServerHello의 임시 key_share로 handshake 보호 키를 파생한다. 서버의 보호된 Certificate·CertificateVerify·Finished를 받고 인증서·서비스 신원·서명을 검증한 뒤 브라우저가 Finished를 보낸다. 이후 애플리케이션 데이터는 별도 TLS traffic key로 보호한다.
 
 여기서도 **인증서 공개키와 임시 DH key_share는 다르다.** CertificateVerify는 인증서에 대응하는 개인키를 보유하고 이번 handshake에 참여했음을 서명으로 증명한다. 인증서 체인·서비스 이름 검증은 그 키가 기대한 서비스에 속하는지 확인한다. CA는 신원과 키의 관계를 보증하지, 매 연결의 대칭 세션 키를 나눠 주지 않는다.[6] (RFC §4.2.8, §4.4.2–4.4.3)[9] (RFC §4.3.4)
 
@@ -489,13 +486,14 @@ TLS 1.3에서는 예전 RSA 키 전송 방식을 사용하지 않는다. 따라�
 
 **TCP 위 HTTP/1.1·HTTP/2**와 ESP를 비교한 개념도는 다음과 같다. TLS record와 TCP segment가 항상 1:1 대응한다는 뜻은 아니다.
 
-```text
-HTTPS over TCP:
-[IP][TCP][TLS record header][ENC(HTTP bytes + TLS inner fields)][Tag]
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/tls-esp-protection-boundaries.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="TLS와 ESP의 보호 경계 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/tls-esp-protection-boundaries.svg' | relative_url }}" alt="TLS와 ESP의 보호 경계" loading="lazy" style="width:100%;max-width:440.0px;height:auto;" />
+  </a>
+  <figcaption>TLS와 ESP의 보호 경계 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
 
-ESP transport:
-[IP][ESP][IV][ENC(TCP header + data + ESP trailer)][Tag]
-```
+TCP 위 HTTPS에서는 IP·TCP·TLS record header가 밖에 보이고 HTTP bytes와 TLS inner fields가 암호화된다. ESP 전송 모드는 IP 헤더를 밖에 두고 TCP header·data·ESP trailer를 암호화한다. IV와 tag는 ENC 밖이고 ESP SPI·순번은 AAD이며 IP 헤더는 ESP AAD가 아니다. TLS record와 TCP segment의 1:1 대응이나 정확한 바이트 폭을 뜻하지 않는다.
 
 | 기준 | HTTPS / TLS | IPsec / ESP |
 |---|---|---|
@@ -515,13 +513,14 @@ TLS는 그 안에서 서비스 연결의 record를 별도로 보호한다.[6][9]
 
 Nebula는 TUN을 통해 가상 L3 네트워크의 IP 트래픽을 받고, UDP 기반 암호화 연결로 운반하는 오버레이다. Lighthouse는 피어 발견과 NAT traversal을 돕는다. 다음은 구조 비교용이며 Nebula의 정확한 wire format이나 ESP 사용을 뜻하지 않는다.[10][11][12]
 
-```text
-Nebula, conceptually:
-[Underlay IP][UDP][Nebula framing][ENC(Overlay IP + TCP/UDP + Data)]
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/nebula-ipsec-overlay-structure.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="Nebula와 호스트 간 IPsec 터널 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/nebula-ipsec-overlay-structure.svg' | relative_url }}" alt="Nebula와 호스트 간 IPsec 터널" loading="lazy" style="width:100%;max-width:440.0px;height:auto;" />
+  </a>
+  <figcaption>Nebula와 호스트 간 IPsec 터널 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
 
-IPsec host-to-host tunnel, conceptually:
-[Underlay IP][ESP][IV][ENC(Inner IP + TCP/UDP + Data + trailer)][Tag]
-```
+Nebula는 underlay IP·UDP·자체 framing 안에 암호화된 overlay IP 패킷을 운반한다. 호스트 간 IPsec 터널은 underlay IP·ESP·IV 뒤에 내부 IP 패킷과 trailer의 암호문 및 tag를 둔다. 두 구조는 내부 IP 패킷을 운반한다는 점을 비교한 개념도이지 Nebula의 정확한 wire format이나 ESP 사용을 뜻하지 않는다. P2P와 터널·전송 모드는 서로 다른 분류다.
 
 따라서 ‘Nebula는 P2P니까 ESP 전송 모드와 같다’보다는 **직접 연결 토폴로지는 닮을 수 있고, 내부 가상 IP 패킷을 운반하는 구조는 터널에 더 가깝다**가 정확하다. Nebula는 Noise 기반의 자체 프로토콜이지 IKEv2/ESP가 아니다.[10]
 
@@ -544,11 +543,14 @@ IPsec host-to-host tunnel, conceptually:
 
 RFC의 개념적 정책 결과는 세 가지다.[2] (RFC §4.4.1)
 
-```text
-BYPASS  -> pass without IPsec
-DISCARD -> discard
-PROTECT -> require IPsec; select or establish an appropriate SA
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/spd-policy-decisions.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="SPD의 세 정책 결과 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/spd-policy-decisions.svg' | relative_url }}" alt="SPD의 세 정책 결과" loading="lazy" style="width:100%;max-width:260.38px;height:auto;" />
+  </a>
+  <figcaption>SPD의 세 정책 결과 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+SPD의 BYPASS는 IPsec 없이 통과, DISCARD는 폐기, PROTECT는 적절한 SA 선택 또는 수립을 요구한다. PROTECT 트래픽에 SA가 없다는 이유로 평문 전송을 대체 경로로 사용하지 않는다.
 
 PROTECT인데 SA가 없다면 필요한 IKE 협상을 유도한다. 패킷을 일시 보류할지 폐기할지는 구현 문제지만, **보호해야 할 패킷을 SA가 없다는 이유로 평문으로 보내는 것이 정상 대체 경로는 아니다.** 트래픽 정책, SA, 라우팅은 서로 맞아야 한다.[1] (RFC §2.9)[2] (RFC §5.1)
 
@@ -655,10 +657,14 @@ IKE SA 자체의 rekey도 CREATE_CHILD_SA를 사용하며 이 경우에는 **새
 
 Native ESP는 **IP 프로토콜 번호 50**이지 TCP/UDP ‘50번 포트’가 아니다. NAT-T에서는 ESP를 UDP로 감싸며 IKEv2는 UDP 4500을 사용한다. UDP 4500의 IKE 패킷은 Non-ESP Marker로 ESP-in-UDP와 구분된다. 실제 NAT는 외부 주소·포트를 바꿀 수 있다.[3] (RFC §2)[1] (RFC §2.23)
 
-```text
-Native ESP: [Outer IP][ESP][IV][Ciphertext][Tag]
-ESP NAT-T:  [Outer IP][UDP][ESP][IV][Ciphertext][Tag]
-```
+<figure class="ipsec-guide-figure">
+  <a href="{{ '/assets/images/ipsec-guide/native-esp-nat-t-carriage.svg' | relative_url }}" target="_blank" rel="noopener" aria-label="Native ESP와 UDP NAT-T 운반 크게 보기">
+    <img src="{{ '/assets/images/ipsec-guide/native-esp-nat-t-carriage.svg' | relative_url }}" alt="Native ESP와 UDP NAT-T 운반" loading="lazy" style="width:100%;max-width:440.0px;height:auto;" />
+  </a>
+  <figcaption>Native ESP와 UDP NAT-T 운반 — 구조와 순서를 설명하는 개념도이며 정확한 바이트 폭·전체 오류 분기를 뜻하지 않는다. 누르면 크게 볼 수 있다.</figcaption>
+</figure>
+
+Native ESP는 외부 IP 뒤에 ESP·IV·암호문·tag를 두며 IP 프로토콜 번호 50을 사용한다. NAT-T는 외부 IP와 ESP 사이에 UDP를 추가해 ESP를 UDP 4500으로 운반한다. ESP-in-UDP에는 IKE용 Non-ESP Marker를 넣지 않는다. UDP 4500의 IKE는 별도의 Non-ESP Marker로 구분한다. NAT-T는 운반 방식이며 피어 AUTH나 ESP 보호를 대체하지 않는다.
 
 NAT-T는 운반 방법의 문제이지 AUTH를 대체하거나 ESP를 TLS로 바꾸는 기능이 아니다. 마찬가지로 ‘ping 성공’은 IKE 인증 성공을 뜻하지 않고, ‘IKE 연결됨’은 필요한 모든 내부 패킷이 해당 SA로 흐른다는 뜻이 아니다.[1] (RFC §2.9, §2.23)[18]
 
@@ -751,6 +757,6 @@ EAP와 OIDC 용어는 각 공식 문서를 기준으로 했다.[7][20]
 
 [20] [Google OpenID Connect 문서](https://developers.google.com/identity/openid-connect/openid-connect)
 
-[21] [Motion Canvas Quickstart](https://motion-canvas.io/docs/quickstart)
+[21] [LottieFiles motion-design — 설명 모션의 연출 지침](https://github.com/LottieFiles/motion-design-skill)
 
-[22] [Motion Canvas Animation flow](https://motion-canvas.io/docs/flow)
+[22] [draw.io 공식 MCP — 편집 가능한 정적 도식 도구](https://www.drawio.com/docs/manual/generate/drawio-mcp-server/)

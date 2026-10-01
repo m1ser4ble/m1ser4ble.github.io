@@ -1,58 +1,58 @@
-# IPsec tutorial diagrams and article verification
+# IPsec article: rendered diagrams and local SVG motion
 
-Article: `_posts/2026-10-01-ipsec-from-keys-to-packets.markdown`
+Canonical article: `/system/ipsec-from-keys-to-packets/`.
 
-This directory preserves Mermaid authoring sources and real-browser article integration tests. Runtime SVG images live under `assets/images/ipsec-guide/`; the article does not require a Mermaid CDN/runtime. `preview.html` is an ignored, temporary Markdown visual preview and is **not** a Jekyll build.
+The updated article uses **20 static SVG figures** and **four local SVG animation embeds**. Its 17 learning sections, RFC-based explanations, exact formulas and real commands are retained. Conceptual ASCII diagrams are replaced by figures plus Korean text alternatives. No Mermaid CDN, Canvas renderer, Creator login or third-party animation runtime is needed by the page.
 
-## Mermaid rendering
+## Authoring assets
 
-Tested with `@mermaid-js/mermaid-cli@11.4.2`. Use a compatible installed Chromium. An optional Puppeteer JSON config contains `executablePath` and Chromium launch arguments appropriate to your machine; do not commit machine-specific paths.
+- `_animations/ipsec-guide/diagrams/*.mmd`: Mermaid sources; generated images in `assets/images/ipsec-guide/`.
+- `tls-esp-protection-boundaries.svg`, `nebula-ipsec-overlay-structure.svg`, `native-esp-nat-t-carriage.svg`: hand-authored native SVG packet layouts, themselves the source.
+- `esp-packet-comparison.drawio`: editable draw.io source; corresponding SVG was extracted from the real editor renderer. The embedded Noto CJK font subset is covered by `FONT-LICENSE.txt` in that asset directory.
+- `assets/animations/ipsec-packet-svg/{index.html,style.css,player.js}`: canonical source/runtime of the nine-second ESP transport/tunnel sequence, adapted from the tested local SVG comparison.
+- `_animations/ipsec-flow-svg/`: reproducible source, build and browser tests for `keys`, `mitm`, `handshake`; runtime under `assets/animations/ipsec-flow-svg/`.
 
-From the repository root, for each `roles`, `authentication-gate`, `directional-sas`, and `oidc-enrollment` diagram:
+The old `_animations/ipsec` and `_animations/ipsec-explainer` projects remain available to their other article. They are no longer embedded in this canonical article; this change does not delete their assets or alter that separate post.
 
-```bash
+## Re-render Mermaid
+
+Tested tool: `@mermaid-js/mermaid-cli@11.4.2`. Use a compatible installed Chromium; pass a local Puppeteer config when its default executable is unavailable. Machine-specific executable paths do not belong in committed config.
+
+```sh
 npm exec --yes --package @mermaid-js/mermaid-cli@11.4.2 -- mmdc \
-  -i _animations/ipsec-guide/diagrams/roles.mmd \
-  -o assets/images/ipsec-guide/roles.svg \
-  -t dark -b transparent -w 1200
+  -i _animations/ipsec-guide/diagrams/ike-sa-init-exchange.mmd \
+  -o assets/images/ipsec-guide/ike-sa-init-exchange.svg \
+  -b '#0b1220' -w 1000
 ```
 
-If Puppeteer's default browser is unavailable, pass `-p <local-puppeteer-config.json>`. Inspect rendered SVGs as actual article `<img>` elements, not only inline SVG; both screenshots and image loading are checked below.
+New flowcharts configure native SVG labels in their sources (`htmlLabels: false`). Check image rendering, not just inline SVG, after regeneration. Keep topology and packet widths labeled schematic; diagrams are not packet captures or exact byte-scale drawings.
 
-## Browser tests
+## Tests
 
-Install the existing baseline's pinned test dependencies and browser if needed:
+Install the existing pinned Playwright dependencies under `_animations/ipsec` or supply the equivalent compatible package. `CHROMIUM_PATH` selects an available browser for the article/message tests.
 
-```bash
-npm ci --prefix _animations/ipsec
-npm exec --prefix _animations/ipsec -- playwright install chromium
-node _animations/ipsec-guide/tests/embed.mjs
-```
+From the repository root:
 
-`embed.mjs` tests real DOM message handling: origin, iframe source, topic-specific message types, finite bounded heights, and independent resizing for the new explainers and the existing handshake animation.
-
-The integration test accepts `ARTICLE_URL` and `SCREENSHOT_DIR` environment variables. `CHROMIUM_PATH` may select an existing Chromium executable when the Playwright cache/package versions differ.
-
-```bash
+```sh
+node _animations/ipsec-guide/tests/clock.mjs
+node _animations/ipsec-guide/tests/packet-site.mjs
+CHROMIUM_PATH=/path/to/chromium node _animations/ipsec-guide/tests/embed.mjs
+node _animations/ipsec-flow-svg/tests/browser.cjs
 ARTICLE_URL=https://m1ser4ble.github.io/system/ipsec-from-keys-to-packets/ \
+  CHROMIUM_PATH=/path/to/chromium \
   node _animations/ipsec-guide/tests/article.mjs
 ```
 
-It verifies:
+`clock.mjs` starts its own ephemeral HTTP server and verifies all four scenes against backward/future animation-callback timestamps. Playback consistently uses the document-local `performance.now()` clock; this prevents negative time in late-loaded iframes.
 
-- HTTP success and expected article content;
-- four static Mermaid SVG figures and four working animated embeds;
-- two expandable optional mathematical sections;
-- actual nonempty canvas pixels, initial pause, play/pause/restart in each iframe;
-- no failed article asset requests or runtime errors;
-- desktop and 390px-wide mobile layout and visible controls;
-- screenshots of article, figures, and embedded players for visual review.
+`packet-site.mjs` starts its own ephemeral local HTTP server. It checks real published packet-player paths, initial pause, speed, reset, both encryption boundaries, actual sizing messages, narrow layout and reduced motion. `embed.mjs` retains origin/source/type/finite bounded-height regression checks, including old message compatibility.
 
-`test-output/` and `preview.html` are intentionally ignored. Private Discord source exports and citation evidence do not belong in this public repository.
+`article.mjs` checks the actual article and every SVG image; all four new iframe URLs; nonempty SVG scenes; initial pause; play/pause/reset; speed selector; keyboard seeking; desktop/390px layout; full iframe height; reduced-motion final states; no failed article assets or page errors. It reports the actual figure count rather than assuming the old four-figure layout. Screenshots are saved to `test-output/` or `SCREENSHOT_DIR` and require visual review; passing behavior tests is not aesthetic approval.
 
-## Animation sources
+`preview.html` is an ignored temporary Markdown preview, **not a Jekyll build**. If Ruby/Bundler is unavailable, use these browser/static checks locally and verify the real GitHub Pages Jekyll deployment afterward. Deployment continues through the repository's established `master` Pages source; no competing workflow is added.
 
-- `_animations/ipsec`: existing whole-handshake project.
-- `_animations/ipsec-explainer`: new `keys`, `mitm`, and `modes` explanation topics.
+## Reading and accessibility
 
-Build their standalone same-origin assets using each project's README and npm scripts. Follow the repository's existing GitHub Pages deployment; do not add a competing publish workflow.
+Animations start paused, expose play/pause, reset, speed and native keyboard-accessible seek, and use final static views for reduced motion. Field/object continuity explains the transformation instead of unrelated fading boxes. Detailed vector strips may scroll inside their frame on narrow screens; wrapping Korean captions and the packet-player's static HTML structures remain readable without page overflow. Figure links open the full-size SVG.
+
+Private Discord source exports, credential values, local SDK wire logs and screenshots from authenticated sessions are not publication assets.

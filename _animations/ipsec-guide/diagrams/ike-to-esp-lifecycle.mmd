@@ -1,0 +1,19 @@
+%%{init: {"theme": "base", "htmlLabels": false, "fontFamily": "Noto Sans CJK KR, sans-serif", "themeVariables": {"fontSize": "22px", "primaryColor": "#15243a", "primaryTextColor": "#e7eef9", "primaryBorderColor": "#536c8f", "lineColor": "#a2b6d3", "secondaryColor": "#172942", "tertiaryColor": "#162338", "edgeLabelBackground": "#0b1220", "clusterBkg": "#101d30", "clusterBorder": "#536c8f"}, "flowchart": {"htmlLabels": false, "nodeSpacing": 22, "rankSpacing": 32, "padding": 18, "curve": "linear", "useMaxWidth": true}}}%%
+%% Schematic only; native SVG text. Encryption: teal; peer/policy authentication: purple; keys: amber.
+flowchart TD
+I["IKE_SA_INIT
+공개 DH 값 + nonce"]:::visible --> Z["Z → PRF 기반 키 파생
+잠정 IKE 키 / SK_d"]:::key
+Z --> A["IKE_AUTH · 보호된 신원
+사전 PSK → 이번 교환의 AUTH
+인증 + 첫 Child SA 협상"]:::auth
+A --> E["SK_d → 별도 ESP 키 재료
+SA_AB / SA_BA"]:::key
+E --> D["원래 IP 패킷 → ESP 보호
+피어가 검증 / 복호화"]:::enc
+
+classDef visible fill:#15243a,stroke:#6c88aa,color:#e7eef9,stroke-width:2px;
+classDef key fill:#352a12,stroke:#eab860,color:#ffe1a4,stroke-width:2px;
+classDef auth fill:#2b2046,stroke:#b69be8,color:#ecddff,stroke-width:2px;
+classDef enc fill:#0d343a,stroke:#5ad5cf,color:#ccfffa,stroke-width:2px;
+classDef stop fill:#3b1c27,stroke:#ef879d,color:#ffdfE6,stroke-width:2px;

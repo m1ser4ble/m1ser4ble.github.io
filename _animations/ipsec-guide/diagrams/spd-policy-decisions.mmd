@@ -1,0 +1,19 @@
+%%{init: {"theme": "base", "htmlLabels": false, "fontFamily": "Noto Sans CJK KR, sans-serif", "themeVariables": {"fontSize": "22px", "primaryColor": "#15243a", "primaryTextColor": "#e7eef9", "primaryBorderColor": "#536c8f", "lineColor": "#a2b6d3", "secondaryColor": "#172942", "tertiaryColor": "#162338", "edgeLabelBackground": "#0b1220", "clusterBkg": "#101d30", "clusterBorder": "#536c8f"}, "flowchart": {"htmlLabels": false, "nodeSpacing": 22, "rankSpacing": 32, "padding": 18, "curve": "linear", "useMaxWidth": true}}}%%
+%% Schematic only; native SVG text. Encryption: teal; peer/policy authentication: purple; keys: amber.
+flowchart TD
+P["IP 패킷 → SPD 정책 판정
+세 결과 중 하나를 선택"]:::visible
+P ~~~ B["① BYPASS
+IPsec 없이 통과"]:::visible
+B ~~~ D["② DISCARD
+폐기"]:::stop
+D ~~~ R["③ PROTECT
+적절한 SA 선택 / 수립"]:::enc
+R --> N["PROTECT인데 SA가 없으면
+협상 유도 · 평문 대체 금지"]:::auth
+
+classDef visible fill:#15243a,stroke:#6c88aa,color:#e7eef9,stroke-width:2px;
+classDef key fill:#352a12,stroke:#eab860,color:#ffe1a4,stroke-width:2px;
+classDef auth fill:#2b2046,stroke:#b69be8,color:#ecddff,stroke-width:2px;
+classDef enc fill:#0d343a,stroke:#5ad5cf,color:#ccfffa,stroke-width:2px;
+classDef stop fill:#3b1c27,stroke:#ef879d,color:#ffdfE6,stroke-width:2px;

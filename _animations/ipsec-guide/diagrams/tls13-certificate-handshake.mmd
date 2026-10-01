@@ -1,0 +1,22 @@
+%%{init: {"theme": "base", "htmlLabels": false, "fontFamily": "Noto Sans CJK KR, sans-serif", "themeVariables": {"fontSize": "22px", "primaryColor": "#15243a", "primaryTextColor": "#e7eef9", "primaryBorderColor": "#536c8f", "lineColor": "#a2b6d3", "secondaryColor": "#172942", "tertiaryColor": "#162338", "edgeLabelBackground": "#0b1220", "clusterBkg": "#101d30", "clusterBorder": "#536c8f"}, "flowchart": {"htmlLabels": false, "nodeSpacing": 22, "rankSpacing": 32, "padding": 18, "curve": "linear", "useMaxWidth": true}}}%%
+%% Schematic only; native SVG text. Encryption: teal; peer/policy authentication: purple; keys: amber.
+flowchart TD
+C["Browser → Server
+ClientHello + 임시 key_share"]:::visible --> S["Server → Browser
+ServerHello + 임시 key_share"]:::visible
+S --> K["양쪽 로컬 계산
+handshake 보호 키 파생"]:::key
+K --> A["Server → Browser · 보호됨
+Certificate + CertificateVerify
++ Finished"]:::auth
+A --> V["브라우저 검증
+인증서 / 서비스 신원 / 서명"]:::auth
+V --> F["Browser → Server · Finished"]:::enc
+F --> D["TLS traffic key로
+애플리케이션 데이터 보호"]:::enc
+
+classDef visible fill:#15243a,stroke:#6c88aa,color:#e7eef9,stroke-width:2px;
+classDef key fill:#352a12,stroke:#eab860,color:#ffe1a4,stroke-width:2px;
+classDef auth fill:#2b2046,stroke:#b69be8,color:#ecddff,stroke-width:2px;
+classDef enc fill:#0d343a,stroke:#5ad5cf,color:#ccfffa,stroke-width:2px;
+classDef stop fill:#3b1c27,stroke:#ef879d,color:#ffdfE6,stroke-width:2px;
