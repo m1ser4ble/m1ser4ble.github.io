@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IPsec IKEv2 연결 수립 — Motion Canvas</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;background:#090f1d;color:#eaf2ff}*{box-sizing:border-box}body{margin:0;padding:16px;max-width:1280px;margin-inline:auto}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}h1{font-size:20px;margin:0}.badge{font:12px ui-monospace,monospace;color:#72bcff;border:1px solid #29415f;border-radius:20px;padding:5px 10px;white-space:nowrap}motion-canvas-player{display:block;width:100%;aspect-ratio:16/9;border:1px solid #29415f;border-radius:16px;overflow:hidden;background:#090f1d}motion-canvas-player::part(overlay){background:transparent}motion-canvas-player::part(play-button){display:none}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 10px}button,select{font:inherit;font-size:14px;background:#142239;color:#eaf2ff;border:1px solid #29415f;border-radius:9px;padding:9px 12px;cursor:pointer}button:hover,button:focus-visible,select:focus-visible{border-color:#72bcff;outline:2px solid #72bcff;outline-offset:2px}button:disabled{opacity:.45;cursor:wait}#play{background:#174b43;border-color:#56e3ba;min-width:92px}label{font-size:13px;color:#9bb0cc}#time{font:13px ui-monospace,monospace;color:#9bb0cc;margin-left:auto}#seek{width:100%;accent-color:#56e3ba;margin:4px 0 12px}.chapter-header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}#chapter-title{font-size:17px;font-weight:700}#status{font-size:12px;color:#9bb0cc}#chapters{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}#chapters button{font-size:12px;padding:8px 10px}#chapters button[aria-current=true]{color:#56e3ba;border-color:#56e3ba;background:#11342f}#summary{color:#b7c8df;font-size:14px;line-height:1.7;min-height:48px;margin:6px 0 12px}.note{border-top:1px solid #29415f;padding-top:12px;color:#9bb0cc;font-size:12px;line-height:1.7;margin:0}a{color:#72bcff}.error{color:#ff8e8e!important}@media(max-width:550px){body{padding:10px}h1{font-size:16px}.badge{font-size:10px;padding:4px 7px}.toolbar{gap:6px}button,select{font-size:12px;padding:8px}#time{margin-left:0;width:100%}#chapter-title{font-size:15px}#summary{font-size:13px}#chapters button{font-size:11px}}
+</style>
+</head>
+<body>
+<header><h1>IPsec 연결 수립을 한 장면씩</h1><span class="badge">MOTION CANVAS 3.17.2</span></header>
+<motion-canvas-player src="./project.js" aria-label="IKEv2 교환과 ESP 암호화 애니메이션"></motion-canvas-player>
+<div class="toolbar">
+<button id="play" disabled aria-label="재생">▶ 재생</button><button id="restart" disabled>처음</button><button id="prev" disabled>← 이전 구간</button><button id="next" disabled>다음 구간 →</button>
+<label for="speed">속도</label><select id="speed" aria-label="재생 속도"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select><output id="time">00:00 / 01:12</output>
+</div>
+<label for="seek">시간 이동</label><input id="seek" type="range" min="0" max="2160" value="0" step="1" aria-label="애니메이션 시간 이동" disabled>
+<div class="chapter-header"><span id="chapter-title">00 · IKE와 ESP의 역할</span><span id="status" role="status">애니메이션을 준비하는 중…</span></div>
+<div id="chapters" aria-label="장면 선택"></div><p id="summary">재생을 누르거나 장면을 선택하세요. 휴대전화에서는 아래 장면별 설명과 전체 화면 페이지를 함께 활용할 수 있습니다.</p>
+<p class="note">가정: IKEv2의 기본 성공 경로 · 사전 공유 키(PSK)로 상호 인증 · ESP 터널 모드 · 데이터 보호는 AES-GCM 예시.<br>실제 암호 연산·패킷 캡처가 아니라 원리를 설명하는 애니메이션입니다. EAP, 인증서, NAT-T, COOKIE, 재전송과 재키잉은 생략했습니다. <a href="https://www.rfc-editor.org/rfc/rfc7296" target="_blank" rel="noopener">RFC 7296</a> · <a href="https://www.rfc-editor.org/rfc/rfc4303" target="_blank" rel="noopener">RFC 4303</a></p>
+<noscript>이 예시는 JavaScript가 필요합니다. 본문의 정적 설명을 읽어 주세요.</noscript>
+<script type="module" src="./player.js"></script>
+<script type="module" src="./controls.js"></script>
+</body>
+</html>
