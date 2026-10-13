@@ -1,0 +1,94 @@
+---
+layout: single
+knowledge_id: dds-guide
+series: dds
+permalink: /dds/guide/
+title: "DDS 시스템 설계와 운용 가이드"
+date: 2026-10-13 00:00:00 +0900
+categories: [system]
+excerpt: "DDS의 데이터 모델, 발견, 전달 품질과 실제 장비 연동 경계를 열 편의 주제와 읽기 경로로 안내한다."
+tags: [dds, guide]
+toc: true
+toc_sticky: true
+source: 'DDS Device Lab 기술 학습 노트와 공개 1차 자료'
+knowledge_links:
+  - dds-basics
+  - dds-discovery-addressing
+  - dds-qos
+  - dds-history-persistence
+  - dds-security
+  - dds-device-adapters
+  - dds-realtime-linux
+  - dds-fault-diagnosis
+  - dds-observability
+  - dds-gva-losa
+---
+
+DDS(Data Distribution Service)는 독립 프로그램이 타입이 있는 데이터를 공유하도록 돕는 표준이다. 이 시리즈는 표준 객체부터 네트워크 발견, QoS, 장애 진단과 장비 모델까지 이어서 설명한다. DDS를 선택하면 통신 계약과 일부 전달 동작을 공통화할 수 있지만, 센서의 의미 검증·권한 있는 명령·운영 절차는 응용 설계로 남는다.
+
+<iframe class="dds-animation" src="{{ '/assets/animations/dds/index.html' | relative_url }}?topic=guide" title="DDS 데이터가 센서에서 소비자와 운용 화면으로 흐르는 개요" loading="lazy" style="width:100%;height:760px;border:1px solid #3a4252;border-radius:12px;background:#111820;" allow="fullscreen"></iframe>
+
+> 그림은 Topic 데이터 흐름을 설명하는 교육용 모식도다. 실제 캡처나 성능 측정 결과가 아니다.
+
+센서 어댑터가 측정값을 타입 있는 샘플로 쓰면, DDS participant와 RTPS가 호환되는 구독자를 찾고 데이터를 전달한다. 구독자는 자기 history와 응용 상태 판정에 따라 표시나 제어 판단을 한다. 애니메이션에서 중앙에 보이는 controller가 항상 DDS broker인 것은 아니다. 예제의 controller는 입력을 검증해 새 상태 Topic을 쓰는 일반 응용이다.
+
+## 열 편 읽기 지도
+
+| 주제 | 이 글에서 답하는 질문 | 추천 독자 |
+|---|---|---|
+| [DDS 기본 개념]({% post_url 2026-10-13-dds-basics %}) | Topic, type, key, participant와 대안은 무엇인가? | 처음 설계하는 개발자 |
+| [Discovery와 주소]({% post_url 2026-10-13-dds-discovery-addressing %}) | 참가자는 어떻게 만나고 실제 네트워크 경로는 무엇인가? | 네트워크 디버깅 담당자 |
+| [QoS]({% post_url 2026-10-13-dds-qos %}) | 유실·이력·갱신 감시를 어떻게 나눌까? | Writer/Reader 설정자 |
+| [History와 Persistence]({% post_url 2026-10-13-dds-history-persistence %}) | 늦은 reader와 프로세스 재시작 때 어떤 데이터를 기대할까? | 복구 설계자 |
+| [Security]({% post_url 2026-10-13-dds-security %}) | 참가자를 인증하고 topic 접근을 제한하는 방법은? | 보안·통제 담당자 |
+| [장비 어댑터]({% post_url 2026-10-13-dds-device-adapters %}) | CAN·RS-422 장비를 공통 DDS 모델에 어떻게 붙일까? | 장비 통합 개발자 |
+| [실시간 Linux]({% post_url 2026-10-13-dds-realtime-linux %}) | OS 스케줄링과 DDS QoS의 책임 경계는? | 지연시간 분석자 |
+| [장애 진단]({% post_url 2026-10-13-dds-fault-diagnosis %}) | 값이 오지 않거나 오래됐을 때 무엇부터 볼까? | 통합·운용 담당자 |
+| [관측성]({% post_url 2026-10-13-dds-observability %}) | 미들웨어 통계와 업무 로그를 어떻게 연결할까? | 운영 도구 개발자 |
+| [GVA와 LOSA]({% post_url 2026-10-13-dds-gva-losa %}) | 공통 지상·차량 데이터 모델과 DDS의 관계는? | 상호운용성 설계자 |
+
+## 관계를 이해하는 순서
+
+이 주제들은 한 계층의 옵션 목록이 아니다. 기본 글은 데이터 계약을 정하고, discovery 글은 endpoint가 서로를 찾는 범위를 설명한다. 둘이 매칭된 뒤 QoS가 전달·이력·시간 조건을 협상한다. History/Persistence는 그 전달 이력을 얼마나 오래 보존하는지 다루고, Security는 신원과 접근 권한을 별도 경계로 둔다.
+
+장비 어댑터는 바이트와 프레임을 장치 의미가 있는 샘플로 변환하는 위치다. Linux 스케줄링은 그 변환과 발행 작업이 CPU에서 언제 실행되는가에 영향을 준다. 장애 진단은 관측 지표를 모아 어느 경계가 깨졌는지 좁히며, 관측성 글은 이를 상관관계가 있는 로그와 지표로 남기는 방법을 다룬다. GVA/LOSA는 데이터 의미와 상호운용 모델의 적용 범위를 정한다.
+
+## 최소 용어
+
+- **DomainParticipant**: 한 DDS Domain에 참가해 Topic과 endpoint를 만드는 응용 객체다. 프로세스나 장비 한 대와 같다는 뜻은 아니다.
+- **Topic**: 데이터 이름과 타입 계약이다. `VehicleState` 같은 이름 자체가 IP 주소나 포트를 뜻하지 않는다.
+- **DataWriter / DataReader**: 각각 샘플을 쓰고 읽는 endpoint다. 매칭은 이름·타입·QoS 등 조건이 맞아야 한다.
+- **RTPS**: OMG DDSI-RTPS 상호운용 wire protocol이다. DDS API와 네트워크 전송은 서로 다른 층이다.
+- **QoS**: reliability, history, deadline, liveliness 같은 정책이다. 이 값만으로 응용의 모든 시간·안전 요구가 입증되지는 않는다.
+
+OMG DDS 1.4는 data-centric publish-subscribe 모델에서 Topic과 type으로 데이터 공간을 식별하고 표준 API 및 동작을 정의한다. 실제 vendor 간 wire 호환성은 별도 DDSI-RTPS 표준이 담당한다. [OMG DDS 1.4 §1.1](https://www.omg.org/spec/DDS/1.4/PDF) · [OMG DDSI-RTPS](https://www.omg.org/spec/DDSI-RTPS/)
+
+## 선택을 시작하는 질문
+
+| 요구 | 우선 검토할 것 | 남는 설계 책임 |
+|---|---|---|
+| 여러 소비자가 최신 상태를 함께 봄 | DDS publish-subscribe와 key/instance 모델 | 최신성 기준, 값 검증, 소비자 부하 |
+| 과거 이벤트를 오래 보관하고 재처리 | 영속 로그형 broker와 retention | 소비 위치, 중복 처리, 보존 비용 |
+| 특정 원격 기능을 요청하고 응답을 기다림 | RPC 또는 DDS request/reply 패턴 | timeout, idempotency, 실패 응답 |
+| 하나의 장비 프로토콜만 연결 | 직접 socket/serial API도 비교 | framing, 재시도, 타입 계약과 분배 |
+| 중앙 발견 서버가 운영상 필요 | Discovery Server 또는 정적 peers 구성 검토 | server 가용성, network reachability |
+
+위 표는 설계 시작점이지 성능 순위가 아니다. OMG는 DDS를 제한된 자원, 실시간·임베디드, 선택적 데이터 전파 문제에 맞춘 표준으로 설명한다. DDS는 원래 있던 proprietary publish-subscribe 제품의 인터페이스와 동작을 이식 가능하게 표준화하려는 목적도 있었다. [OMG DDS 1.4 §1.1](https://www.omg.org/spec/DDS/1.4/PDF)
+
+## 공개 사례를 읽을 때
+
+공개 자료는 사용 범위를 정확히 읽어야 한다. NASA Astrobee 안내서는 ROS 메시지를 지상으로 보내는 경로에서 DDS 변환을 설명한다. 그 사실만으로 우주정거장 소프트웨어 전체가 DDS 위에서 동작한다고 일반화할 수 없다. ROS 2 설계 문서는 DDS 구현체를 미들웨어 계층으로 쓰는 선택과 구현별 차이를 설명한다. 특정 회사의 비공개 생산 배치 규모나 성능은 출처가 없으면 추정하지 않는다. [NASA Astrobee Guest Science Guide](https://www.nasa.gov/wp-content/uploads/2017/12/irg-ff029-astrobee-guest-science-guide.pdf) · [ROS on DDS](https://design.ros2.org/articles/ros_on_dds.html)
+
+## 프로젝트 범위
+
+이 사이트의 실습 사례는 ROS 없는 C++ 세 프로세스(sensor_sim → controller → status_viewer), Fast DDS 2.11.2, 같은 Docker Linux VM의 UDPv4 환경이다. 2026-10-09 기록에는 179개 상태 단위 검사와 20개 DDS 통합 시나리오가 통과했다고 적혀 있다. 이 숫자는 해당 모의 환경의 실제 실행 결과이며 오늘 다시 실행한 결과, 다중 호스트 시험, 실장비 검증, DDS Security·Persistence·실시간 Linux·GVA 적합성 시험을 뜻하지 않는다.
+
+## 문서 간 이동
+
+기본 개념을 읽고 주소 문제를 진단한 뒤, 필요한 QoS를 정하고 이력·보안 요구를 별도로 설계한다. 장비가 DDS를 직접 지원하지 않으면 어댑터와 공통 데이터 모델부터 정한다. 값이 늦으면 시간 동기화·수신시각·앱 처리 지연을 분리해 진단한다. 관측성은 이 흐름에 상관관계를 붙이고, GVA/LOSA는 데이터 계약이 실제 적용 범위에 맞는지 검토한다.
+
+## 조사 범위와 한계
+
+2026-10-13 확인. 기준은 OMG DDS 1.4, OMG DDSI-RTPS와 Fast DDS 2.x 문서이며, 프로젝트 실행 기록은 2026-10-09 환경으로 한정했다. 이 안내는 시스템 선택의 출발점이다. 각 후속 글에서 설정·버전별 세부 조건을 확인해야 하며, 공개 사례에서 확인되지 않은 생산 규모나 성능은 주장하지 않는다.
+
+{% include knowledge-links.html %}

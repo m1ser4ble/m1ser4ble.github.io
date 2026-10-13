@@ -1,0 +1,101 @@
+---
+layout: single
+knowledge_id: dds-qos
+series: dds
+permalink: /dds/qos/
+title: "DDS QoS: 전달, 이력과 시간 약속을 분리해서 설계하기"
+date: 2026-10-13 00:00:00 +0900
+categories: [system]
+excerpt: "Reliability·History·Deadline·Liveliness·Lifespan의 역할과 한계를 센서 데이터 예로 구분한다."
+tags: [dds, qos, reliability]
+toc: true
+toc_sticky: true
+source: 'DDS Device Lab 기술 학습 노트와 공개 1차 자료'
+knowledge_links:
+  - dds-guide
+  - dds-basics
+  - dds-discovery-addressing
+  - dds-history-persistence
+---
+
+DDS QoS(Quality of Service)는 endpoint의 전달·보관·시간 행동을 설정하는 정책들이다. QoS는 장비의 업무 의미를 판단하지 않는다. 예를 들어 `RELIABLE`이더라도 샘플이 신선하거나 센서가 정상이라고 증명하지 않으며, `Deadline`은 CPU 작업이 정해진 시각 안에 끝나도록 스케줄링하지 않는다.
+
+<iframe class="dds-animation" src="{{ '/assets/animations/dds/index.html' | relative_url }}?topic=qos" title="DDS QoS가 누락 복구, 보관, 갱신 감시를 별도 축으로 다루는 모습" loading="lazy" style="width:100%;height:760px;border:1px solid #3a4252;border-radius:12px;background:#111820;" allow="fullscreen"></iframe>
+
+> 이 도식은 정책의 역할을 분리해 보여주는 교육용 예시다. 실제 네트워크 상태나 지연시간 측정이 아니다.
+
+센서 Writer는 최근 샘플을 기록하고 Reader에 전달한다. RELIABLE은 Writer history에 남아 있는 누락 샘플을 복구하려 시도하고, KEEP_LAST는 유지할 샘플 수를 제한하며, Deadline과 Liveliness는 서로 다른 조건을 감시한다. 어떤 정책도 애플리케이션의 유효성 검사와 처리 완료 확인을 자동으로 하지 않는다.
+
+## 먼저 질문을 정책으로 옮기기
+
+| 질문 | 정책 | 적용할 때 보는 것 |
+|---|---|---|
+| 누락 샘플을 재전송할까? | Reliability | 전송 비용, 지연, history/resource 한도 |
+| 최신 값 몇 개를 유지할까? | History + ResourceLimits | instance 수와 느린 Reader의 최대 적체 |
+| 늦게 온 Reader가 직전 상태를 받을까? | Durability | Writer 수명과 volatile/transient 범위 |
+| 새 값이 얼마 간격으로 와야 하나? | Deadline | instance별 갱신 약속과 위반 상태 |
+| Writer가 살아 있나? | Liveliness | assertion 방식과 lease duration |
+| 샘플 자체가 언제 만료되나? | Lifespan | source/reception timestamp 정책 |
+| reader가 지나치게 자주 받지 않게 할까? | TimeBasedFilter | 구현체 지원 및 데이터 손실 허용 여부 |
+
+QoS 정책은 서로 영향을 준다. 예를 들어 `KEEP_ALL`이라도 ResourceLimits와 메모리 한도를 넘을 수 있고, 큰 Reliability backlog는 오래된 값을 뒤늦게 전달할 수 있다. history depth와 resource cap은 함께 설계해야 한다. [Fast DDS standard QoS policies](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/dds_layer/core/policy/standardQosPolicies.html)
+
+## Reliability와 전달 완료
+
+`BEST_EFFORT`는 누락 재전송을 요구하지 않으므로 최신 주기값처럼 새 샘플이 곧 이전 값을 대체할 때 후보가 된다. `RELIABLE`은 reader 확인을 활용해 Writer history에 있는 손실 샘플을 재전송하려고 한다. 이는 영구 단절·Writer 종료·history 소진·앱 소비 완료까지 보장하는 exactly-once 계약이 아니다. [Fast DDS Reliability](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/dds_layer/core/policy/standardQosPolicies.html)
+
+요청/명령의 실행 완료를 알아야 한다면 command ID, acknowledgement, timeout, 중복 방지와 업무 응답을 앱 프로토콜로 설계한다. DDS write 성공만으로 원격 장비가 명령을 수행했다고 판단하지 않는다. 전달 보존과 프로세스 재시작 복구는 [History와 Persistence 글]({% post_url 2026-10-13-dds-history-persistence %})에서 분리한다.
+
+## History, key, 자원 한도
+
+`KEEP_LAST(depth=n)`는 각 instance에 대한 가장 최근 n개 샘플을 유지하는 정책이다. Topic이 keyed가 아니라면 그 Topic은 하나의 instance처럼 동작할 수 있다. Keyed Topic에서는 instance마다 depth가 적용된다. `KEEP_ALL`은 무한 메모리 약속이 아니며 ResourceLimits와 vendor 자원에 제한된다.
+
+예를 들어 20Hz 상태 Topic에 KEEP_LAST(1)을 두면 느린 reader가 과거의 모든 중간 상태를 따라잡는 것보다 최신 상태를 보는 데 유리하다. 반면 경보 이벤트를 하나도 놓치면 안 된다면 이 정책만으로는 부족할 수 있다. 그 경우 event 저장과 업무 acknowledgement를 포함한 설계를 별도로 검토한다.
+
+## Durability와 Lifespan
+
+`VOLATILE`은 늦게 발견된 Reader에게 이전 Writer 샘플을 제공하지 않는 기본적인 데이터 전달 범위다. `TRANSIENT_LOCAL`은 Writer가 살아 있는 동안 그 Writer의 history를 새 Reader에 제공하는 방식이다. `PERSISTENT` 같은 영속성은 저장 서비스/plugin과 버전 지원 여부를 확인해야 한다. durability를 켰다는 이유만으로 reader cursor나 업무 완료 내역까지 복구되는 것은 아니다.
+
+`Lifespan`은 sample이 유효하다고 취급될 수 있는 시간을 제한한다. 이는 앱 내부에 복사된 모든 값이 자동 삭제되거나 화면에 stale 표시가 된다는 뜻이 아니다. 응용은 자기 cache와 상태를 별도로 관리해야 한다.
+
+## Deadline과 Liveliness는 다르다
+
+Deadline은 새 sample 갱신 간격이 설정한 기간을 초과했는지 감시한다. keyed Topic이라면 instance별로 적용된다. Liveliness는 writer/entity가 설정한 lease 안에 살아 있음을 주장하는지 확인한다. 프로세스가 살았지만 센서 측정이 멈췄을 수도 있고, 센서 데이터는 유효하지만 participant의 liveliness 확인이 늦을 수도 있다. 둘 다 센서 값의 타당성 검사와 다르다. [Deadline 정책](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/dds_layer/core/policy/standardQosPolicies.html) · [Liveliness API](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/api_reference/dds_pim/core/policy/livelinessqospolicy.html)
+
+또한 DDS Deadline은 Linux task deadline이 아니다. 앱 timer가 write를 호출하는 주기, OS가 thread를 실행하는 시각, 네트워크 전달, Reader 처리 완료는 각각 별도 시각점이다. QoS가 위반을 보고해도 callback이 정확한 deadline 시각에 실행된다는 보장은 없다.
+
+## Endpoint가 매칭되는가
+
+QoS는 요청/제공 호환성을 확인하는 통신 조건이다. 예컨대 Reader가 RELIABLE을 요구하는데 Writer가 BEST_EFFORT만 제공하면 매칭되지 않을 수 있다. Deadline 요청 기간은 제공하는 Writer 기간보다 짧지 않아야 한다. 일치했다고 해서 runtime 지연이 요구조건을 충족한다는 뜻은 아니므로 status callback과 실제 end-to-end 계측을 함께 본다. [Fast DDS QoS compatibility](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/dds_layer/core/policy/standardQosPolicies.html)
+
+## 간단한 설정 검토 예
+
+센서가 50ms마다 상태를 쓰고, 통제 앱이 200ms 이상 새 갱신이 없으면 경보하려는 경우:
+
+```text
+Writer: RELIABLE, KEEP_LAST(8), Deadline=50ms
+Reader: RELIABLE, KEEP_LAST(8), Deadline=200ms
+App: sample 값·측정시각·sequence·범위를 확인하고 마지막 정상값 나이를 별도 계산
+```
+
+수치는 요구 예시이지 보편 권장값이 아니다. Writer가 더 짧은 주기의 deadline을 제공하면 Reader의 느슨한 요구와 호환될 수 있다. Deadline은 writer가 50ms 간격을 보장하거나 reader 처리를 200ms 안에 끝내는 OS schedulability 분석이 아니다. 이 설계에서 stale 상태 전이는 응용 경과시간으로 정의하고 측정시각과 수신시각의 차이를 따로 관측한다.
+
+## 구현체와 버전
+
+OMG는 QoS 표준 의미를 정의하지만 특정 구현체의 모든 정책 지원과 자원 동작은 별도 확인해야 한다. 2026-10-13에 열람한 Fast DDS 2.14.7 문서는 일부 QoS의 미구현 경고를 포함한다. 프로젝트 실행 기록은 Fast DDS 2.11.2다. 따라서 최신 문서의 지원 표를 2.11.2에 소급 적용하지 않으며 실제 배포 버전의 문서, 반환 코드와 호환성 status로 검증한다.
+
+## 프로젝트 설정과 근거 범위
+
+기록된 시험 설정에서 SensorSample은 RELIABLE, VOLATILE, KEEP_LAST(16), sample/instance 한도 16/1, Deadline 200ms, AUTOMATIC Liveliness lease 1초다. DeviceStatus는 RELIABLE, TRANSIENT_LOCAL, KEEP_LAST(1)이다. 응용은 마지막 정상 수신 500ms 경과를 STALE로 판정하고, 회복 시 3개 연속 정상 샘플을 요구한다. 이 latter 상태 규칙은 DDS QoS가 아니라 앱 로직이다.
+
+2026-10-09 로컬 VM의 20개 통합 시나리오에는 live pause/recovery, 무효값, 중복·역순 sequence, 늦게 실행한 viewer, incompatible QoS, write timeout 등의 실행이 기록돼 있다. 이는 해당 환경의 실제 통과 결과다. CAN/RS-422 장비, 다중 host, hard real-time, 영속화, security를 검증한 결과가 아니다.
+
+## 결정 기준
+
+최신 주기 상태는 작은 KEEP_LAST history와 필요 시 BEST_EFFORT를 비교하고, 매 이벤트 보존은 RELIABLE·history·persistence 외에도 앱 저장과 ACK를 포함해 검토한다. 늦은 reader에 상태 snapshot을 제공하려면 TRANSIENT_LOCAL을 검토하되 writer 재시작 이후 기대를 명시한다. writer liveness만 필요한지, 새 데이터 갱신까지 필요한지 각각 liveliness와 deadline으로 질문한다. 정책을 정한 뒤 매칭 결과, 자원 최대치, 손실·지연·재시작 시나리오를 실제 버전에서 시험한다.
+
+## 조사 범위와 한계
+
+2026-10-13 확인한 OMG DDS 1.4와 Fast DDS 2.x/2.14.7 QoS 자료, 프로젝트 2.11.2 설정과 2026-10-09 실행 기록을 반영했다. 새 QoS 실험을 실행하지 않았으며 다른 vendor 구현체의 동작·성능 비교도 하지 않았다. QoS 호환성은 통신 조건이며 제품의 실시간성 또는 안전성 인증을 대체하지 않는다.
+
+{% include knowledge-links.html %}

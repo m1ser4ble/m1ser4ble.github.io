@@ -4,6 +4,8 @@ main:
   #  url: "/"
   - title: "Introduce"
     url: /about/
+  - title: "DDS"
+    url: /dds/guide/
   - title: "Language"
     url: "/category/language"
     sublinks:

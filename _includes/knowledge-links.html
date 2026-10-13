@@ -1,0 +1,35 @@
+{%- if page.series == 'dds' and page.knowledge_id and page.knowledge_id != '' -%}
+  {%- assign dds_posts = site.posts | where: 'series', 'dds' -%}
+  {%- assign dds_targets = page.knowledge_links | uniq -%}
+  {%- capture dds_outbound -%}
+    {%- for target_id in dds_targets -%}
+      {%- if target_id != page.knowledge_id -%}
+        {%- assign target_post = dds_posts | where: 'knowledge_id', target_id | first -%}
+        {%- if target_post -%}
+          <li><a href="{{ target_post.url | relative_url | escape }}">{{ target_post.title | escape }}</a></li>
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- capture dds_inbound -%}
+    {%- for source_post in dds_posts -%}
+      {%- if source_post.knowledge_id != page.knowledge_id and source_post.knowledge_links contains page.knowledge_id -%}
+        <li><a href="{{ source_post.url | relative_url | escape }}">{{ source_post.title | escape }}</a></li>
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+<link rel="stylesheet" href="{{ '/assets/css/dds-knowledge.css' | relative_url | escape }}">
+<script src="{{ '/assets/js/dds-embed.js' | relative_url | escape }}" defer></script>
+  {%- if dds_outbound != '' %}
+<section class="dds-knowledge-links" aria-labelledby="dds-related">
+  <h2 id="dds-related">관련 개념</h2>
+  <ul>{{ dds_outbound }}</ul>
+</section>
+  {%- endif -%}
+  {%- if dds_inbound != '' %}
+<section class="dds-knowledge-links" aria-labelledby="dds-backlinks">
+  <h2 id="dds-backlinks">이 글을 참조하는 글</h2>
+  <ul>{{ dds_inbound }}</ul>
+</section>
+  {%- endif -%}
+{%- endif -%}
