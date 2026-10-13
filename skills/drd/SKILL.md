@@ -41,6 +41,7 @@ normal Codex behavior instead.
    - Do not invent citations, dates, benchmark numbers, or company practices.
    - Use parallel tool calls or subagents when available; otherwise run the
      dimensions sequentially.
+   - Apply the evidence checks and stopping criteria below before synthesis.
 4. Synthesize in Korean, preserving English technical terms.
 5. Design embedded visuals when they improve understanding.
    - Add visuals for concepts that are hard to hold in prose: multi-step
@@ -58,6 +59,60 @@ normal Codex behavior instead.
    - Match existing Markdown style, tables, headings, and diagram style when
      present.
    - Include source URLs in a references section or inline citations.
+
+## Evidence Checks
+
+For decision-relevant claims, numbers, history, production examples, and
+version-sensitive behavior, keep compact working notes as you research:
+
+| Claim | Evidence actually read | Checked date / applicable version | Status |
+|-------|------------------------|-----------------------------------|--------|
+| Specific assertion, including its conditions | Source title, URL or local artifact, and relevant section | Retrieval date and product/spec version when relevant | 확인 / 추론 / 미확인 |
+
+- **확인:** The inspected source directly supports the claim under the stated
+  conditions. This means source-supported, not independently tested.
+- **추론:** A conclusion or recommendation derived from cited facts; identify
+  the premises and label the inference in the document.
+- **미확인:** Reliable support is absent or the relevant text was inaccessible;
+  qualify or omit the claim instead of presenting it as fact.
+- Open the relevant original text. A search snippet, valid URL, registered DOI,
+  or repeated assertion does not establish that the source supports the claim.
+- A primary product specification may suffice for its own documented behavior.
+  Corroborate contested claims and consequential comparative claims where
+  possible; copied articles and mirrors are not independent confirmations.
+- Distinguish a documented capability, a vendor's performance claim, a public
+  case report, and an experiment actually executed. Report benchmark conditions;
+  do not turn popularity, an advertised multiplier, or a successful tool exit
+  into proof of quality or correctness.
+
+### Conflicting Sources and Versions
+
+Check whether apparent disagreement comes from different versions, platforms,
+configurations, definitions, or dates before choosing a conclusion. Preserve
+the behavior applicable to the user's actual environment; newer documentation
+does not automatically describe an older installed release. State each scope
+and cite the supporting text. If the same-scope conflict remains unresolved,
+report it rather than silently choosing a convenient source.
+
+## Research Scope and Stopping Criteria
+
+Start with the user's goal, a task-sized set of core questions, and any supplied
+time or cost budget. Use the mandatory dimensions to identify gaps, not to
+expand the assignment into unrelated research. No fixed source count proves
+completeness, and unsupported dimensions must remain explicitly unconfirmed.
+
+Stop when the core questions are answered, important claims have inspected
+evidence or explicit limitations, material conflicts are resolved or disclosed,
+and further targeted searches are adding no decision-relevant information.
+Respect an explicit budget; if it is exhausted or a source is inaccessible,
+deliver the supported result with remaining gaps instead of searching endlessly
+or manufacturing completeness. Do not start paid services merely to fill a gap.
+
+For substantial documents, add a short **조사 범위와 한계** paragraph near the
+references: questions covered, research date, relevant versions, and unresolved
+issues. Record searches and selection reasons when reproducibility matters.
+Keep detailed evidence notes separate from the polished article unless requested;
+preserve the existing Korean prose, Jekyll format, and visualization contract.
 
 ## Mandatory Research Dimensions
 
