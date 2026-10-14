@@ -18,7 +18,7 @@ knowledge_links:
   - dds-history-persistence
 ---
 
-DDS QoS(Quality of Service)는 endpoint의 전달·보관·시간 행동을 설정하는 정책들이다. QoS는 장비의 업무 의미를 판단하지 않는다. 예를 들어 `RELIABLE`이더라도 샘플이 신선하거나 센서가 정상이라고 증명하지 않으며, `Deadline`은 CPU 작업이 정해진 시각 안에 끝나도록 스케줄링하지 않는다.
+DDS(Data Distribution Service) QoS(Quality of Service)는 endpoint의 전달·보관·시간 행동을 설정하는 정책들이다. QoS는 장비의 업무 의미를 판단하지 않는다. 예를 들어 `RELIABLE`이더라도 샘플이 신선하거나 센서가 정상이라고 증명하지 않으며, `Deadline`은 CPU(Central Processing Unit) 작업이 정해진 시각 안에 끝나도록 스케줄링하지 않는다.
 
 <iframe class="dds-animation" src="{{ '/assets/animations/dds/index.html' | relative_url }}?topic=qos" title="DDS QoS가 누락 복구, 보관, 갱신 감시를 별도 축으로 다루는 모습" loading="lazy" style="width:100%;height:760px;border:1px solid #3a4252;border-radius:12px;background:#111820;" allow="fullscreen"></iframe>
 
@@ -60,7 +60,7 @@ QoS 정책은 서로 영향을 준다. 예를 들어 `KEEP_ALL`이라도 Resourc
 
 ## Deadline과 Liveliness는 다르다
 
-Deadline은 새 sample 갱신 간격이 설정한 기간을 초과했는지 감시한다. keyed Topic이라면 instance별로 적용된다. Liveliness는 writer/entity가 설정한 lease 안에 살아 있음을 주장하는지 확인한다. 프로세스가 살았지만 센서 측정이 멈췄을 수도 있고, 센서 데이터는 유효하지만 participant의 liveliness 확인이 늦을 수도 있다. 둘 다 센서 값의 타당성 검사와 다르다. [Deadline 정책](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/dds_layer/core/policy/standardQosPolicies.html) · [Liveliness API](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/api_reference/dds_pim/core/policy/livelinessqospolicy.html)
+Deadline은 새 sample 갱신 간격이 설정한 기간을 초과했는지 감시한다. keyed Topic이라면 instance별로 적용된다. Liveliness는 writer/entity가 설정한 lease 안에 살아 있음을 주장하는지 확인한다. 프로세스가 살았지만 센서 측정이 멈췄을 수도 있고, 센서 데이터는 유효하지만 participant의 liveliness 확인이 늦을 수도 있다. 둘 다 센서 값의 타당성 검사와 다르다. [Deadline 정책](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/dds_layer/core/policy/standardQosPolicies.html) · [Liveliness API(Application Programming Interface)](https://fast-dds.docs.eprosima.com/en/2.x/fastdds/api_reference/dds_pim/core/policy/livelinessqospolicy.html)
 
 또한 DDS Deadline은 Linux task deadline이 아니다. 앱 timer가 write를 호출하는 주기, OS가 thread를 실행하는 시각, 네트워크 전달, Reader 처리 완료는 각각 별도 시각점이다. QoS가 위반을 보고해도 callback이 정확한 deadline 시각에 실행된다는 보장은 없다.
 
@@ -78,24 +78,24 @@ Reader: RELIABLE, KEEP_LAST(8), Deadline=200ms
 App: sample 값·측정시각·sequence·범위를 확인하고 마지막 정상값 나이를 별도 계산
 ```
 
-수치는 요구 예시이지 보편 권장값이 아니다. Writer가 더 짧은 주기의 deadline을 제공하면 Reader의 느슨한 요구와 호환될 수 있다. Deadline은 writer가 50ms 간격을 보장하거나 reader 처리를 200ms 안에 끝내는 OS schedulability 분석이 아니다. 이 설계에서 stale 상태 전이는 응용 경과시간으로 정의하고 측정시각과 수신시각의 차이를 따로 관측한다.
+수치는 요구 예시이지 보편 권장값이 아니다. Writer가 더 짧은 주기의 deadline을 제공하면 Reader의 느슨한 요구와 호환될 수 있다. Deadline은 writer가 50ms 간격을 보장하거나 reader 처리를 200ms 안에 끝내는 Operating System (OS) schedulability 분석이 아니다. 이 설계에서 stale 상태 전이는 응용 경과시간으로 정의하고 측정시각과 수신시각의 차이를 따로 관측한다.
 
 ## 구현체와 버전
 
-OMG는 QoS 표준 의미를 정의하지만 특정 구현체의 모든 정책 지원과 자원 동작은 별도 확인해야 한다. 2026-10-13에 열람한 Fast DDS 2.14.7 문서는 일부 QoS의 미구현 경고를 포함한다. 프로젝트 실행 기록은 Fast DDS 2.11.2다. 따라서 최신 문서의 지원 표를 2.11.2에 소급 적용하지 않으며 실제 배포 버전의 문서, 반환 코드와 호환성 status로 검증한다.
+OMG(Object Management Group)는 QoS 표준 의미를 정의하지만 특정 구현체의 모든 정책 지원과 자원 동작은 별도 확인해야 한다. 2026-10-13에 열람한 Fast DDS 2.14.7 문서는 일부 QoS의 미구현 경고를 포함한다. 프로젝트 실행 기록은 Fast DDS 2.11.2다. 따라서 최신 문서의 지원 표를 2.11.2에 소급 적용하지 않으며 실제 배포 버전의 문서, 반환 코드와 호환성 status로 검증한다.
 
 ## 프로젝트 설정과 근거 범위
 
 기록된 시험 설정에서 SensorSample은 RELIABLE, VOLATILE, KEEP_LAST(16), sample/instance 한도 16/1, Deadline 200ms, AUTOMATIC Liveliness lease 1초다. DeviceStatus는 RELIABLE, TRANSIENT_LOCAL, KEEP_LAST(1)이다. 응용은 마지막 정상 수신 500ms 경과를 STALE로 판정하고, 회복 시 3개 연속 정상 샘플을 요구한다. 이 latter 상태 규칙은 DDS QoS가 아니라 앱 로직이다.
 
-2026-10-09 로컬 VM의 20개 통합 시나리오에는 live pause/recovery, 무효값, 중복·역순 sequence, 늦게 실행한 viewer, incompatible QoS, write timeout 등의 실행이 기록돼 있다. 이는 해당 환경의 실제 통과 결과다. CAN/RS-422 장비, 다중 host, hard real-time, 영속화, security를 검증한 결과가 아니다.
+2026-10-09 로컬 VM(Virtual Machine)의 20개 통합 시나리오에는 live pause/recovery, 무효값, 중복·역순 sequence, 늦게 실행한 viewer, incompatible QoS, write timeout 등의 실행이 기록돼 있다. 이는 해당 환경의 실제 통과 결과다. CAN(Controller Area Network)/RS-422 장비, 다중 host, hard real-time, 영속화, security를 검증한 결과가 아니다.
 
 ## 결정 기준
 
-최신 주기 상태는 작은 KEEP_LAST history와 필요 시 BEST_EFFORT를 비교하고, 매 이벤트 보존은 RELIABLE·history·persistence 외에도 앱 저장과 ACK를 포함해 검토한다. 늦은 reader에 상태 snapshot을 제공하려면 TRANSIENT_LOCAL을 검토하되 writer 재시작 이후 기대를 명시한다. writer liveness만 필요한지, 새 데이터 갱신까지 필요한지 각각 liveliness와 deadline으로 질문한다. 정책을 정한 뒤 매칭 결과, 자원 최대치, 손실·지연·재시작 시나리오를 실제 버전에서 시험한다.
+최신 주기 상태는 작은 KEEP_LAST history와 필요 시 BEST_EFFORT를 비교하고, 매 이벤트 보존은 RELIABLE·history·persistence 외에도 앱 저장과 ACK(acknowledgment, 확인 응답)를 포함해 검토한다. 늦은 reader에 상태 snapshot을 제공하려면 TRANSIENT_LOCAL을 검토하되 writer 재시작 이후 기대를 명시한다. writer liveness만 필요한지, 새 데이터 갱신까지 필요한지 각각 liveliness와 deadline으로 질문한다. 정책을 정한 뒤 매칭 결과, 자원 최대치, 손실·지연·재시작 시나리오를 실제 버전에서 시험한다.
 
 ## 조사 범위와 한계
 
-2026-10-13 확인한 OMG DDS 1.4와 Fast DDS 2.x/2.14.7 QoS 자료, 프로젝트 2.11.2 설정과 2026-10-09 실행 기록을 반영했다. 새 QoS 실험을 실행하지 않았으며 다른 vendor 구현체의 동작·성능 비교도 하지 않았다. QoS 호환성은 통신 조건이며 제품의 실시간성 또는 안전성 인증을 대체하지 않는다.
+2026-10-13 확인한 Object Management Group(OMG) DDS 1.4와 Fast DDS 2.x/2.14.7 QoS 자료, 프로젝트 2.11.2 설정과 2026-10-09 실행 기록을 반영했다. 새 QoS 실험을 실행하지 않았으며 다른 vendor 구현체의 동작·성능 비교도 하지 않았다. QoS 호환성은 통신 조건이며 제품의 실시간성 또는 안전성 인증을 대체하지 않는다.
 
 {% include knowledge-links.html %}

@@ -14,7 +14,7 @@ toc: true
 toc_sticky: true
 ---
 
-**DDS 이력은 Writer와 Reader가 보유하는 샘플의 제한된 집합이고, Persistence Service는 설정한 Writer 이력의 재시작 복원을 돕는다. 둘 다 애플리케이션이 업무를 완료했다는 기록은 아니다.** 이 구분을 놓치면 재생된 옛 센서 상태를 현재 사실로 믿거나, 장비 명령을 중복 실행할 수 있다.
+**DDS(Data Distribution Service) 이력은 Writer와 Reader가 보유하는 샘플의 제한된 집합이고, Persistence Service는 설정한 Writer 이력의 재시작 복원을 돕는다. 둘 다 애플리케이션이 업무를 완료했다는 기록은 아니다.** 이 구분을 놓치면 재생된 옛 센서 상태를 현재 사실로 믿거나, 장비 명령을 중복 실행할 수 있다.
 
 이 글의 제품별 설정은 프로젝트에서 사용한 Fast DDS **2.11.2** 문서를 기준으로 한다. 최신 3.x 문서가 같은 이름의 정책을 더 설명하더라도 그 내용을 2.11.2 동작으로 소급하지 않는다.
 
@@ -29,20 +29,20 @@ toc_sticky: true
 | History | 아직 전달·소비할 샘플 중 얼마를 기억할까? | 무제한 보존, 앱의 처리 완료 |
 | Reliability | Reader가 요청한 샘플 전달을 어떻게 재시도할까? | 유한한 저장 한도를 넘은 모든 샘플, deadline, exactly-once 업무 처리 |
 | Durability | 늦게 매칭한 Reader에게 과거 샘플을 제공할까? | Writer 종료 뒤 영속 보존 자체 |
-| Persistence Service | 재시작 경계를 넘어 설정된 DDS 상태를 저장소에서 되살릴까? | 전체 앱 메모리·DB transaction·장비 실제 상태 |
+| Persistence Service | 재시작 경계를 넘어 설정된 DDS 상태를 저장소에서 되살릴까? | 전체 앱 메모리·database (DB) transaction·장비 실제 상태 |
 | 업무 commit/checkpoint | 앱이 특정 이벤트를 처리하고 결과를 기록했는가? | DDS 정책이 대신 기록해 주지 않음 |
 
 예를 들어 10Hz 자세 샘플에 `KEEP_LAST(5)`를 쓰면 한 instance의 최근 다섯 샘플 이력을 관리한다. 이는 0.5초를 정확히 보장한다는 뜻은 아니다. 발행 간격의 흔들림, 한도, sample 수명과 구현 상태가 영향을 준다. `KEEP_ALL`도 메모리와 ResourceLimits의 한계를 없애지 않는다. [Fast DDS 2.11.2 History 정책](https://fast-dds.docs.eprosima.com/en/v2.11.2/fastdds/dds_layer/core/policy/standardQosPolicies.html#historyqospolicy)
 
 ## 왜 이력이 필요한가
 
-분산 시스템에서는 Publisher가 쓴 때와 Subscriber가 읽는 때가 다르다. Reader가 잠깐 느려지거나 늦게 시작하면 최근 값을 받을 필요가 있지만, 모든 과거 이벤트를 무기한 저장해야 하는지는 별도 문제다. DDS는 중앙 broker를 필수로 두지 않아도 Writer/Reader의 history와 QoS로 보관·재전달 조건을 정한다.
+분산 시스템에서는 Publisher가 쓴 때와 Subscriber가 읽는 때가 다르다. Reader가 잠깐 느려지거나 늦게 시작하면 최근 값을 받을 필요가 있지만, 모든 과거 이벤트를 무기한 저장해야 하는지는 별도 문제다. DDS는 중앙 broker를 필수로 두지 않아도 Writer/Reader의 history와 QoS(Quality of Service)로 보관·재전달 조건을 정한다.
 
-OMG DDS 표준 1.0은 2004년 12월 정식 판본으로 등록되어 있고, DDS 표준은 1.4까지 발전했다. DDS Security는 별도 명세 계열로 1.0이 2016년 8월에 정식 채택됐다. 이 글은 DDS 역사 전체를 반복하기보다 현재 관심사인 history 및 persistence 동작에 한정한다. [OMG DDS 1.0 이력](https://www.omg.org/spec/DDS/1.0/) · [OMG DDS 1.4](https://www.omg.org/spec/DDS/1.4/)
+Object Management Group(OMG) DDS 표준 1.0은 2004년 12월 정식 판본으로 등록되어 있고, DDS 표준은 1.4까지 발전했다. DDS Security는 별도 명세 계열로 1.0이 2016년 8월에 정식 채택됐다. 이 글은 DDS 역사 전체를 반복하기보다 현재 관심사인 history 및 persistence 동작에 한정한다. [OMG DDS 1.0 이력](https://www.omg.org/spec/DDS/1.0/) · [OMG DDS 1.4](https://www.omg.org/spec/DDS/1.4/)
 
 ## 늦은 Reader와 Writer 재시작은 다르다
 
-새 Reader가 살아 있는 Writer와 매칭될 때 과거 이력을 받아야 한다면 호환되는 Durability와 `RELIABLE`을 검토한다. 2.11.2 문서는 late-joiner 과거 샘플에 `RELIABLE`이 필요하다고 명시한다. `TRANSIENT_LOCAL` 이력은 Writer가 살아 있는 동안 유지된다. Writer가 프로세스와 함께 사라지면 이 메모리 이력도 함께 끝난다. QoS 매칭 규칙도 양쪽 설정을 확인해야 한다. [Durability와 Reliability](https://fast-dds.docs.eprosima.com/en/v2.11.2/fastdds/dds_layer/core/policy/standardQosPolicies.html#durabilityqospolicy)
+새 Reader가 살아 있는 Writer와 매칭될 때 과거 이력을 받아야 한다면 호환되는 Durability와 `RELIABLE`을 검토한다. 2.11.2 문서는 late-joiner 과거 샘플에 `RELIABLE`이 필요하다고 명시한다. `TRANSIENT_LOCAL` 이력은 Writer가 살아 있는 동안 유지된다. Writer가 프로세스와 함께 사라지면 이 메모리 이력도 함께 끝난다. QoS(Quality of Service) 매칭 규칙도 양쪽 설정을 확인해야 한다. [Durability와 Reliability](https://fast-dds.docs.eprosima.com/en/v2.11.2/fastdds/dds_layer/core/policy/standardQosPolicies.html#durabilityqospolicy)
 
 Writer 종료 뒤 재시작까지 이력을 가져가려면 그 다음 계층인 Persistence Service가 필요하다. Fast DDS 2.11.2의 설정 예는 `TRANSIENT_DURABILITY_QOS`, `dds.persistence.guid`, persistence plugin을 구성한다. 내장 SQLite plugin은 지정한 로컬 DB 파일을 사용한다. 2.11.2 문서는 이 persistence 동작이 `TRANSIENT`에서 효과가 있다고 설명하며, `PERSISTENT_DURABILITY_QOS`는 미구현으로 표기한다. `DurabilityServiceQosPolicy`도 해당 판본에서 미구현이다. [Fast DDS 2.11.2 Persistence Service](https://fast-dds.docs.eprosima.com/en/v2.11.2/fastdds/persistence/persistence.html) · [2.11.2 QoS 정책](https://fast-dds.docs.eprosima.com/en/v2.11.2/fastdds/dds_layer/core/policy/standardQosPolicies.html#durabilityserviceqospolicy)
 
@@ -77,7 +77,7 @@ Persistence는 옛 값을 되살릴 수 있으므로 재시작 직후 복원된 
 | 최신 상태만 전달하고 재접속 Reader가 현재 값을 받음 | `TRANSIENT_LOCAL` + 작은 `KEEP_LAST` + `RELIABLE` | Writer 재시작 이후도 복원해야 할 때 |
 | 최근 Writer 이력을 프로세스 재시작 후 복원 | 해당 Fast DDS 판본의 Persistence Service 및 저장소 | 노드·디스크 전체 손실, 장기 이벤트 감사까지 필요할 때 |
 | 누락된 모든 업무 이벤트를 장기간 재생 | 별도 event log/journal, offset과 retention | 단순 latest-state DDS history만으로 충분하다고 볼 때 |
-| 명령 실행 및 결과의 업무적 완료를 복구 | command ledger, idempotency key, 장비 상태 재조회 | DDS ACK를 업무 transaction으로 간주할 때 |
+| 명령 실행 및 결과의 업무적 완료를 복구 | command ledger, idempotency key, 장비 상태 재조회 | DDS ACK(acknowledgment, 확인 응답)를 업무 transaction으로 간주할 때 |
 
 Kafka 같은 내구성 로그는 append-only 이벤트 재생·consumer offset 운영에 유리할 수 있지만, 별도 broker cluster와 관리·지연 trade-off가 생긴다. DDS history는 실시간 분산 데이터 흐름에 잘 붙지만, bounded history를 업무 event store로 착각하면 안 된다. 영속 상태를 둘 위치는 데이터의 수명과 복구 책임으로 선택한다.
 
@@ -90,7 +90,7 @@ Kafka 같은 내구성 로그는 append-only 이벤트 재생·consumer offset �
 1. 저장하려는 것이 latest state인지, 순서가 중요한 event인지, 장비 명령/결과인지 결정한다.
 2. 느린 Reader와 late joiner, Writer 재시작, DB 유실을 별도 장애로 시험한다.
 3. History depth, ResourceLimits, Lifespan, Reliability, Durability의 매칭과 최악 저장량을 함께 정한다.
-4. Persistence GUID를 endpoint의 논리 identity로 안정적으로 관리하고 중복 배포를 방지한다.
+4. Persistence GUID(Globally Unique Identifier)를 endpoint의 논리 identity로 안정적으로 관리하고 중복 배포를 방지한다.
 5. DB 파일 위치·권한·백업·용량·손상·읽기 전용·호스트 교체를 시험한다. SQLite 파일 하나가 다른 호스트에 자동 복제되는 것은 아니다.
 6. 복원된 상태를 곧바로 제어 입력으로 쓰지 않는다. 센서 freshness와 command precondition을 재확인한다.
 7. DDS 통지, 앱 read, 업무 commit, 물리 장비 결과를 서로 다른 관측 이벤트로 기록한다.
@@ -99,7 +99,7 @@ Kafka 같은 내구성 로그는 append-only 이벤트 재생·consumer offset �
 
 학습 프로젝트는 Fast DDS 2.11.2 기반 세 프로세스에서 `SensorSample`에 `VOLATILE/KEEP_LAST(16)`, 상태 데이터에 `TRANSIENT_LOCAL/KEEP_LAST(1)`을 사용했다. 2026-10-09 실행에서 늦게 시작한 viewer가 새 상태 발행 없이 이전 상태를 받는 통합 시나리오가 확인됐다. 상태 판정 단위 검사 179개와 DDS 통합 시나리오 20개도 통과했다. 이 결과는 Writer 재시작 persistence 시험이 아니다.
 
-프로젝트는 SQLite Persistence Service, DDS Security, 실제 CAN/RS-422 장비, 다중 호스트 failover, 업무 command ledger를 구성하거나 시험하지 않았다. 따라서 위의 장애 대응 표는 설계 기준이지 실행 결과가 아니다. 테스트 범위와 조건은 공개 1차 자료와 구별되는 프로젝트 기록이며, 이 글은 이를 외부 공개 저장소나 제품 사례로 제시하지 않는다.
+프로젝트는 SQLite Persistence Service, DDS Security, 실제 CAN(Controller Area Network)/RS-422 장비, 다중 호스트 failover, 업무 command ledger를 구성하거나 시험하지 않았다. 따라서 위의 장애 대응 표는 설계 기준이지 실행 결과가 아니다. 테스트 범위와 조건은 공개 1차 자료와 구별되는 프로젝트 기록이며, 이 글은 이를 외부 공개 저장소나 제품 사례로 제시하지 않는다.
 
 ## 조사 범위와 한계
 
