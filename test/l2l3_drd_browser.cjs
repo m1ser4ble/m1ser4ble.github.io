@@ -50,7 +50,7 @@ const output = process.env.L2L3_REVIEW_DIR || '/tmp/l2l3-drd-review';
     }
     const nojs=await browser.newPage({javaScriptEnabled:false,viewport:{width:390,height:900}});
     await nojs.goto(base,{waitUntil:'domcontentloaded'});
-    assert.equal(await nojs.locator('noscript').count(),12,'each diagram retains a no-JS explanation');
+    assert.equal(await nojs.locator('.l2l3-panel noscript').count(),12,'each diagram retains a no-JS explanation');
     assert.ok((await nojs.locator('.page__content').innerText()).includes('재귀적 다음 홉'),'full conceptual prose survives without scripts');
     assert.equal(await nojs.locator('.l2l3-panel button').count(),0,'no dependency on controls for text');
     await nojs.close();
