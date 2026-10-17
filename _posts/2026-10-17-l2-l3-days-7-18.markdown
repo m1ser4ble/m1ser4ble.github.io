@@ -1,0 +1,1423 @@
+---
+layout: single
+title: "L2/L3 7~18일차 완전 연결 가이드: 이웃 발견에서 EVPN과 실제 패킷 전달까지"
+date: 2026-10-17 00:00:00 +0900
+permalink: /network/l2-l3-days-7-18/
+categories: [system]
+excerpt: "IPv6/NDP, LACP, MTU, OSPF, BGP, VRRP, VXLAN, EVPN, IRB, ECMP, BFD, RIB/FIB를 등장 배경과 패킷 흐름으로 연결한다."
+toc: true
+toc_sticky: true
+tags: [networking, linux, l2, l3, bgp, vxlan, evpn]
+source: "Discord L2/L3 공개 학습글 7~18일차 본문 및 VXLAN·EVPN 추가 질의응답, RFC·IEEE·Linux·FRRouting 공식 자료"
+---
+
+## 핵심 요약
+
+**이 열두 주제는 독립적인 약자 암기 목록이 아니다. 한 패킷을 보내기 위해 필요한 서로 다른 질문에 답한다.**
+
+1. 목적지가 가까운 이웃인가, 라우터 너머인가? 주소·프리픽스·경로가 답한다.
+2. 지금 링크에서 누구의 MAC 주소로 보낼까? IPv4의 ARP, IPv6의 NDP가 답한다.
+3. 그 목적지 경로를 어떻게 알게 됐나? OSPF·BGP 같은 제어 프로토콜이 경로 정보를 만든다.
+4. 여러 물리 링크·경로가 있으면 어떻게 사용할까? LACP는 링크 묶음을 조율하고, ECMP는 여러 IP 다음 홉을 사용한다.
+5. 떨어진 서버를 같은 LAN처럼 만들 수 있나? VXLAN은 프레임을 운반하고 EVPN은 원격 주소 위치를 공유한다.
+6. 서로 다른 가상 서브넷 사이에서는? IRB가 브리징과 라우팅을 연결한다.
+7. 크기 제한이나 장애로 전달할 수 없으면? PMTUD는 패킷 크기를, VRRP는 첫 홉 역할을, BFD는 검사 경로 생존을 다룬다.
+8. 정보를 받았는데 왜 못 보내나? RIB 선택, 다음 홉 해석, FIB 설치, 이웃 해석, 실제 데이터 경로를 각각 확인해야 한다.
+
+본문은 **2026-10-06의 7일차부터 2026-10-17의 18일차까지** 실제 공개 스레드를 기준으로 재구성했다. 특히 “VNI와 VLAN ID는 왜 다르지?”, “모르는 IP를 모든 인터페이스로 뿌리는 건가?”, “L2는 같은데 L3는 다를 수 있나?”, “EVPN은 애초에 무엇 때문에 필요하지?”라는 후속 질문을 별도 핵심 문제로 다룬다. 기존 글을 짧게 압축하는 대신 그 사이에서 생략됐던 배경을 복원하는 것이 목표다.
+
+각 일차의 그림은 버튼으로 상황을 바꿔 **그때 쓰는 헤더·테이블·상태**를 대조한다. 그림의 상자는 처리 단계를 나타내며, 항상 물리 장비 한 대씩을 뜻하지 않는다. 모두 교육용 모델이고 실제 패킷 캡처나 벤치마크가 아니다. JavaScript를 사용하지 못해도 본문만으로 흐름을 따라갈 수 있다.
+
+## 먼저 필요한 배경: 주소, 표, 제어와 데이터
+
+### IP와 MAC은 왜 둘 다 필요한가
+
+A가 다른 서브넷의 B로 전송한다고 하자. IP 목적지는 끝까지 B를 가리킨다. 그러나 Ethernet 프레임의 목적 MAC은 **지금 연결된 링크에서 패킷을 넘겨받을 다음 장비**다. 첫 링크에서는 게이트웨이, 다음 링크에서는 다음 라우터, 마지막 링크에서는 B다. 일반적인 NAT 없는 IP 전달에서는 라우터가 프레임의 MAC 헤더를 새로 붙이고 IP TTL/Hop Limit을 줄이지만 IP 목적지를 다음 라우터 주소로 바꾸지 않는다.
+
+이 구분이 없으면 “B로 보내는데 게이트웨이 MAC이 찍힌다”, “BGP 다음 홉이 멀리 있는 루프백인데 ARP가 왜 다른 주소를 찾는다”가 모두 이상하게 보인다. 둘은 각각 **최종 목적지**와 **지금의 전달 상대**를 식별하기 때문에 함께 존재한다. IPv6 기본 헤더와 Hop Limit의 의미는 [RFC 8200 §3](https://www.rfc-editor.org/rfc/rfc8200.html#section-3), BGP 다음 홉 해석은 [RFC 4271 §9.1.2.1](https://www.rfc-editor.org/rfc/rfc4271.html#section-9.1.2.1)을 기준으로 읽으면 된다.
+
+### 비슷해 보이는 표들이 답하는 질문은 다르다
+
+| 표·상태 | 키 → 결과의 예 | 답하는 질문 |
+|---|---|---|
+| 호스트 주소·프리픽스 | 인터페이스 → IP 주소·길이 | 나는 누구이며 어떤 주소를 쓰나? |
+| IP 라우팅/전달 정보 | 목적 prefix → 다음 홉·출력 인터페이스 | 이 IP 패킷을 어디로 보낼까? |
+| ARP/NDP 이웃 정보 | 링크와 다음 홉 IP → MAC·도달 상태 | 지금 링크의 수신 프레임 주소는? |
+| 브리지 FDB | VLAN/브리지 영역과 MAC → 포트 | 이 Ethernet 프레임을 어느 포트로 보낼까? |
+| VXLAN 원격 전달 항목 | VNI와 MAC → 원격 VTEP IP | 어느 터널 종단에 포장해 보낼까? |
+| EVPN 경로 | MAC/IP·세그먼트 정보 → 광고자·속성 | 원격 위치를 누구에게서 어떤 정책으로 배웠나? |
+| BFD 세션 | 검사 상대·세션 → Up/Down·간격 | 이 검사 경로의 유효한 제어 패킷을 받고 있나? |
+
+FDB(Forwarding Database)는 MAC 기반 표이고, FIB(Forwarding Information Base)는 실제 전달에 쓰는 정보라는 더 일반적인 말이다. 이 글에서는 혼동을 피하려고 **브리지 MAC 표는 FDB, IP 전달 표는 FIB**로 부른다. 같은 Linux 장비라도 둘을 별도로 봐야 한다.
+
+### Control plane과 data plane
+
+Control plane은 경로·주소 위치·상태를 교환하고 선택하는 부분이다. Data plane은 그렇게 준비한 정보를 이용해 실제 사용자 패킷을 전달하는 부분이다. BGP 세션이 TCP로 연결됐다는 것은 **제어 통신 한 경로가 열렸다**는 뜻이지, VXLAN UDP 데이터·큰 패킷·테넌트 경로까지 모두 정상이라는 뜻이 아니다.
+
+“광고(advertisement)”는 다른 장비에 도달 정보를 알리는 제어 메시지다. 광고를 받은 장비는 정책에 따라 수입·선택·설치한다. 광고가 곧 실행 명령도, 사용자 데이터 자체도 아니다. [MP-BGP, RFC 4760 §§1–3](https://www.rfc-editor.org/rfc/rfc4760.html#section-1)은 BGP가 주소군과 다음 홉을 묶어 여러 종류의 도달 정보를 운반하는 구조를 설명한다.
+
+## 용어 사전과 읽기 지도
+
+약자의 확장만 알아서는 설계 목적이 보이지 않는다. 우선 아래 질문으로 위치를 잡고 해당 일차에서 동작을 읽는다.
+
+| 일차 | 이름과 풀네임 | 처음 붙잡을 질문 |
+|---|---|---|
+| 7 | IPv6: Internet Protocol version 6 / NDP: Neighbor Discovery Protocol | ARP 없이 같은 링크의 이웃과 라우터를 어떻게 찾나? |
+| 8 | LACP: Link Aggregation Control Protocol / LAG: Link Aggregation Group | 여러 선을 어떻게 하나의 링크처럼 쓸까? |
+| 9 | MTU: Maximum Transmission Unit / PMTUD: Path MTU Discovery | 끝까지 통과할 수 있는 패킷 크기는? |
+| 10 | OSPF: Open Shortest Path First / SPF: Shortest Path First | 내부망의 연결 상태로 어떻게 경로를 계산하나? |
+| 11 | BGP: Border Gateway Protocol / AS: Autonomous System | 다른 운영 주체의 도달 정보와 정책을 어떻게 교환하나? |
+| 12 | VRRP: Virtual Router Redundancy Protocol | 첫 홉 라우터가 바뀌어도 호스트 설정을 유지할까? |
+| 13 | VXLAN: Virtual eXtensible Local Area Network / VTEP: VXLAN Tunnel End Point | IP망으로 Ethernet을 어떻게 운반하나? |
+| 14 | EVPN: Ethernet VPN / MP-BGP: Multiprotocol BGP | 원격 MAC/IP가 어느 종단에 있는지 어떻게 알까? |
+| 15 | IRB: Integrated Routing and Bridging / VRF: Virtual Routing and Forwarding | 여러 가상 LAN 사이에서 어떻게 라우팅하나? |
+| 16 | ECMP: Equal-Cost Multi-Path | 등비용 다음 홉 여러 개를 어떻게 사용할까? |
+| 17 | BFD: Bidirectional Forwarding Detection | 링크 Up만으로 모르는 전달 장애를 어떻게 감지하나? |
+| 18 | RIB: Routing Information Base / FIB: Forwarding Information Base | 배운 경로가 실제 송신 동작으로 이어지는가? |
+
+추가로 VNI(VXLAN Network Identifier)는 **데이터 패킷의 망 식별자**, RT(Route Target)는 **제어 경로의 수입·배포 정책 태그**다. RD(Route Distinguisher)는 같은 주소를 사용하는 서로 다른 경로를 구분하기 위한 값이다. 이 셋은 서로 대체할 수 없다. BUM(Broadcast, Unknown Unicast, Multicast)은 브로드캐스트·미지 유니캐스트·멀티캐스트 트래픽을 묶어 부르는 말이다. 상세 의미와 RT/RD 구분은 EVPN 절에서 다시 다룬다.
+
+## 등장 배경과 이유: 한 문제가 다음 문제를 만든다
+
+처음에는 같은 LAN의 상대에게 프레임을 전달하면 된다. 다른 LAN까지 가려면 라우터와 IP 경로가 필요하다. 장비와 링크가 늘어나면 정적 경로만으로 장애를 따라가기 어려워져 동적 라우팅이 필요해진다. 여러 운영 주체가 연결되면 단순 최단 거리 대신 비용·계약·정책을 반영해야 한다. 이때 OSPF의 내부 최단 경로 문제와 BGP의 정책적 도달 정보 문제가 갈라진다.
+
+대역폭과 가용성을 위해 선을 늘리면 또 선택 문제가 생긴다. 같은 두 논리 상대 사이 선은 LAG로 묶을 수 있고, 여러 IP 다음 홉은 ECMP로 사용할 수 있다. 그러나 선을 여러 개 만들었다고 한 TCP 연결이 자동으로 모든 용량을 쓰지는 않는다. 흐름의 순서를 유지하려는 선택과 처리량 분산 사이에 타협이 필요하기 때문이다.
+
+가상 머신·테넌트를 물리 랙 위치와 독립적으로 배치하려면 논리 L2망을 IP 패브릭 위에 올리는 방식이 유용하다. VXLAN은 그 운반 형식을 제공한다. 하지만 **운반할 수 있다는 것과 목적 MAC의 위치를 안다는 것은 별개**다. EVPN은 후자의 정보를 제어 평면으로 공유한다. 또 다른 서브넷과 통신하려면 이 가상망 안에서도 라우팅이 필요하므로 IRB가 연결된다.
+
+이는 이해를 위한 의존 관계이지 실제 발명 순서가 아니다. EVPN은 VXLAN 플러딩 감소만을 위해 처음 만들어진 기술이 아니다. 기존 Ethernet VPN의 멀티호밍·자원 활용·장애 수렴 문제도 출발점이었다. 원래 MPLS 기반 EVPN을 정의한 [RFC 7432 §1](https://www.rfc-editor.org/rfc/rfc7432.html#section-1)과 네트워크 가상화 overlay에 적용한 [RFC 8365 §§1–4](https://www.rfc-editor.org/rfc/rfc8365.html#section-1)을 구분해야 한다.
+
+## 역사적 기원과 연대표
+
+표준의 저자는 언제나 기술의 유일한 발명자와 같지 않다. 아래는 **직접 확인 가능한 규격의 이정표**이며, 비공개 최초 구현이나 개인의 발명 우선권을 단정하지 않는다. 각 주제의 이론적 배경과 대안은 해당 일차에서 이어서 설명한다.
+
+| 시기 | 확인 가능한 이정표 | 의미 |
+|---|---|---|
+| 1989 | S. Deering, [RFC 1112](https://www.rfc-editor.org/rfc/rfc1112.html) | IP multicast의 host group 모델과 IPv4 그룹 주소 범위 |
+| 1990 | [RFC 1191](https://www.rfc-editor.org/rfc/rfc1191.html) | IPv4 경로 MTU 탐색 |
+| 1998 | J. Moy, [RFC 2328](https://www.rfc-editor.org/rfc/rfc2328.html) | OSPFv2의 링크 상태·SPF 동작을 정리한 규격 |
+| 1998 | [RFC 2365](https://www.rfc-editor.org/rfc/rfc2365.html) | 관리 범위 IPv4 multicast, 239/8 의미 |
+| 2000~2008 | IEEE Link Aggregation, [802.1AX-2008 승인 기록](https://www.ieee802.org/3/axay/) | Linux `802.3ad` 이름과 현재 802.1AX 계열 표준의 관계 |
+| 2000 | [RFC 2992](https://www.rfc-editor.org/rfc/rfc2992.html) | ECMP 해시와 경로 집합 변화의 영향 분석 |
+| 2006~2007 | [BGP-4 RFC 4271](https://www.rfc-editor.org/rfc/rfc4271.html), [MP-BGP RFC 4760](https://www.rfc-editor.org/rfc/rfc4760.html) | 정책·경로 속성과 다중 주소군 도달 정보 운반 |
+| 2007 | [RFC 4861](https://www.rfc-editor.org/rfc/rfc4861.html), [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.html) | IPv6 Neighbor Discovery와 주소 자동 설정 |
+| 2010 | [RFC 5880](https://www.rfc-editor.org/rfc/rfc5880.html), [RFC 5881](https://www.rfc-editor.org/rfc/rfc5881.html) | BFD 기본 동작과 단일 홉 IP 적용 |
+| 2014 | [RFC 7348](https://www.rfc-editor.org/rfc/rfc7348.html) | 여러 기업 공동 저자의 VXLAN 규격 정리 |
+| 2015 | [RFC 7432](https://www.rfc-editor.org/rfc/rfc7432.html) | BGP MPLS-Based Ethernet VPN |
+| 2017 | [RFC 8200](https://www.rfc-editor.org/rfc/rfc8200.html), [RFC 8201](https://www.rfc-editor.org/rfc/rfc8201.html) | IPv6 기본 규격과 IPv6 PMTUD 개정 |
+| 2018 | [RFC 8365](https://www.rfc-editor.org/rfc/rfc8365.html) | EVPN을 VXLAN 같은 overlay에 적용 |
+| 2021 | [RFC 9135](https://www.rfc-editor.org/rfc/rfc9135.html) | EVPN IRB 절차 정리 |
+| 2024 | [RFC 9568](https://www.rfc-editor.org/rfc/rfc9568.html) | RFC 5798을 대체한 VRRPv3 규격 |
+
+이 순서가 보여 주는 핵심은 “새 프로토콜이 이전 프로토콜을 모두 대체했다”가 아니다. **이웃 탐색·경로 배포·터널 운반·장애 감지는 서로 다른 문제라 함께 쌓인다.**
+
+## 동작 메커니즘을 읽는 공통 규칙
+
+각 절은 그 절의 토폴로지를 기준으로 읽는다. 예를 들어 13~14일차의 A와 B는 같은 논리 서브넷이지만 15일차의 A와 B는 서로 다른 서브넷이다. 설명용 주소·MAC은 규격을 이해하기 위한 값이며 특정 실서비스 설정을 뜻하지 않는다.
+
+명령 예시는 **미실행·관측용**이다. 실행 결과를 만들어 넣지 않았다. `ip route get`은 경로 조회이고, `ping`은 시험 트래픽을 만들며, `tcpdump`는 권한과 개인정보 취급에 주의해야 하는 캡처다. CLI의 지원 여부·필드는 설치된 Linux/iproute2/FRR 버전에서 확인한다.
+
+<style>
+.l2l3-panel{box-sizing:border-box;max-width:100%;margin:1.5rem 0;padding:12px;border:1px solid #4c667d;border-radius:12px;background:#101a29;color:#e6edf3;font-family:system-ui,sans-serif;overflow:hidden}.l2l3-panel svg{display:block;width:100%;height:auto;font-family:system-ui,sans-serif}.l2l3-controls{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.l2l3-controls button{font:inherit;font-size:14px;white-space:normal;padding:8px 12px;background:#1d3046;color:#e6edf3;border:1px solid #6f879e;border-radius:7px;cursor:pointer;min-height:40px}.l2l3-controls button[aria-pressed="true"]{background:#245d64;border-color:#8eefe2}.l2l3-controls button:focus-visible{outline:3px solid #ffe29a;outline-offset:2px}.l2l3-panel .l2l3-live{font-size:13px;margin:8px 0;color:#c4d3e3}.l2l3-panel figcaption{font-size:14px;margin:6px 0}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+
+## 7일차 IPv6/NDP — 주소를 가진 것과 다음 홉에 닿는 것은 다르다
+
+### 왜 IPv6에는 ARP가 없는가
+
+IPv6(Internet Protocol version 6)는 IPv4의 주소 공간을 32비트에서 128비트로 넓혔지만, 변화는 주소의 길이에 그치지 않는다. 호스트가 망에 붙은 뒤 라우터를 찾고, 직접 보낼 상대를 구분하고, Ethernet 주소를 알아내는 절차도 재구성했다. IPv4에서 ARP(Address Resolution Protocol)가 하던 주소 해석, ICMP(Internet Control Message Protocol)의 라우터 발견·Redirect, 일관된 표준 절차가 없었던 이웃 도달성 확인을 묶은 것이 ND(Neighbor Discovery), 흔히 NDP(Neighbor Discovery Protocol)라고 부르는 기능이다. 따라서 “IPv6판 ARP”는 입구 설명으로는 쓸 수 있어도 전체 설계를 설명하지 못한다. [RFC 4861 §3.1](https://www.rfc-editor.org/rfc/rfc4861.txt)은 이 관계를 직접 비교한다.
+
+역사도 서로 다른 문서를 구분해서 읽어야 한다. Ethernet상의 IPv6 전송은 1998년 [RFC 2464](https://www.rfc-editor.org/rfc/rfc2464.txt), ND는 RFC 2461을 대체한 2007년 RFC 4861, SLAAC(Stateless Address Autoconfiguration, 비상태 주소 자동 설정)는 RFC 2462를 대체한 2007년 [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.txt)가 기본 축이다. IPv6 본체는 RFC 2460에서 2017년 [RFC 8200](https://www.rfc-editor.org/rfc/rfc8200.txt)으로 개정됐다. 즉 “IPv6 표준 하나”가 주소 자동 설정부터 매체별 캡슐화까지 전부 정의하는 것은 아니다.
+
+### 먼저 분리할 세 가지 상태: 주소, 경로, 이웃
+
+`fd12:3456:789a:10::10/64`에서 `/64`는 앞 64비트가 프리픽스라는 뜻이다. 그러나 주소가 인터페이스에 존재한다는 사실만으로 모든 전달 결정이 끝나지는 않는다. 주소는 **내가 누구인가**, 경로·온링크 정보는 **어느 인터페이스의 누구에게 넘길까**, 이웃 테이블은 **그 다음 홉을 Ethernet에서 어떻게 부를까**라는 서로 다른 질문에 답한다. `fe80::1` 같은 링크 로컬 주소는 한 링크 범위의 주소이며, 동일한 주소 표기가 다른 인터페이스에서도 등장할 수 있으므로 `fe80::1%eth0`처럼 범위 식별이 필요하다. 일반 데이터를 멀리 보낼 때도 첫 라우터의 주소는 링크 로컬일 수 있다.
+
+호스트의 RS(Router Solicitation, 라우터 정보 요청, ICMPv6 Type 133)는 보통 `ff02::2`, 즉 같은 링크의 모든 라우터를 향한다. 라우터는 주기적으로 또는 요청에 대한 응답으로 RA(Router Advertisement, 라우터 광고, Type 134)를 보낸다. RA의 출발지는 해당 인터페이스의 링크 로컬 주소다. Router Lifetime이 0이 아니면 그 라우터를 기본 라우터 후보로 유지할 수 있지만, 0인 RA도 프리픽스 같은 다른 정보를 전달할 수 있다. RA를 “주소를 주는 패킷” 하나로 읽지 말아야 하는 이유다. [RFC 4861 §§4.1–4.2, 6.3](https://www.rfc-editor.org/rfc/rfc4861.txt)
+
+| RA에서 보는 항목 | 답하는 질문 | 잘못된 결론 |
+|---|---|---|
+| Router Lifetime | 이 송신자를 기본 라우터 후보로 얼마나 유지할까 | 0이면 RA 전체를 무시한다 |
+| Prefix Information의 L(On-link) | 이 프리픽스를 직접 전달 대상으로 볼 근거가 있는가 | L=0은 무조건 off-link라는 명령이다 |
+| A(Autonomous address-configuration) | 이 프리픽스를 SLAAC 주소 생성에 쓸 수 있는가 | 주소 생성 성공은 on-link의 증거다 |
+| Source Link-Layer Address 옵션 | 라우터의 MAC(Media Access Control) 주소는 무엇인가 | 라우터를 쓰려면 항상 별도 NS가 필요하다 |
+
+L과 A는 독립이다. L=0은 그 광고가 온링크 여부에 관해 아무 진술도 하지 않는다는 뜻이지 기존 온링크 판단을 취소하는 비트가 아니다. 2010년 [RFC 5942 §3](https://www.rfc-editor.org/rfc/rfc5942.txt)은 주소 할당과 온링크 판단의 혼동을 명시적으로 바로잡았다. Linux가 수동 `/64` 설정에 따라 연결 경로를 생성하는 동작과, 프로토콜 이론상 “주소를 받았으니 이 프리픽스는 무조건 온링크”라는 주장을 섞지 말아야 한다.
+
+### A가 B와 C로 보낼 때: NS의 목적지와 Target은 다르다
+
+설명용 망에서 A와 B는 L2 스위치 S의 왼쪽 LAN에, C는 라우터 R의 오른쪽 LAN에 있다. 왼쪽 프리픽스는 RA의 L=1로 온링크임을 배웠고 모든 주소는 DAD를 끝냈다고 가정한다. A·B는 R 왼쪽을 기본 라우터로 쓰며 C에는 반환 경로가 있다. NAT(Network Address Translation)는 없다.
+
+| 노드/인터페이스 | IPv6 주소 | MAC 주소 |
+|---|---|---|
+| A | `fd12:3456:789a:10::10/64` | `02:00:00:00:10:10` |
+| B | `fd12:3456:789a:10::20/64` | `02:00:00:00:10:20` |
+| R 왼쪽 | `fe80::1` | `02:00:00:00:10:01` |
+| R 오른쪽 | `fd12:3456:789a:20::1/64` | `02:00:00:00:20:01` |
+| C | `fd12:3456:789a:20::20/64` | `02:00:00:00:20:20` |
+
+A가 B로 보낼 때는 B가 다음 홉이다. 아직 MAC을 모르면 이웃 캐시에 `INCOMPLETE` 항목을 만들고 일부 데이터 패킷을 대기시킨 뒤 NS(Neighbor Solicitation, 이웃 정보 요청, Type 135)를 보낸다. NS는 ARP와 달리 **Ethernet → IPv6 → ICMPv6(Internet Control Message Protocol for IPv6)** 안에 실린다. Ethernet EtherType은 `0x86DD`다. NS의 IPv6 목적지는 B의 유니캐스트 주소가 아니라 B의 하위 24비트에 대응하는 solicited-node multicast `ff02::1:ff00:20`이고, **찾고 있는 B 주소는 ICMPv6의 Target Address**에 들어간다. Ethernet 목적지는 `33:33:ff:00:00:20`이며, Source Link-Layer Address 옵션에는 A의 MAC을 넣는다. IPv6 멀티캐스트 주소의 마지막 32비트 앞에 `33:33`을 붙이는 매핑은 [RFC 2464 §§3, 7](https://www.rfc-editor.org/rfc/rfc2464.txt)에 정의돼 있다.
+
+여기서 멀티캐스트는 “스위치가 정확히 B 포트 하나에만 내보낸다”는 약속이 아니다. 스위치의 멀티캐스트 전달·snooping 구성에 따라 다른 포트에도 퍼질 수 있고, 하위 24비트가 같은 여러 IPv6 주소가 같은 solicited-node 그룹을 쓸 수도 있다. B가 Target을 검사해 자기 주소임을 확인하는 논리와 스위치의 물리 전달 범위는 별개다. B는 보통 A로 유니캐스트 NA(Neighbor Advertisement, 이웃 정보 광고, Type 136)를 돌려주며 자신의 MAC을 옵션으로 전달한다. A는 대기한 데이터를 `A MAC → B MAC` 프레임으로 보낸다. 스위치는 MAC 전달 정보를, A는 IPv6 이웃 정보를 쓴다. [RFC 4861 §§7.2.2–7.2.5](https://www.rfc-editor.org/rfc/rfc4861.txt)
+
+반면 A가 C로 보낼 때 다음 홉은 R 왼쪽의 `fe80::1`이다. RA 옵션으로 MAC을 이미 배웠으면 추가 탐색 없이, 모르면 R을 대상으로 NS/NA를 거쳐 첫 프레임을 만든다. 첫 Ethernet 목적지는 R의 MAC이지만 IPv6 목적지는 계속 C다. R은 경로를 조회하고 Hop Limit을 감소시킨 뒤 오른쪽에서 C의 MAC을 찾아 새 Ethernet 헤더를 씌운다. **원문 확인 질문의 답은 “잘못 찾은 것이 아니다”**이다. 최종 목적지는 C이고, 현재 링크에서 맡길 상대는 R이므로 두 헤더의 목적지가 다른 것이 정상이다.
+
+<figure id="drd-l2l3-7" class="l2l3-panel">
+<figcaption>7일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="7일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### DAD와 NUD: 같은 NS라도 질문이 다르다
+
+DAD(Duplicate Address Detection, 중복 주소 탐지)는 새 주소를 쓰기 전에 “누가 이미 이 주소를 쓰는가”를 확인한다. 기본 절차에서 NS의 Target은 검사할 주소, IPv6 출발지는 아직 그 주소를 쓸 수 없으므로 `::`이며, Source Link-Layer Address 옵션을 넣지 않는다. 검사 중인 주소는 tentative 상태다. 이미 주소를 쓰는 노드의 NA뿐 아니라 다른 tentative 노드의 NS도 충돌 판단에 중요하다. 따라서 `::` 출발지 NS를 보고 곧바로 패킷 손상이나 공격이라고 판단하면 정상적인 초기화를 오진한다. [RFC 4862 §§5.4–5.4.5](https://www.rfc-editor.org/rfc/rfc4862.txt)
+
+NUD(Neighbor Unreachability Detection, 이웃 도달 불가 탐지)는 이미 배운 MAC으로 보내는 상대가 여전히 도달 가능한지 확인한다. `STALE`은 “죽었다”가 아니라 “최근 확인이 없다”다. 이 상태의 기존 MAC으로 먼저 보낼 수 있고, 그 뒤 `DELAY`, 필요하면 유니캐스트 NS를 보내는 `PROBE`로 진행한다. 상위 계층의 도달 확인이나 적절한 NA를 받으면 `REACHABLE`로 돌아간다. 이 비동기 상태 기계 덕분에 확인 패킷의 왕복을 매번 데이터 전송의 선행 조건으로 만들지 않는다. [RFC 4861 §7.3.3](https://www.rfc-editor.org/rfc/rfc4861.txt)
+
+### 선택 기준, Linux 함정과 보안 경계
+
+| 선택/설계 | 적합한 상황 | 남는 의무 |
+|---|---|---|
+| SLAAC | 호스트가 광고된 프리픽스로 주소를 스스로 구성하게 할 때 | RA 신뢰 경계, DAD, 주소 수명·생성 정책 관리 |
+| DHCPv6(Dynamic Host Configuration Protocol for IPv6)·수동 주소 | 중앙 주소 관리나 고정 주소 운영이 필요한 경우 | 주소 확보만으로 RA·기본 경로·NDP 문제가 해결되지는 않음 |
+| 정적 이웃 항목 | 작은 고정 장비망의 제한된 진단·운영 | MAC 변경·장애 대응을 운영자가 책임짐; NDP 전체의 대체가 아님 |
+
+SLAAC를 “MAC에 `ff:fe`만 끼워 넣는 알고리즘”으로 고정해서도 안 된다. 오래된 RFC 2464의 주소 생성 설명과 달리, 2017년 [RFC 8064 §3](https://www.rfc-editor.org/rfc/rfc8064.txt)은 안정적인 링크 계층 주소를 그대로 드러내는 IID(Interface Identifier)를 기본값으로 쓰지 말고 RFC 7217 방식의 안정적 주소 생성을 권고한다. 주소 생성 정책은 추적 가능성·프라이버시와 관련된 별도 선택이다.
+
+Linux에서는 IPv6 forwarding을 켜면서 RA 수신 동작이 달라지는 함정이 있다. 공식 [IP Sysctl의 `accept_ra`](https://docs.kernel.org/networking/ip-sysctl.html)는 1을 forwarding 비활성일 때 수락, 2를 forwarding과 무관하게 수락으로 설명한다. 따라서 주소는 남아 있는데 기본 경로만 사라졌다면 NS보다 RA 수신 정책을 먼저 의심할 수 있다. 이것은 점검 기준이지 모든 서버에 `accept_ra=2`를 쓰라는 지시는 아니다.
+
+ICMPv6를 ping 전용으로 여겨 통째로 막으면 RA·NS·NA뿐 아니라 뒤에서 볼 MTU 오류까지 끊는다. ND의 Hop Limit 255 검사는 라우터를 넘어온 위조 메시지를 걸러내는 장치이지 같은 링크의 악성 호스트를 인증하는 장치는 아니다. 같은 링크의 가짜 RA·NA 위협은 별도 신뢰 정책이 필요하며, “멀티캐스트니까 안전하다”는 결론은 성립하지 않는다. [RFC 4861 §§3.3, 11](https://www.rfc-editor.org/rfc/rfc4861.txt)
+
+### 미실행 관측 명령과 읽는 순서
+
+아래는 **미실행·설정 변경 없는 관측 예시**다. `eth0`를 실제 인터페이스로 바꾸고 승인된 장비에서만 캡처한다. 캡처에는 민감한 주소 정보가 포함될 수 있다.
+
+```bash
+ip -6 addr show dev eth0
+ip -6 route show
+ip -6 route get fd12:3456:789a:20::20
+ip -6 neigh show dev eth0
+sysctl net.ipv6.conf.eth0.accept_ra net.ipv6.conf.all.forwarding
+sudo tcpdump -p -eni eth0 -vv -c 30 'icmp6'
+```
+
+주소의 tentative 여부 → 경로의 다음 홉·인터페이스 → 그 다음 홉의 이웃 상태 → RS/RA/NS/NA의 Type·Target·MAC 옵션 순으로 읽는다. `STALE` 하나로 장애를 선언하거나, 라우터 목적 MAC을 보고 최종 목적지 오류라고 판단하지 않는다. 링크 로컬 목적지를 명령에 직접 넣을 때는 `%eth0` 또는 해당 명령의 인터페이스 지정 옵션도 함께 확인한다.
+
+**조사 범위와 한계:** 2026-10-17 KST에 RFC 본문과 Linux 공식 문서를 확인했다. Ethernet상의 일반 IPv6 ND/SLAAC와 Linux 수신 정책이 범위이며, 특정 배포판 기본 설정·실기기 캡처는 검증하지 않았다. 특정 빅테크의 현재 NDP 구성 사례는 조사한 1차 자료로 확인하지 못했으므로 일반 원리를 그 회사의 운영 정책이라고 서술하지 않는다.
+
+## 8일차 LACP — 선을 묶는 협상과 패킷을 나누는 정책은 다른 일이다
+
+### 등장 배경과 표준의 이름
+
+서버의 NIC(Network Interface Card) 한 포트보다 많은 총 처리량과 케이블 장애 대응이 필요할 때, 여러 물리 링크를 상위 계층에는 하나처럼 보이게 만들 수 있다. 이 묶음이 LAG(Link Aggregation Group), 양쪽 장비가 어느 포트를 같은 묶음으로 쓸지 조율하는 제어 프로토콜이 LACP(Link Aggregation Control Protocol)다. Linux의 `bond0`, 스위치의 port-channel은 이런 논리 인터페이스를 드러내는 이름이다. **bonding은 구현 범주, LAG는 묶음, LACP는 그 묶음을 조율하는 프로토콜**이므로 모든 bonding이 LACP를 쓰는 것은 아니다. [Linux Ethernet Bonding Driver HOWTO, Introduction·`mode`](https://docs.kernel.org/networking/bonding.html)
+
+STP(Spanning Tree Protocol)가 중복된 L2 경로에서 루프를 막는 문제를 다룬다면, 링크 집성은 같은 논리적 양 끝 사이의 선들을 한 링크로 노출하는 문제를 다룬다. 집성 밖의 스위치 삼각형까지 사라지는 것이 아니므로 “LACP를 켰으니 STP는 불필요하다”는 결론은 틀리다. 집성의 데이터 경로를 하나의 논리 링크로 취급하는 것과 전체 토폴로지의 루프 없는 성질은 별개의 조건이다.
+
+역사적으로 [IEEE 802.3ad 작업반 기록](https://www.ieee802.org/3/ad/)은 2000년 3월 IEEE 802.3ad-2000 승인을 명시한다. 이후의 표준 계열은 IEEE 802.1AX로 이어지며, [IEEE 802.1AX-2020 공식 개요](https://standards.ieee.org/ieee/802.1AX/6768/)는 2014판을 대체하는 표준으로 설명한다. Linux의 `mode=802.3ad`라는 옵션명이 남았다고 현재 집성 표준의 문서명이 반드시 802.3ad인 것은 아니다. 여기서 확인한 것은 2020 본표준의 개요와 2000년 승인 기록이며, 유료 본문 전체나 후속 개정의 모든 기능을 조사한 것은 아니다.
+
+### LACPDU의 Actor와 Partner가 맞아야 하는 이유
+
+LACP는 IP 주소가 없어도 교환할 수 있는 Ethernet 제어 정보다. LACPDU(LACP Data Unit)는 Slow Protocols EtherType `0x8809`, subtype `0x01`을 사용한다. 통상적인 목적지 MAC은 `01:80:c2:00:00:02`다. Actor는 이 메시지를 보내는 자신, Partner는 자신이 알고 있는 상대이며, 시스템 우선순위·시스템 MAC, 포트 우선순위·번호, Key, 상태 비트 등을 전달한다. Linux의 [`if_ether.h`](https://raw.githubusercontent.com/torvalds/linux/master/include/uapi/linux/if_ether.h)와 [`bond_3ad.h`의 `struct lacpdu`](https://raw.githubusercontent.com/torvalds/linux/master/include/net/bond_3ad.h)는 이 EtherType과 실제 필드 배치를 확인할 수 있는 구현 1차 자료다.
+
+Key는 암호화 비밀이 아니라 해당 시스템 안에서 포트의 집성 호환성을 나타내는 운영 값이다. 양 끝이 같은 숫자의 Key를 수동으로 입력해야 한다는 뜻도 아니다. 중요한 것은 같은 집성에 넣으려는 멤버들의 로컬 특성과 상대 시스템·상대 Key 인식이 일관되는가이다. 케이블을 엉뚱한 장비에 꽂았는데 carrier만 살아 있는 경우, 상대 식별과 동기화 정보를 확인하는 절차가 물리 up만 보는 것보다 더 많은 잘못된 연결을 드러낼 수 있다.
+
+| 항목 | 의미 | 오해하면 생기는 문제 |
+|---|---|---|
+| Active / Passive | 먼저 LACPDU를 보내는가, 상대 요청에 반응하는가 | 주선/예비선으로 오해하여 passive 포트의 데이터 사용을 배제함 |
+| Synchronization | 양쪽의 집성 선택·상태 인식이 맞는가 | 물리 up을 곧 협상 완료로 오인함 |
+| Collecting | 해당 멤버에서 사용자 프레임을 수신할 준비 | 수신 가능 여부와 송신 가능 여부를 같은 값으로 취급함 |
+| Distributing | 해당 멤버로 사용자 프레임을 송신할 준비 | 송신 해시 후보에 단순 up 포트를 모두 포함한다고 생각함 |
+
+Active/active와 active/passive는 협상을 시작할 수 있지만 passive/passive는 서로 기다린다. Passive도 정상 집성 뒤에는 사용자 데이터를 받을 수 있고 보낼 수 있다. Linux `802.3ad` 모드는 동일 속도·duplex 조건의 그룹을 만들며 스위치 포트도 집성에 맞게 구성해야 한다. VLAN(Virtual Local Area Network), trunk 허용 목록, 태그·MTU 일관성은 운영자가 맞출 조건이지 LACP가 사용자 설정을 자동 복제하는 기능이 아니다. [Linux bonding의 `lacp_active`, `mode`, `xmit_hash_policy`](https://docs.kernel.org/networking/bonding.html), [Cisco Catalyst 9000 공식 장애 분석의 LACP Flags·Basic Checks](https://www.cisco.com/c/en/us/support/docs/switches/catalyst-9300-series-switches/220367-troubleshoot-etherchannels-on-catalyst-9.html)
+
+### 두 10 Gb/s 멤버에서 A의 패킷 하나를 추적하기
+
+설명용 서버 A는 `eth1`, `eth2` 두 10 Gb/s 포트로 같은 스위치 S에 연결되고, IP 주소는 개별 포트가 아니라 `bond0`에 둔다. 둘 다 사용 가능한 멤버이며 왼쪽은 VLAN 10이다. B는 같은 LAN, C는 라우터 R 너머에 있고 A의 기본 게이트웨이는 R 왼쪽이다. C의 반환 경로도 존재하며 NAT는 없다.
+
+| 대상 | 주소 | MAC |
+|---|---|---|
+| A bond0 | `192.168.10.10/24` | `02:00:00:00:10:10` |
+| B | `192.168.10.20/24` | `02:00:00:00:10:20` |
+| R 왼쪽 | `192.168.10.1/24` | `02:00:00:00:10:01` |
+| R 오른쪽 | `192.168.20.1/24` | `02:00:00:00:20:01` |
+| C | `192.168.20.20/24` | `02:00:00:00:20:20` |
+
+A→B에서는 먼저 B를 ARP로 찾아 `A MAC → B MAC`, `A IP → B IP`인 프레임을 만든다. 그 다음 bond의 송신 정책이 어느 물리 멤버로 내보낼지 정한다. S는 A의 위치를 논리 집성으로 취급하고 B에게 전달한다. B→A 응답에서 멤버를 고르는 주체는 서버가 아니라 **S의 송신 분산 정책**이다. 따라서 요청과 응답이 서로 다른 물리선을 사용해도 이상이 아니다.
+
+A→C에서도 bond가 최종 목적지 C를 다음 홉으로 바꾸는 일은 없다. A의 라우팅 결과에 따라 R 왼쪽 MAC을 ARP로 알아내고, `A MAC → R MAC` 안에 `A IP → C IP`를 넣는다. bond는 이 프레임의 출력 멤버만 정한다. R이 받은 뒤 경로를 조회하고 TTL(Time To Live)을 감소시키며, 오른쪽에서 C의 MAC을 찾아 새 Ethernet 헤더를 만든다. **LACP가 라우팅 테이블을 계산하거나 다음 홉을 선택하는 것은 아니다.**
+
+### 단일 연결은 왜 두 배가 아닌가: 순서와 해시의 교환관계
+
+LACP가 답하는 것은 “어느 포트를 사용할 수 있는가”다. 패킷별로 어느 멤버를 고르는가는 송신 측의 분산 정책이 답한다. 여러 선으로 패킷을 무조건 번갈아 보내면 큐 지연 차이만 있어도 도착 순서가 뒤집힐 수 있다. 일반적인 집성은 이 위험을 줄이기 위해 안정된 멤버 구성에서 같은 conversation을 같은 멤버에 대응시킨다. Linux 문서는 아래 정책을 구분한다. [bonding `xmit_hash_policy`](https://docs.kernel.org/networking/bonding.html)
+
+| Linux 정책 | 주된 입력 | 효과와 제한 |
+|---|---|---|
+| `layer2` | 출발·목적 MAC, packet type | 기본 정책. 같은 게이트웨이로 나가는 원격 통신들이 같은 입력이 되어 한 멤버에 몰릴 수 있음 |
+| `layer2+3` | MAC과 IP 주소 | 원격 목적 IP 다양성이 있으면 분산에 도움. 같은 주소 쌍의 여러 TCP 연결은 분리되지 않을 수 있음 |
+| `layer3+4` | IP와 TCP/UDP 포트 | 같은 서버 쌍의 여러 연결을 나눌 수 있음. 단일 연결은 여러 멤버를 합산하지 않음 |
+| `encap2+3` / `encap3+4` | flow dissector가 찾아낸 헤더 | 지원되는 캡슐화에서 내부 흐름 다양성을 활용할 수 있으나 환경별 헤더 해석 확인 필요 |
+
+TCP(Transmission Control Protocol), UDP(User Datagram Protocol)의 포트를 쓰면 연결을 더 잘 구분할 수 있지만 공짜는 아니다. Linux는 `layer3+4`에서 단편화·비단편화 패킷이 같은 conversation 안에 섞이면 포트 정보를 사용할 수 있는 경우와 없는 경우의 해시가 달라져 순서가 뒤집힐 수 있고, 이 정책은 완전한 802.3ad 준수가 아니라고 경고한다. “L4 해시가 항상 더 좋다”가 아니라 트래픽 특성과 순서 요구를 함께 보라는 뜻이다.
+
+두 10 Gb/s 링크의 합산 명목 용량은 20 Gb/s이나, 이와 같은 일반적인 해시 집성에서 단일 TCP 연결은 한 10 Gb/s 멤버의 용량 이하에 머문다. 프레임 오버헤드나 다른 병목이 있으면 애플리케이션 처리량은 더 낮다. 여러 연결도 정확한 반반 분산을 보장하지 않으며, hash는 남은 대역폭을 측정해 가장 한가한 선을 찾는 스케줄러와 같지 않다. **원문 확인 질문처럼 원격 서버가 여러 개인데 eth1만 바쁘다면 첫 점검은 송신 정책과 실제 입력 헤더의 다양성**이다. `layer2`에서 목적 MAC이 모두 같은 게이트웨이라면 협상이 정상이어도 쏠릴 수 있다.
+
+<figure id="drd-l2l3-8" class="l2l3-panel">
+<figcaption>8일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="8일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 장애 대응에서 구분할 감지, 집성 상태, 상위 서비스 정책
+
+케이블 단선, 상대의 LACP 응답 중단, 원격 서버까지의 장애는 같은 사건이 아니다. `miimon`은 멤버의 링크 상태를 주기적으로 확인하고, `lacp_rate=fast`는 상대에게 짧은 주기의 LACPDU 전송을 요청한다. 공식 문서의 slow/fast 요청 주기는 각각 30초/1초지만, 그것을 곧바로 서비스의 전체 복구 시간으로 바꾸면 안 된다. 실제 복구에는 물리 감지·LACP 상태 전이·해시 재배치·상위 계층 재전송이 겹친다. [Linux bonding `miimon`, `lacp_rate`](https://docs.kernel.org/networking/bonding.html)
+
+장애 멤버를 제외하면 남은 선으로 흐름을 재배치할 수 있으나 전환 중 손실·재정렬이 사라지는 것은 아니다. Linux `min_links`는 집성이 carrier를 주장하기 위해 필요한 최소 활성 링크 수를 정한다. 두 선 중 하나가 살아도 서비스 유지가 가능한 시스템과, 한 선만으로는 필요한 처리량을 제공하지 못해 아예 상위 서비스의 전환을 유도해야 하는 시스템은 이 정책이 달라야 한다. “가용성”을 단순히 케이블 하나만 살아도 up이라고 정의할지, 최소 처리량 충족으로 정의할지 먼저 합의해야 한다. [Linux bonding `min_links`](https://docs.kernel.org/networking/bonding.html)
+
+| 대안 | 선택할 상황 | 교환관계 |
+|---|---|---|
+| LACP 집성 | 상대도 집성을 지원하고 여러 흐름의 총량·링크 중복이 필요 | 양쪽 구성과 해시 관측이 필요; 단일 흐름 합산은 아님 |
+| Active-backup bonding | 대역폭 합산보다 단순한 링크 장애 대응이 우선 | 정상 시 한 멤버만 사용; 절체 시 MAC 학습·이웃 갱신도 고려 |
+| Static 집성 | 프로토콜 협상 없이 양 끝을 엄격하게 관리할 수 있음 | 상대 식별·동기화 확인을 LACP에 맡기지 못해 잘못된 배선·구성에 주의 |
+| 더 빠른 단일 포트 | 단일 흐름 자체의 최대 속도를 높여야 함 | 포트·광모듈 비용 및 단일 링크 장애 대책을 별도로 검토 |
+
+이 표는 문서화된 동작에서 도출한 선택 기준이지 제품 성능 실험 결과가 아니다. 또한 일반적인 단일 LAG를 서로 독립된 스위치 두 대에 임의로 걸치면 안 된다. 다중 섀시 집성은 상대들이 하나의 논리적 집성 상대처럼 동작하게 하는 별도 기술·설계가 필요하며, 이번 조사에서는 특정 MLAG(Multi-Chassis Link Aggregation) 제품의 장애 의미론까지 검증하지 않았다.
+
+### 미실행 관측 명령과 검증 범위
+
+아래는 **미실행·설정 변경 없는 예시**이며 이미 구성된 `bond0`를 전제로 한다. LACPDU는 논리 인터페이스만 보지 말고 실제 물리 멤버에서도 관측한다.
+
+```bash
+ip -d link show bond0
+ip -s link show eth1
+ip -s link show eth2
+less /proc/net/bonding/bond0
+ip route get 192.168.20.20
+sudo tcpdump -p -eni eth1 -vv -c 10 'ether proto 0x8809'
+```
+
+모드와 송신 hash → Actor/Partner·Aggregator → Synchronization·Collecting·Distributing → 양쪽 멤버 카운터를 연결해서 읽는다. Slow Protocols 캡처에는 다른 subtype도 포함될 수 있으므로 subtype 1인지 확인한다. 단일 연결 벤치마크 하나로 집성 총량을 판정하지 말고, 승인된 시험에서 다중 연결과 양방향을 구분해야 한다.
+
+**조사 범위와 한계:** 2026-10-17 KST에 Linux 공식 bonding 문서, 커널 자료 구조, IEEE 공식 개요, Cisco Catalyst 9000 문서를 읽었다. kernel.org 문서는 rolling 문서이고 문서 안의 오래된 갱신 일자가 현재 배포판의 옵션 지원 버전을 보장하지 않는다. Cisco의 장비 출력은 업체의 문서 예이지 여기서 실행한 결과나 빅테크의 실제 배포 사례가 아니다. 상대 MAC·필드·상태는 확인했으나 IEEE 본표준 전체에 대한 적합성 인증은 하지 않았다.
+
+## 9일차 MTU/PMTUD — 경로가 있다는 사실은 큰 패킷이 통과한다는 뜻이 아니다
+
+### 크기의 기준점을 먼저 정한다
+
+MTU(Maximum Transmission Unit)는 여기서 **한 링크에 보낼 수 있는 IP 패킷 전체의 최대 길이**를 뜻한다. IP 헤더와 IP 데이터는 포함하지만 Ethernet 헤더와 FCS(Frame Check Sequence)는 제외한다. 따라서 MTU 1500은 애플리케이션 데이터 1500바이트도 Ethernet 프레임 전체 1500바이트도 아니다. PMTU(Path MTU)는 선택된 경로의 링크 MTU 중 최솟값이며, PMTUD(Path MTU Discovery)는 송신자가 그 제한에 맞게 패킷 크기를 조정하도록 정보를 얻는 과정이다. [RFC 1191 §§1, 4](https://www.rfc-editor.org/rfc/rfc1191.txt), [RFC 8201 §§2–3](https://www.rfc-editor.org/rfc/rfc8201.txt)
+
+라우팅은 다음 홉을, ARP/NDP 이웃 정보는 다음 홉의 링크 계층 주소를, PMTU 정보는 그 경로에 내보낼 크기를 결정하는 데 관여한다. 경로가 바뀌면 PMTU도 달라질 수 있고 A→C와 C→A의 경로가 다르면 값도 다를 수 있다. ECMP(Equal-Cost Multipath, 동일 비용 다중 경로)까지 있으면 같은 목적지라도 여러 실제 경로가 존재할 수 있다. RFC 8201 §5.2가 PMTU 저장 키를 목적지·흐름·인터페이스 등 구현상의 경로 표현과 함께 논의하는 이유다. 이 값을 “네트워크 전체의 MTU 하나”로 단순화하면 터널과 경로 변경에서 문제가 드러난다.
+
+### 왜 단편화 대신 탐색을 하는가: 표준의 진화
+
+IPv4는 라우터가 패킷을 잘라서 전달하고 수신자가 재조립하는 단편화를 허용했다. 하지만 그러려면 조각을 식별하고 재조립 상태를 유지해야 하며, 일부 조각만 잃어도 원래 데이터그램 전체를 완성하지 못한다. 1990년 Mogul·Deering의 RFC 1191은 DF(Don't Fragment) 비트와 ICMP 오류를 이용해 애초에 통과 가능한 크기로 보내는 방법을 정의했다. 이 문서는 RFC 1063을 대체했고, “가장 작은 값으로 무조건 낮춰 보내기”와 “중간에서 알아서 조각내기” 사이에서 경로에 맞는 효율을 얻으려는 설계다. [RFC 1191 Abstract·§2](https://www.rfc-editor.org/rfc/rfc1191.txt)
+
+IPv6는 이 책임을 더 명확히 송신 측으로 옮겼다. IPv6 라우터는 단편화하지 않고, 출력 링크에 비해 너무 크면 ICMPv6 Packet Too Big을 돌려준다. 송신자가 크기를 줄이거나 Fragment 헤더로 송신 측 단편화를 할 수 있으므로 “IPv6에는 단편화가 전혀 없다”는 말도 틀리다. IPv6 본체에는 IPv4의 DF 비트가 없다. 2017년 RFC 8201은 1996년 RFC 1981을 대체했고, [RFC 8200 §§4.5, 5](https://www.rfc-editor.org/rfc/rfc8200.txt)는 라우터/송신자의 책임과 최소 링크 MTU 1280을 설명한다. 1280은 물리 링크가 반드시 한 프레임에 전송해야 한다는 뜻이 아니라, 더 작은 하부 매체는 IPv6 아래 계층에서 분할·재조립을 제공해야 한다는 요구다.
+
+### A→B는 되는데 A→C는 멈추는 토폴로지
+
+설명용 망은 A·B가 S를 통해 R1 왼쪽 LAN에 있고, R1–R2를 거쳐 C로 간다. 왼쪽 LAN과 R2–C의 MTU는 1500, **R1–R2만 1400**이다. NAT·터널은 없고 양방향 경로가 갖춰져 있다고 가정한다.
+
+| 구간/노드 | 주소·역할 | 확인할 링크 계층 정보 |
+|---|---|---|
+| A | `192.168.10.10/24` | MAC `02:00:00:00:10:10` |
+| B | `192.168.10.20/24` | MAC `02:00:00:00:10:20` |
+| R1 왼쪽 | `192.168.10.1/24`, A의 게이트웨이 | MAC `02:00:00:00:10:01` |
+| R1–R2 | `10.0.12.1/30` ↔ `10.0.12.2/30` | 출력 MTU 1400 |
+| R2 오른쪽 | `192.168.20.1/24`, C의 게이트웨이 | C와 연결된 LAN |
+| C | `192.168.20.20/24` | MAC `02:00:00:00:20:20` |
+
+A→B는 B의 MAC을 ARP로 찾아 S를 통해 직접 전달한다. 이 경로에 1400 링크는 없으므로 1500바이트 IP 패킷을 보낼 수 있다. 반면 A→C의 첫 프레임은 `A MAC → R1 왼쪽 MAC`, 내부 IP는 `A IP → C IP`다. 이때 A의 인터페이스 MTU가 1500이어도 경로 전체의 PMTU는 1400이다. S 같은 L2 스위치가 IP 패킷을 출력 링크에 맞게 잘라 주는 것은 아니다.
+
+### IPv4 PMTUD: 원본 데이터와 오류 메시지는 별개다
+
+처음에 더 작은 PMTU를 모르는 A가 DF=1인 1500바이트 IP 패킷을 보내면 R1은 경로상 다음 홉 R2를 선택한다. 그러나 출력 MTU는 1400이고 단편화는 금지되어 있으므로 원본 패킷을 버린다. 대신 A에게 ICMP Type 3(Destination Unreachable), Code 4(fragmentation needed and DF set), Next-Hop MTU=1400인 **새 오류 패킷**을 보낸다. 오류에는 원래 IP 헤더와 데이터 일부가 인용되어 어느 통신에 대한 오류인지 식별하도록 돕는다. 이 형식은 [RFC 1191 §4](https://www.rfc-editor.org/rfc/rfc1191.txt)에 정의되어 있다.
+
+A는 오류를 확인해 PMTU 추정치를 낮춘다. TCP라면 미확인 데이터를 더 작은 세그먼트로 나누어 재전송할 수 있다. 오류 메시지가 이미 버린 원본의 나머지를 목적지까지 운반해 주는 것이 아니다. 수정된 데이터 패킷이 R1–R2–C를 통과할 때 IP 목적지는 여전히 C이고 Ethernet 헤더는 각 구간의 송신·다음 홉 MAC으로 바뀐다. 더 작은 링크가 뒤에 또 있으면 탐색을 반복한다. 반대로 라우팅이 바뀌어 더 큰 패킷도 통과할 수 있게 된 경우를 알아내려면 별도의 재탐색이 필요하다. 한 번 학습한 PMTU를 영원히 고정하는 것이 설계 목표는 아니다. [RFC 1191 §§2, 6.3–6.4](https://www.rfc-editor.org/rfc/rfc1191.txt)
+
+DF=0이면 IPv4 라우터는 필요에 따라 단편화할 수 있고 최종 수신자가 재조립한다. 그러나 이것을 PMTUD 장애의 만능 해결책으로 쓰면 조각 손실·중간 장비 처리·재조립 부담이라는 다른 실패 경계로 문제를 옮길 뿐이다. IPv6에서는 이 라우터 단편화 우회가 없으므로 Packet Too Big의 정상 전달이나 송신 측의 다른 탐색 방식이 더욱 중요하다.
+
+<figure id="drd-l2l3-9" class="l2l3-panel">
+<figcaption>9일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="9일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### MSS는 TCP 데이터 제한이지 경로 크기의 증명서가 아니다
+
+MSS(Maximum Segment Size)는 TCP 데이터 길이 제한이다. 기본 IPv4 헤더 20바이트와 TCP 헤더 20바이트, 옵션 없음이라는 조건에서 PMTU가 1400이면 TCP 데이터 상한은 `1400 - 20 - 20 = 1360`바이트다. IPv6 기본 헤더 40바이트와 TCP 기본 헤더 20바이트만 있다면 같은 계산은 1340바이트다. 실제로는 IP/TCP 옵션과 IPv6 확장 헤더를 반영해야 하며 상대가 광고한 MSS도 지켜야 한다. 상대 MSS를 알았다는 것은 상대의 수신 한도를 아는 것이지 R1–R2 중간 링크를 측정했다는 뜻이 아니다. [RFC 1191 §§3.1, 6.4](https://www.rfc-editor.org/rfc/rfc1191.txt), [RFC 8201 §5.5](https://www.rfc-editor.org/rfc/rfc8201.txt)
+
+이 구분은 “작은 ping은 되는데 큰 전송이 멈춘다”는 증상을 설명한다. TCP의 연결 수립 패킷과 작은 요청은 제한보다 작아 통과하지만, 큰 데이터 패킷은 버려지고 그 사실을 알려야 할 ICMP까지 방화벽이나 잘못된 내부 라우팅에 막히면 송신자는 크기를 낮출 근거를 잃는다. 이것이 PMTUD 블랙홀이다. 다만 혼잡·필터·애플리케이션 지연도 비슷한 증상을 낼 수 있으므로 증상만으로 확정하지 않는다. [RFC 8201 §5.5](https://www.rfc-editor.org/rfc/rfc8201.txt)
+
+### ICMP가 오지 않을 때의 대안과 선택 기준
+
+PLPMTUD(Packetization Layer Path MTU Discovery)는 IP 위에서 실제 전송 단위를 만드는 계층이 작은 패킷부터 시작해 더 큰 probe를 보내고 성공 여부를 확인하는 방법이다. 2007년 [RFC 4821 §§1–2](https://www.rfc-editor.org/rfc/rfc4821.txt)은 ICMP 없이도 동작하도록 하는 원리를 설명한다. 2020년 [RFC 8899 §3](https://www.rfc-editor.org/rfc/rfc8899.txt)은 Datagram PLPMTUD(DPLPMTUD)를 정의하면서 데이터그램용 probe, 수신 피드백, probe 손실 처리의 요구를 명시했다. UDP 자체에는 수신 확인이 없으므로 “UDP 소켓을 열면 커널이 모든 앱에 완성된 DPLPMTUD를 제공한다”는 뜻이 아니다. 손실은 혼잡 때문일 수도 있으므로 단일 probe 유실을 무조건 정확한 MTU 증거로 해석해서도 안 된다.
+
+| 방식 | 적합한 조건 | 한계/운영 책임 |
+|---|---|---|
+| 고전적 PMTUD | 라우터의 ICMP 오류가 송신 측까지 도달 | 오류 필터·잘못된 분산 전달·위조 오류 검증에 주의 |
+| TCP PLPMTUD | ICMP 블랙홀에도 복구할 여지가 필요 | TCP별 설정·탐색 지연이 있으며 다른 UDP 앱을 대신 고치지 않음 |
+| 데이터그램 DPLPMTUD | 전송·애플리케이션이 probe 수신 피드백을 구현 | 피드백·probe 타이머·혼잡과 손실 구분을 설계해야 함 |
+| TCP MSS 조정 | 관리되는 경계에서 TCP 크기 문제를 완화 | UDP·기타 IP 트래픽에는 효과 없음; PMTU 자체의 탐색과 다름 |
+| 보수적인 터널 MTU | 하부 경로와 캡슐화 상한을 통제할 수 있음 | 더 많은 패킷·헤더 비용, 향후 경로 변화 가능성 |
+
+Linux 공식 [IP Sysctl의 `tcp_mtu_probing`](https://docs.kernel.org/networking/ip-sysctl.html)은 0=비활성, 1=기본 비활성이지만 ICMP 블랙홀 탐지 때 활성, 2=항상 활성으로 설명한다. 이것은 동작 설명이지 운영 서버에서 즉시 값을 바꾸라는 지시가 아니다. 먼저 오류가 실제 어디서 끊기는지 확인하고, 승인된 시험으로 영향 범위를 구분해야 한다. 터널에서는 외부 IP·UDP·보안 헤더 등이 추가되므로 내부 IP 패킷에 하부 MTU를 그대로 허용하면 초과할 수 있다. 오버헤드는 프로토콜·주소 계열·옵션에 따라 달라지므로 “터널이면 항상 몇 바이트 뺀다”는 단일 상수로 처리하지 않는다.
+
+### 실제 공개 사례: Cloudflare가 ICMP를 수신 서버까지 돌려보내야 했던 이유
+
+Cloudflare의 2015-02-04 [「Path MTU discovery in practice」](https://blog.cloudflare.com/path-mtu-discovery-in-practice/)는 IPv6-over-IPv4 터널 이용자 일부가 서비스에 접근하지 못했던 장애와 대응을 공개한다. 문제는 단지 작은 링크가 있다는 사실이 아니라, 내부 ECMP가 ICMP 오류를 해당 흐름을 처리하는 서버로 반드시 보내주지 않는다는 데 있었다. 당시 임시 대응으로 IPv6 MTU를 낮추고 IPv4에 RFC 4821 탐색을 사용했으며, 관련 ICMP를 서버들에 전달하는 Path MTU Daemon도 공개했다.
+
+교훈은 “큰 회사도 무조건 MTU 1280을 쓴다”가 아니다. **오류의 외부 헤더를 라우팅하는 것과 오류에 인용된 원래 흐름의 소유자를 찾는 것이 다를 수 있다**는 점이다. 이 사례는 2015년 장애 보고의 범위로만 인용하며 Cloudflare의 현재 전체 망 설정으로 일반화하지 않는다. 전면 MTU 축소는 신속한 완화일 수 있어도 경로별 최적 크기를 영구히 대체한다는 결론은 아니다.
+
+### 미실행 관측 명령과 원문 확인 질문
+
+아래는 **미실행 예시**다. `ip`, `sysctl`, `ss`, `ethtool -k`는 조회이며 `ping`은 시험 패킷을 발생시킨다. 캡처는 다른 터미널에서 승인된 인터페이스에 실행하는 상황을 가정한다.
+
+```bash
+ip link show dev eth0
+ip route get 192.168.20.20
+sysctl net.ipv4.tcp_mtu_probing
+ss -ti
+ethtool -k eth0
+sudo tcpdump -p -ni eth0 -vv -c 20 'icmp'
+ping -4 -c 3 -W 2 -M do -s 1472 192.168.20.20
+ping -4 -c 3 -W 2 -M do -s 1372 192.168.20.20
+```
+
+`ping -s`는 IP 패킷 전체가 아니라 ICMP 데이터 길이다. IPv4 옵션이 없으면 `1472 + 8 + 20 = 1500`, `1372 + 8 + 20 = 1400`이다. [`ping(8)`의 `-M do`](https://man7.org/linux/man-pages/man8/ping.8.html)는 DF를 설정하면서 커널의 기존 PMTU 검사도 받는다. 이미 PMTU 1400을 배웠다면 큰 요청이 A에서 거절될 수 있으므로 “R1이 큰 ping을 버렸다”고 단정하기 전에 실제 송신 여부를 보아야 한다.
+
+숙련된 Linux 개발자에게는 또 하나의 경계가 있다. TSO(TCP Segmentation Offload), GSO(Generic Segmentation Offload), GRO(Generic Receive Offload) 때문에 호스트 관측 지점의 skb 단위와 선로상의 실제 IP 패킷 크기가 다를 수 있다. 캡처에 MTU보다 큰 길이가 보인다고 곧바로 선로에 초대형 패킷이 나갔다고 결론 내리지 말고 offload 상태·캡처 위치·다른 쪽의 관측을 대조한다. 이는 [Linux 공식 Segmentation Offloads의 TSO·GSO·GRO 설명](https://docs.kernel.org/networking/segmentation-offloads.html)에서 도출하는 진단상의 주의다.
+
+**원문 확인 질문의 답:** B에는 큰 ping이 되지만 C에는 작은 ping만 된다면 R1 출력 MTU와 해당 패킷의 DF → A로 돌아오는 Type 3/Code 4 및 방화벽 → A의 PMTU 추정·로컬 거절 여부 순으로 확인한다. “목적지가 살아 있다”와 “이 크기가 이 방향 경로를 통과한다”는 서로 다른 주장이다.
+
+**조사 범위와 한계:** 2026-10-17 KST에 IPv4/IPv6 PMTUD·PLPMTUD RFC와 Linux 공식 문서, ping 매뉴얼, 날짜가 명시된 Cloudflare 사례를 읽었다. 예시 바이트·비용 계산은 별도로 산술 확인했으나 네임스페이스·라우터·실망에서 패킷을 보내거나 설정을 변경하지 않았다. ICMP 인용 패킷 검증과 PMTU 캐시의 정확한 내부 자료 구조는 커널 버전별 소스까지 추적하지 않았으므로 특정 배포판 구현을 단정하지 않는다.
+
+## 10일차 OSPF — 장애 뒤의 새 길은 제어 평면이 계산하고 데이터 평면이 사용한다
+
+### 왜 정적 경로만으로는 운영 부담이 커지는가
+
+작은 망에서는 “B의 프리픽스는 R2로 보내라”는 정적 경로만으로도 통신한다. 그러나 링크와 라우터가 늘면 변경할 표와 장애 조합도 늘어난다. OSPF(Open Shortest Path First)는 라우터들이 자신 주변의 연결 상태를 공유하고 각자가 최단 경로를 계산하게 하는 IGP(Interior Gateway Protocol, 내부 게이트웨이 프로토콜)다. 여기서 Open은 공개 표준 계열, Shortest Path First는 홉 수가 아니라 설정된 비용에 대한 최소 경로 계산을 가리킨다. 조직 내부의 도달성을 자동화하는 것이 목적이며 인터넷 전체의 정책 라우팅을 이 이름 하나로 대신하는 것은 아니다. [RFC 2328 §§1–1.3](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+Link-state 기술은 ARPANET의 초기 설계와 IS-IS(Intermediate System to Intermediate System)의 관련 아이디어를 배경으로 발전했고, IETF OSPF 작업반은 DR·멀티캐스트·영역 계층 등을 더했다. John Moy가 작성한 1998년 RFC 2328은 RFC 2178을 대체한 OSPFv2 표준이다. IPv6용으로 수정한 OSPFv3는 2008년 [RFC 5340](https://www.rfc-editor.org/rfc/rfc5340.txt)이 RFC 2740을 대체했다. 이어 2010년 [RFC 5838](https://www.rfc-editor.org/rfc/rfc5838.txt)은 OSPFv3의 address family 확장을 정의하므로 “v2=IPv4, v3=오직 IPv6”는 입문용 구분이지 영구적인 기능 제한은 아니다. 이 절의 실제 예제는 원문과 동일하게 **IPv4 OSPFv2, 단일 Area 0**으로 제한한다.
+
+### LSDB, RIB, FIB, ARP는 서로 다른 표다
+
+OSPF 패킷은 TCP나 UDP를 사용하지 않고 IPv4 Protocol 필드 89로 운반된다. “89번 포트”를 열겠다는 표현은 계층을 혼동한 것이다. 사용자 데이터를 OSPF 패킷 안에 넣는 것도 아니다. OSPF는 제어 평면에서 경로를 계산하도록 돕고, 실제 데이터 평면은 이미 설치된 경로를 이용한다. [RFC 2328 Appendix A.1·§8](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+| 정보 | 담고 있는 것 | 이것만 정상이어도 보장하지 않는 것 |
+|---|---|---|
+| Neighbor 상태 | 어느 Router ID와 어느 동기화 단계인가 | 최종 호스트까지 도달 가능 |
+| LSDB(Link State Database) | LSA(Link State Advertisement)로 표현한 토폴로지·도달 정보 | 그 정보가 반드시 커널에 설치됨 |
+| OSPF 계산 결과 | SPF(Shortest Path First)의 비용·다음 홉 | 다른 경로 소스와의 선택에서 반드시 우승함 |
+| RIB(Routing Information Base) | 라우팅 소프트웨어가 다루는 경로 후보와 선택 | 데이터 평면 설치가 반드시 성공함 |
+| FIB(Forwarding Information Base) | 실제 전달에 쓰도록 설치한 경로 | 다음 홉의 MAC을 이미 알고 있음 |
+| ARP 이웃 테이블 | 다음 홉 IPv4 주소의 MAC·상태 | 목적지 프리픽스의 경로가 존재함 |
+
+LSDB는 지도, SPF는 출발점에서 길을 계산하는 과정, FIB는 실제 전달에 쓰는 결과다. 같은 영역의 라우터들은 수렴 뒤 해당 영역의 관련 LSA에 대해 일관된 지도를 갖도록 하지만, 각자가 루트이므로 다음 홉은 다르다. 이 영역 범위를 빼고 “AS(Autonomous System) 전체의 모든 라우터가 언제나 동일한 LSDB”라고 말하면 다중 영역과 수렴 중간 상태를 설명하지 못한다. Linux의 FRR(FRRouting)에서는 OSPF 데몬의 계산 결과와 라우팅 관리자·커널에 설치된 상태를 나눠 관찰하는 것이 이 구분의 실용적인 출발점이다. [RFC 2328 §§2–3, 16](https://www.rfc-editor.org/rfc/rfc2328.txt), [FRR 공식 OSPFv2 문서](https://docs.frrouting.org/en/latest/ospfd.html)
+
+### Hello에서 Full까지: 서로 안다는 것과 DB가 맞는 것은 다르다
+
+Ethernet에서 Hello는 보통 AllSPFRouters `224.0.0.5`로 전송된다. 이웃 관계를 만들려면 영역, 인증, HelloInterval·RouterDeadInterval, 해당 망 유형에서 요구되는 옵션 등의 조건이 맞아야 한다. 네트워크 마스크도 검사하지만 point-to-point와 virtual link에서는 그 필드를 무시하는 예외가 있다. 받은 Hello의 이웃 목록에 자기 Router ID가 있어야 양방향 통신이 확인된 **2-Way**다. Router ID는 IPv4 주소처럼 표기하는 32비트 식별자이며 반드시 실제 데이터 전달용 인터페이스 주소일 필요는 없다. [RFC 2328 §§10.1, 10.5](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+그 뒤 인접 관계를 만들 대상으로 선택된 이웃과 DB를 동기화한다. **ExStart**에서는 Database Description(DD/DBD)의 교환 순서를 위한 역할·시퀀스를 정하고, **Exchange**에서는 LSA 헤더 요약을 비교한다. 빠지거나 오래된 항목은 Link State Request로 요청하고 Link State Update로 받으며 Link State Acknowledgment로 확인한다. 추가 요청을 처리하는 **Loading**을 거쳐 동기화가 끝나면 **Full**이다. OSPF의 다섯 패킷 종류는 Hello, Database Description, Link State Request, Link State Update, Link State Acknowledgment다. **LSA는 정보 단위이고 Update는 LSA를 운반하는 패킷**이므로 Update 하나와 LSA 하나를 항상 일대일로 생각하지 않는다. [RFC 2328 §§10, 13, Appendix A.3](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+LSA가 들어오면 오래된 정보를 무조건 덮어쓰는 것도 아니다. 같은 LSA는 LS type·Link State ID·Advertising Router로 식별하고 sequence number, checksum, age 등의 규칙으로 최신 인스턴스를 판별한다. flooding과 확인·재전송은 이 지도를 이웃에게 신뢰성 있게 확산하는 기제다. LSDB를 단순히 “수신한 라우팅 패킷의 마지막 값”으로 구현하면 중복·역순 도착과 장애 후 오래된 정보가 남는 문제를 해결할 수 없다. [RFC 2328 §§12.1.6–12.1.7, 13.1](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+### 공유 LAN의 DR/BDR와 point-to-point를 구분한다
+
+공유 Ethernet에서 모든 라우터 쌍을 완전한 인접 관계로 유지하면 동기화·전파 관계가 많아진다. OSPF는 DR(Designated Router, 지정 라우터), BDR(Backup Designated Router, 백업 지정 라우터)을 두어 이를 조직한다. DR/BDR이 아닌 두 라우터 사이에서는 2-Way가 정상일 수 있다. 반면 두 끝만 있는 point-to-point 유형은 별도의 DR 선거 없이 완전 인접 관계를 맺는 흐름으로 이해할 수 있다. **이웃이 모두 Full이어야 정상이라는 규칙은 망 유형을 무시한 오진**이다. DR은 사용자 트래픽을 반드시 경유하는 중앙 게이트웨이가 아니라 해당 공유망의 제어 정보 교환을 조직하는 역할이다. [RFC 2328 §§7, 9.4, 10.4](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+### 비용 21과 51: 홉이 더 많아도 더 짧은 길
+
+설명용 구성에서 A와 C는 R1 왼쪽 LAN, B는 R3 오른쪽 LAN에 있다. 라우터 사이 Ethernet은 양 끝 모두 OSPF point-to-point 유형이고 모든 라우터는 Area 0이다. R1→R2와 R2→R3의 출력 cost는 각각 10, R1→R3 직통은 50, R3→B LAN은 1로 명시했다고 가정한다. 반대 방향 비용도 이 예제에서는 같고 반환 경로도 갖췄다.
+
+| 노드/링크 | 주소 |
+|---|---|
+| A / C / R1 왼쪽 | `192.168.10.10/24` / `192.168.10.20/24` / `192.168.10.1/24` |
+| R1–R2 | `10.0.12.1/30` ↔ `10.0.12.2/30` |
+| R2–R3 | `10.0.23.1/30` ↔ `10.0.23.2/30` |
+| R1–R3 | `10.0.13.1/30` ↔ `10.0.13.2/30` |
+| R3 오른쪽 / B | `192.168.30.1/24` / `192.168.30.20/24` |
+| A / R1 왼쪽 / B MAC | `02:00:00:00:10:10` / `02:00:00:00:10:01` / `02:00:00:00:30:20` |
+
+A→C는 같은 서브넷이므로 C의 MAC을 ARP로 알아내어 S를 통해 직접 보낸다. OSPF가 계산한 라우터 간 경로를 쓰지 않는다. A→B에서는 A의 기본 게이트웨이 R1이 첫 다음 홉이다. 첫 프레임은 `A MAC → R1 MAC`, 내부 IP는 `A IP → B IP`다. R3의 LAN 정보가 반영되면 R1은 R2 경유의 `10 + 10 + 1 = 21`과 직통의 `50 + 1 = 51`을 비교하여 R2를 선택한다. 같은 영역 내부 경로의 SPF는 가중 방향 그래프의 최소 비용을 계산한다. 홉 수만 줄이는 알고리즘이 아니다. [RFC 2328 §16.1](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+R1의 데이터 평면은 설치된 경로로 다음 홉 `10.0.12.2`를 정하고, ARP로 그 MAC을 찾아 새 프레임을 만든다. R2는 R3에게, R3는 B에게 같은 방식으로 전달한다. NAT 없는 이 예제에서 IP 출발지·목적지는 유지되고 TTL은 라우터마다 감소하며 Ethernet 헤더는 구간마다 바뀐다. 데이터 패킷마다 LSDB 전체에서 Dijkstra 알고리즘을 다시 돌리는 것이 아니다. 동일 비용의 다음 홉들이 있다면 ECMP가 가능하지만, 이 예제의 21과 51은 동일 비용이 아니므로 둘 다 쓰는 예로 해석하지 않는다.
+
+<figure id="drd-l2l3-10" class="l2l3-panel">
+<figcaption>10일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="10일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 장애 수렴은 한 번의 마법 같은 전환이 아니다
+
+R2–R3가 끊기면 인접 라우터는 인터페이스 장애 통보를 받거나 Hello가 끊겨 Dead 타이머가 만료되는 방식으로 변화를 감지한다. 새 LSA를 남은 인접 관계로 flooding하고, 다른 라우터들은 LSDB를 갱신한 뒤 SPF를 재계산하며 최종적으로 FIB가 바뀐다. 수렴하면 R1의 B 방향 다음 홉은 `10.0.13.2`가 된다. 그러나 감지 → 전파 → 계산 → 설치는 각자 시간과 실패 지점을 가진 단계다. [RFC 2328 §§9–10, 12–13, 16](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+따라서 “OSPF를 쓰면 무손실 자동 복구”라는 약속은 없다. 이전 경로로 나간 패킷은 버려질 수 있고, 라우터들의 FIB 반영 시점 차이로 일시적인 전달 불일치가 생길 여지도 있다. 이것은 분산 갱신 과정으로부터 도출하는 운영상 추론이며 여기서 실제 microloop를 측정한 것은 아니다. OSPF 자체는 이미 손실된 TCP·UDP 사용자 데이터를 재전송하지 않는다. 링크 감지를 더 빠르게 하는 것과 전체 서비스가 더 빨리 복구되는 것도 같은 지표가 아니다.
+
+### 선택 기준과 운영 함정: Full·MTU·cost를 따로 확인한다
+
+| 방식 | 선택하기 좋은 상황 | 이 절에서 강조할 경계 |
+|---|---|---|
+| 정적 경로 | 소규모·변화가 적고 운영자가 경로를 명확히 관리 | 장애 조합이 늘면 변경 부담; 생존 감지는 별도 |
+| OSPF | 조직 내부에서 링크 상태·비용 기반 동적 우회가 필요 | 영역·타이머·LSA 전파·동기화 운영이 필요 |
+| RIP(Routing Information Protocol) 계열 | 간단한 거리 벡터 모델을 학습하거나 제한된 환경 | OSPF와 지도 공유·비용 모델이 다름; 일반적인 대규모 성능 우열 수치는 여기서 검증하지 않음 |
+| IS-IS / BGP(Border Gateway Protocol) | 기존 조직의 링크 상태 운영 체계 또는 정책 중심 경로 설계가 있음 | OSPF와 자동 대체 관계가 아님; 제품별·설계별 비교는 이번 범위 밖 |
+
+이 표는 구조상의 선택 기준이며 보편적인 성능 순위가 아니다. 먼저 단일 Area 0, 명시적 Router ID, 양 끝에서 일치하는 망 유형·타이머·인증으로 예제를 고정하는 것이 좋다. 비용을 bandwidth에서 자동 산출한다면 모든 라우터의 reference bandwidth를 일관되게 관리해야 한다. FRR 문서는 기본 reference bandwidth를 100 Mbit/s로 설명하므로, 그대로면 여러 고속 링크가 모두 cost 1로 보일 수 있다. 명목 링크 속도가 다른데도 경로가 기대와 달라지는 원인이 될 수 있다. [FRR 공식 `auto-cost reference-bandwidth`](https://raw.githubusercontent.com/FRRouting/frr/master/doc/user/ospfd.rst)
+
+특히 9일차의 MTU 문제가 제어 평면에도 돌아온다. Hello를 받아 이웃이 보이더라도 Database Description의 Interface MTU가 수신 측이 받아들일 수 있는 크기보다 크면 패킷이 거절될 수 있다. 그래서 ExStart/Exchange에서 정체되는 원인 중 하나가 MTU 불일치다. “Hello가 보이니 방화벽·크기 문제는 모두 해결됐다”는 결론은 성립하지 않는다. 검사만 우회하기 전에 실제 양쪽 MTU와 캡슐화·링크 유형을 맞춰야 한다. [RFC 2328 §10.6](https://www.rfc-editor.org/rfc/rfc2328.txt)
+
+### 미실행 관측 명령과 원문 확인 질문
+
+다음은 **미실행·조회용 예시**다. R1에 FRR과 OSPF가 이미 구성되어 있다고 가정하며 `eth1`은 R1–R2 링크로 바꾼다. 명령 지원·권한은 실제 FRR 버전에 맞춰 확인한다.
+
+```bash
+sudo vtysh -c 'show ip ospf neighbor'
+sudo vtysh -c 'show ip ospf database'
+sudo vtysh -c 'show ip ospf route'
+sudo vtysh -c 'show ip route 192.168.30.0/24'
+ip route get 192.168.30.20
+ip neigh show dev eth1
+sudo tcpdump -p -ni eth1 -vv -c 20 'ip proto 89'
+```
+
+이웃 상태 → B 프리픽스 관련 LSA → OSPF 계산 결과 → 라우팅 관리자의 선택 → 커널의 경로 → 다음 홉 MAC → 반환 경로 순서로 증거를 연결한다. OSPF 캡처는 제어 패킷에 대한 관측이며, 그것만으로 실제 사용자 데이터의 전달 성공을 증명하지 않는다.
+
+**원문 확인 질문의 답:** 이웃이 Full인데 B에 닿지 않는다면 Full이 증명하는 것은 그 인접 관계의 DB 동기화뿐이다. B 프리픽스가 제대로 광고됐는지, 계산 결과가 있는지, 실제 FIB에 다른 경로가 선택되거나 설치가 실패하지 않았는지, ARP와 출력 인터페이스가 정상인지, B에서 A로 돌아오는 경로가 있는지를 따로 확인한다. “OSPF 정상”을 “서비스 정상”으로 확대하지 않는 것이 핵심이다.
+
+**조사 범위와 한계:** 2026-10-17 KST에 RFC 2328의 Hello·이웃 상태·DB 교환·LSA 최신성·SPF·패킷 부록과 RFC 5340·5838, FRR 공식 문서 원문을 읽었다. OSPFv3의 인증 확장, 다중 영역 요약·재분배 정책, BFD(Bidirectional Forwarding Detection) 실험과 특정 빅테크의 현재 OSPF 운영 사례는 검증 범위 밖이다. FRR `master`와 `latest`는 조회 시점 문서이며 설치된 릴리스의 동작을 보증하지 않는다. 실제 수렴 시간·패킷 손실률·장비 출력은 측정하지 않았다.
+
+## 11일차 — BGP: 인터넷의 경로는 왜 가장 짧은 길이 아닐까?
+
+### 먼저 풀어야 했던 문제: 연결 지도보다 관리 영역의 정책
+
+회사 내부에서는 링크 비용을 기준으로 길을 고르는 것이 자연스럽다. 그러나 서로 다른 사업자를 연결할 때는 «가장 가까운 출구»보다 «돈을 덜 내는 출구», «고객에게 제공하기로 한 경로», «타사에서 받아도 되는 주소»가 먼저다. 모든 조직의 내부 토폴로지를 하나의 OSPF 영역처럼 공유할 수도 없다. 정적 경로만으로는 늘어나는 주소 대역과 장애를 관리하기 어렵다. **BGP(Border Gateway Protocol, 경계 게이트웨이 프로토콜)는 내부 지도를 통합하는 대신, 목적지 대역의 도달성과 그 경로의 속성을 교환한다.** AS(Autonomous System, 자율 시스템)는 외부에 일관된 라우팅 정책을 보이는 관리 영역이며 ASN은 그 번호다. 단순히 라우터 한 대나 회사 하나와 항상 일치하지 않는다.[RFC 4271 §3](https://www.rfc-editor.org/rfc/rfc4271.html#section-3)
+
+역사적으로 BGP는 EGP(Exterior Gateway Protocol)의 운용 경험과 NSFNET의 AS 간 연결 문제에서 출발했다. Kirk Lougheed와 Yakov Rekhter가 작성한 [RFC 1105, 1989년 6월](https://www.rfc-editor.org/rfc/rfc1105.html)은 이미 AS 경로를 이용한 루프 제거와 정책 결정을 설명한다. BGP-4의 [RFC 1771, 1995년 3월](https://www.rfc-editor.org/rfc/rfc1771.html)을 거쳐 2006년 1월 [RFC 4271](https://www.rfc-editor.org/rfc/rfc4271.html)이 기본 명세를 정리했다. BGP-4의 중요한 변화는 CIDR(Classless Inter-Domain Routing, 클래스 없는 도메인 간 라우팅) 프리픽스와 경로 집계다. 최신 구현의 모든 기능이 2006년 문서에 들어 있다는 뜻은 아니며, 뒤에 배울 MP-BGP 같은 확장은 별도 RFC로 확인해야 한다.
+
+이론적 핵심은 **path vector**다. «목적지까지 비용이 몇인가»만 보내는 대신 AS_PATH로 경로가 통과한 AS 목록을 전달한다. 일반적인 eBGP 재광고에서는 자신의 ASN을 앞에 붙이고, 자기 ASN이 들어 있는 수신 경로는 루프 후보로 제외한다. 다만 AS_PATH는 AS 수준 경로 이력이지 물리 라우터 홉 수나 지연시간 측정값이 아니다. 짧다는 이유만으로 더 빠르거나 더 싸다고 할 수 없다.[RFC 4271 §5.1.2, §9.1.2](https://www.rfc-editor.org/rfc/rfc4271.html#section-5.1.2)
+
+### 제어 메시지, 후보 테이블, 실제 패킷을 나누기
+
+BGP는 IP 라우팅을 제어하지만 메시지는 TCP(Transmission Control Protocol)의 바이트 스트림으로 운반한다. 수신 대기 포트는 **179**다. TCP에 순서 보장·재전송을 맡긴 것이지 사용자 데이터를 TCP 179로 터널링하는 것이 아니다. 다른 AS의 피어는 eBGP(External BGP), 같은 AS의 피어는 iBGP(Internal BGP)다. iBGP로 외부 경로를 알아도 그 NEXT_HOP까지 갈 내부 경로는 OSPF·연결 경로·정적 경로 등이 제공해야 한다.[RFC 4271 §3](https://www.rfc-editor.org/rfc/rfc4271.html#section-3)
+
+| 메시지·필드 | 뜻과 확인 지점 |
+|---|---|
+| 공통 헤더 | Marker 16바이트, Length 2바이트, Type 1바이트. TCP의 한 세그먼트와 BGP 메시지 하나는 같은 경계가 아니다. |
+| OPEN | 버전, AS, Hold Time, BGP Identifier, 선택 파라미터 등을 교환한다. |
+| KEEPALIVE | BGP 수준의 생존·OPEN 확인 메시지다. TCP ACK와 다르다. |
+| UPDATE | 철회할 프리픽스, 경로 속성, NLRI(Network Layer Reachability Information)를 운반한다. 여기서 NLRI는 목적지 IPv4 프리픽스다. |
+| AS_PATH / NEXT_HOP | AS 경로 이력 / 실제 전달을 위해 재귀적으로 해석해야 하는 다음 홉 주소다. |
+| LOCAL_PREF | AS 내부 출구 선호도다. 높을수록 선호하며 일반 eBGP로 상대 AS에 전달하지 않는다. |
+| NOTIFICATION | 오류·종료 사유를 알린다. |
+
+세션의 시간 순서는 **TCP 연결 → OPEN 교환 → 허용한 OPEN에 KEEPALIVE 응답 → Established → UPDATE 교환**이다. 최초에는 export 정책에 맞는 경로를 전송하고 이후 변화분을 갱신한다. 공통 헤더와 기본 메시지 종류는 [RFC 4271 §4](https://www.rfc-editor.org/rfc/rfc4271.html#section-4), LOCAL_PREF 범위는 [§5.1.5](https://www.rfc-editor.org/rfc/rfc4271.html#section-5.1.5)에 근거한다. 기본 명세의 OPEN AS 필드와 헤더 크기를 설명한 것이며, 확장된 4바이트 ASN 처리까지 이 표로 일반화하지 않는다.
+
+수신과 사용 사이에도 경계가 있다. **Adj-RIB-In**은 이웃에게 받은 후보, **Loc-RIB**은 로컬 정책으로 선택한 BGP 결과, **Adj-RIB-Out**은 각 이웃에 내보낼 정보다. Adj는 Adjacent, Loc은 Local이다. RIB(Routing Information Base)는 경로 정보 기반이고, FIB(Forwarding Information Base)는 실제 패킷 조회에 사용하는 전달 정보다. 이 이름들은 개념 모델이지 세 벌의 메모리 복사본을 강제하지 않는다. 선택된 BGP 경로도 다른 프로토콜의 경로와 비교하고 커널·하드웨어에 설치하는 단계를 통과해야 한다.[RFC 4271 §3.2](https://www.rfc-editor.org/rfc/rfc4271.html#section-3.2)
+
+### 같은 프리픽스의 정책 선택과 패킷의 최장 일치를 구분하기
+
+격리된 설명용 망에서 A `192.168.10.10/24`와 C `192.168.10.20/24`는 스위치 S에 연결하고, R1의 `192.168.10.1`을 게이트웨이로 쓴다. R1·R2·R3의 사설 ASN은 각각 `65001`·`65002`·`65003`이며 B `192.168.30.20/24`는 R3 뒤에 있다. R1–R2 링크는 `10.0.12.1/30`–`10.0.12.2/30`, R2–R3는 `10.0.23.1/30`–`10.0.23.2/30`, R1–R3 직접 링크는 `10.0.13.1/30`–`10.0.13.2/30`이다. 양방향 경로와 입·출력 허용 정책이 있다고 가정하며 공용 인터넷에는 이 주소·ASN을 광고하지 않는다.
+
+R3가 `192.168.30.0/24`를 광고하면 R1에는 다음 후보가 생긴다.
+
+| R1의 수신 출처 | AS_PATH | NEXT_HOP | R1 수신 정책의 LOCAL_PREF |
+|---|---|---|---|
+| R3 직접 | `65003` | `10.0.13.2` | 100 |
+| R2 경유 | `65002 65003` | `10.0.12.2` | 200 |
+
+NEXT_HOP이 도달 가능하고 더 앞선 비교 조건들이 같다면, FRR(FRRouting)은 높은 LOCAL_PREF를 짧은 AS_PATH보다 먼저 비교하므로 R2를 고른다. **R2가 eBGP로 200을 보내준 것이 아니라 R1이 자신의 수신 정책으로 부여했다.** RFC는 정책에 따른 선호를 정의하고, 정확한 구현별 비교 순서는 [FRR BGP — Route Selection](https://docs.frrouting.org/en/latest/bgp.html#route-selection)을 확인한다. NEXT_HOP이 해석되지 않으면 높은 선호도도 소용없다.[RFC 4271 §9.1.2](https://www.rfc-editor.org/rfc/rfc4271.html#section-9.1.2)
+
+실제 A→B의 순서는 다음과 같다.
+
+1. A는 B가 원격 서브넷임을 판단하고 R1의 MAC을 ARP(Address Resolution Protocol)로 구한다.
+2. 첫 프레임은 `02:00:00:00:10:10 → 02:00:00:00:10:01`, 내부 IP는 `192.168.10.10 → 192.168.30.20`이다.
+3. R1은 설치된 FIB를 조회해 `10.0.12.2`를 다음 홉으로 고르고 해당 MAC으로 새 Ethernet 헤더를 만든다.
+4. R2→R3→B로 전달한다. NAT가 없는 예이므로 IP 양 끝은 유지되지만 TTL(Time To Live)은 각 라우터에서 줄고 MAC 헤더는 링크별로 바뀐다.
+5. 반면 A→C는 같은 서브넷의 직접 전달이므로 C의 MAC을 구해 S를 통과하며 BGP 출구 선택을 쓰지 않는다.
+
+LOCAL_PREF는 **동일 프리픽스의 BGP 후보 비교**다. `/16`과 `/24`가 모두 FIB에 설치되어 있으면 목적지 패킷은 우선 더 구체적인 `/24`에 최장 프리픽스 일치한다. 높은 LOCAL_PREF의 `/16`으로 `/24` 조회를 덮어쓰는 식으로 이해하면 실제 route leak을 잘못 분석한다.
+
+<figure id="drd-l2l3-11" class="l2l3-panel">
+<figcaption>11일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="11일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 언제 쓰고, 무엇을 먼저 확인할까?
+
+| 선택지 | 유리한 조건 | 비용·한계 |
+|---|---|---|
+| 정적 기본 경로 | 단일 업링크, 작은 고정 망 | 주소·장애 변경 시 수작업 부담이 커진다. |
+| OSPF 같은 IGP | 한 관리 영역 안의 내부 토폴로지·비용 기반 수렴 | 사업자별 수입·수출 정책을 표현하는 BGP의 대체물이 아니다. |
+| BGP | 다중 사업자·여러 AS, 명시적 경로 정책과 프리픽스 배포 | 필터·다음 홉·수렴·경로 설치를 함께 운영해야 한다. |
+
+이 선택표는 각 프로토콜 목적에서 도출한 설계 판단이다. 운영에서는 «세션부터 켜고 나중에 필터»가 아니라 import/export 정책을 먼저 정한다. [RFC 8212 §3](https://www.rfc-editor.org/rfc/rfc8212.html#section-3)은 명시적 정책이 없는 eBGP 경로를 기본적으로 사용·광고하지 않도록 RFC 4271을 보완한다. 실제 FRR의 `bgp ebgp-requires-policy`와 선택한 프로파일도 확인한다. 경로 철회 UPDATE나 세션 단절 뒤에는 후보를 다시 골라 FIB에 반영한다. 감지와 설치 사이의 손실은 가능하며 TCP의 제어 메시지 재전송이 사용자 패킷을 구해 주지는 않는다.
+
+다음은 **미실행·조회용 예시**다. FRR과 위 구성이 이미 있고 `eth12`가 R1–R2 링크라고 가정한다.
+
+```bash
+sudo vtysh -c 'show bgp ipv4 unicast summary'
+sudo vtysh -c 'show bgp ipv4 unicast 192.168.30.0/24'
+ip route get 192.168.30.20
+ip neigh show dev eth12
+sudo tcpdump -p -ni eth12 -vv -c 20 'tcp port 179'
+```
+
+**확인 질문 — BGP에서는 R2가 best인데 `ip route get`은 다른 다음 홉이라면?** 답은 AS_PATH를 다시 세는 것이 아니다. BGP 결과의 전체 RIB 채택·커널 설치 여부, 더 구체적인 경로, Linux 정책 라우팅을 확인한 뒤 이웃 MAC을 본다. Established는 제어 세션 상태일 뿐 경로 허용·설치·반환 경로의 성공 증거가 아니다.
+
+## 12일차 — VRRP: 게이트웨이가 죽어도 호스트 설정은 왜 그대로일까?
+
+### 라우터 두 대를 설치하는 것만으로는 부족하다
+
+호스트의 기본 게이트웨이가 R1의 실제 IP라면 R2를 옆에 설치해도 R1 장애 때 호스트는 계속 R1을 찾는다. 호스트마다 동적 라우팅을 실행하거나 게이트웨이를 다시 설정하는 방법은 관리·호환성·장애 감지 비용이 크다. **VRRP(Virtual Router Redundancy Protocol)는 호스트가 참조하는 가상 게이트웨이의 정체성은 고정하고 그 역할을 수행할 라우터만 바꾼다.** OSPF·BGP가 망 안팎의 경로를 다룬다면 VRRP는 첫 홉의 가용성을 다룬다.[RFC 9568 §1.3](https://www.rfc-editor.org/rfc/rfc9568.html#section-1.3)
+
+초기 IETF 명세는 [RFC 2338, 1998년 4월](https://www.rfc-editor.org/rfc/rfc2338.html)이며 기능적으로 HSRP(Hot Standby Router Protocol)·IP Standby 같은 기존 방식을 비교 대상으로 삼았다. IPv4 중심의 VRRPv2 이후 [RFC 5798, 2010년](https://www.rfc-editor.org/rfc/rfc5798.html)이 IPv4·IPv6의 VRRPv3를 정리했다. **[RFC 9568, 2024년 4월](https://www.rfc-editor.org/rfc/rfc9568.html)은 RFC 5798을 명시적으로 폐기·대체한다(Obsoletes). 프로토콜 버전은 여전히 3이다.** 단순 명칭 변경만이 아니라 상태 머신 정정, IPv4 체크섬 범위 명확화, 학습 브리지의 잘못된 포트 학습을 바로잡는 광고 동작 등도 반영했다. 구형 문서의 Master가 이 글의 Active에 해당한다.[RFC 9568 §1.1](https://www.rfc-editor.org/rfc/rfc9568.html#section-1.1)
+
+### 고정되는 상태와 움직이는 상태
+
+설명용 망에서 A `192.168.10.10/24`와 C `192.168.10.20/24`는 S에 연결되어 있다. R1의 LAN 주소는 `192.168.10.2`, 우선순위는 150이고 R2는 `192.168.10.3`, 우선순위 100이다. 두 라우터 모두 원격 B `192.168.30.20`까지의 경로와 반환 경로가 있다. A·C의 기본 게이트웨이는 VIP(Virtual IP address) `192.168.10.1`로 고정한다.
+
+| 상태 | 정상 시 | R1 장애 후 |
+|---|---|---|
+| VRID(Virtual Router Identifier) | 1 | 1 |
+| 가상 IP | `192.168.10.1` | 동일 |
+| IPv4 가상 MAC | `00:00:5e:00:01:01` | 동일 |
+| Active 담당 | R1 | R2 |
+| S의 가상 MAC→포트 FDB | R1 포트 | R2 포트로 재학습 |
+| R2의 라우팅·NAT·방화벽 상태 | 별도 관리 | VRRP가 자동 복제하지 않음 |
+
+표준 IPv4 가상 MAC은 `00:00:5e:00:01:{VRID}`이며 마지막 바이트는 16진수다. IPv6는 `00:00:5e:00:02:{VRID}`다. VRID는 링크의 가상 라우터를 식별하며 범위는 1–255다. 호스트의 ARP 캐시인 **IP→MAC**과 스위치 FDB(Forwarding Database)인 **MAC→포트**는 다른 상태다. 정상 전환에서 반드시 달라져야 하는 것은 «호스트가 쓰는 MAC»이 아니라 «그 MAC이 있는 스위치 포트»다.[RFC 9568 §6.1, §7.2–7.3](https://www.rfc-editor.org/rfc/rfc9568.html#section-7.2)
+
+<figure id="drd-l2l3-12" class="l2l3-panel">
+<figcaption>12일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="12일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 광고 헤더와 정상 전달의 단계
+
+R1이 Active, R2가 Backup인 상태를 가정한다. 일반 후보의 우선순위는 1–254이고 높은 쪽을 선호한다. **255는 가상 주소를 자신의 실제 주소로 소유하는 address owner 전용**, **0은 Active가 역할을 내려놓는다는 신호**다. 같은 우선순위의 충돌은 표준 상태 머신의 주소 비교로 정리하지만, 운영자는 우선순위를 의도적으로 구분해 역할을 예측 가능하게 만드는 편이 낫다.[RFC 9568 §5.2.4, §6.4](https://www.rfc-editor.org/rfc/rfc9568.html#section-5.2.4)
+
+| 계층·필드 | 이 예의 값 또는 의미 |
+|---|---|
+| Ethernet 광고 출발 MAC | 가상 MAC. 스위치가 담당자의 포트를 학습하도록 한다. |
+| IPv4 출발/목적 | `192.168.10.2 → 224.0.0.18` |
+| IP Protocol / TTL | `112` / `255`. TCP·UDP 헤더와 포트는 없다. |
+| VRRP Version / Type | 4비트씩, `3` / `1`(Advertisement) |
+| VRID / Priority / 주소 수 | 각각 8비트. 어느 가상 라우터인지, 누가 우선인지, 몇 주소를 보호하는지 표시한다. |
+| Reserve / Max Advertise Interval | 4비트 / 12비트. 간격 단위는 centisecond다. |
+| Checksum / 주소 목록 | 16비트 검증값 / 가상 IPv4 또는 IPv6 주소 목록 |
+
+`224.0.0.18`은 링크 로컬 멀티캐스트이므로 TTL이 커도 라우터가 다른 LAN으로 넘기지 않는다. 수신 TTL이 255가 아니면 폐기한다. IPv6 광고는 `ff02::12`, Next Header 112, Hop Limit 255를 사용하며 IPv4·IPv6 가상 라우터 인스턴스는 별개다. RFC 9568의 IPv4 체크섬은 VRRP 메시지만, IPv6는 pseudo-header까지 포함한다.[RFC 9568 §5, §7](https://www.rfc-editor.org/rfc/rfc9568.html#section-5)
+
+1. A→C는 같은 서브넷의 직접 전달이므로 C의 MAC을 찾아 S를 통과한다.
+2. A→B는 원격 전달이므로 VIP `192.168.10.1`의 MAC을 ARP로 묻는다. Active인 R1만 응답한다.
+3. **ARP 응답 내부의 Sender Hardware Address는 가상 MAC**이다. 주의할 점은 RFC가 이 ARP 응답의 **바깥 Ethernet 출발 MAC은 물리 라우터 MAC**으로 명시한다는 것이다. ARP 내부 필드와 Ethernet 헤더를 같은 필드로 읽지 않는다.[RFC 9568 §8.1.2](https://www.rfc-editor.org/rfc/rfc9568.html#section-8.1.2)
+4. A의 데이터 프레임 목적 MAC은 가상 MAC이지만 목적 IP는 B `192.168.30.20`다. VIP는 다음 홉이지 최종 목적 IP가 아니다.
+5. S가 R1에 전달하면 R1은 자신의 라우팅 테이블로 다음 홉을 골라 새 Ethernet 프레임을 만든다. NAT 없는 예에서 IP 양 끝은 유지되고 TTL은 감소한다.
+
+### 장애 감지는 선출이고, 전환 완료는 데이터 경로의 문제다
+
+광고가 사라졌다는 사실은 곧바로 «전원이 꺼졌다»는 증명이 아니다. 링크 단절·제어 패킷 손실도 같은 관측을 만든다. VRRP는 제한된 시간 안에 광고가 오지 않으면 Backup이 Active로 전환하는 **타이머 기반 장애 감지와 우선순위 선출**이다. LAN이 분할되거나 광고만 차단되면 두 라우터가 모두 Active가 될 수 있다. 분산 시스템의 과반수 합의나 NAT 상태 복제 프로토콜로 해석하면 안 된다.
+
+광고 간격을 `T`, Backup 자신의 우선순위를 `P`라 하면 다음과 같다.[RFC 9568 §6.1](https://www.rfc-editor.org/rfc/rfc9568.html#section-6.1)
+
+- `Skew_Time = ((256 - P) × T) / 256`
+- `Active_Down_Interval = 3 × T + Skew_Time`
+
+이 예에서 T=1초, R2의 P=100이면 타이머는 3.609375초다. 이는 공식으로 계산한 대기 시간이지 실측 전체 복구 시간이 아니다. 정상 종료 시 우선순위 0 광고를 받으면 더 짧은 Skew_Time을 기다리지만, 전원 단절 때는 그 광고조차 오지 않는다. 새 Active는 Advertisement와 Gratuitous ARP(요청 없이 보내는 ARP 알림)를 보내고, 가상 MAC을 출발지로 하는 광고가 S의 FDB를 R2 포트로 움직인다. 호스트의 VIP→가상 MAC 대응은 그대로여도 정상이다.
+
+### 선택 기준, 운영 함정, 확인 질문
+
+| 접근 | 적합한 경우 | 따로 책임질 것 |
+|---|---|---|
+| 호스트의 정적 게이트웨이 한 개 | 단순·비중요 망 | 그 장비가 단일 장애점이다. |
+| VRRP | 호스트 변경 없이 같은 링크의 게이트웨이를 인계 | 상향 경로 건강, 상태 동기화, 광고 전달, 스위치 학습 |
+| 호스트 동적 라우팅·다중 경로 | 라우팅에 참여하도록 설계한 서버 환경 | 호스트 제어·정책·호환성 비용 |
+| 분산 anycast gateway | EVPN 등 분산 패브릭에서 로컬 라우팅 | 별도 아키텍처이며 VRRP 한 그룹의 Active 선출과 같지 않음 |
+
+권장 순서는 LAN 광고만 보지 않고 **실제로 보호하려는 경로의 건강을 추적**하는 것이다. R1 상향 링크만 끊겨도 LAN 광고는 계속될 수 있다. Keepalived의 `track_interface`·`track_script`는 가중치 조정 또는 FAULT 전환에 사용할 수 있다. 너무 공격적인 검사·광고 타이머는 일시적인 지연을 장애로 만들어 흔들림을 키울 수 있으므로 관찰 가능한 장애 목표와 함께 정한다. 복구 시에는 기본 선점 허용 여부를 검토하되, address owner는 선점 금지와 관계없이 역할을 되찾는다는 표준 예외도 기억한다.[RFC 9568 §6.1](https://www.rfc-editor.org/rfc/rfc9568.html#section-6.1), [Keepalived 설정 원문](https://raw.githubusercontent.com/acassen/keepalived/master/doc/man/man5/keepalived.conf.5.in)
+
+VRRPv3는 자체 인증을 제공하지 않으므로 TTL 255 검사가 같은 LAN의 악의적인 참가자까지 막아 준다고 생각하지 않는다.[RFC 9568 §9](https://www.rfc-editor.org/rfc/rfc9568.html#section-9) 또한 VIP를 인계했다고 NAT·방화벽 연결 상태와 기존 TCP 세션까지 보존되는 것은 아니다. 상태가 필요한 장비는 별도 동기화와 반환 경로를 설계한다.
+
+다음은 **미실행·조회용 예시**다. `eth0`는 실제 인터페이스로 바꾸고 Keepalived의 `use_vmac`도 별도로 확인한다. VIP만 설정했다고 표준 가상 MAC을 쓴다고 단정하지 않는다.
+
+```bash
+ip route get 192.168.30.20
+ip neigh show dev eth0
+sudo tcpdump -p -eni eth0 -vv -c 30 'arp or ip proto 112'
+bridge fdb show
+```
+
+마지막 명령은 S가 Linux 브리지일 때 S에서 실행할 조회다. 광고는 R1·R2 또는 미러 포트에서 관찰하는 편이 확실하다. **확인 질문 — 장애 후 A의 ARP가 같은 가상 MAC인데 왜 끊겼을까?** 캐시부터 지우지 말고 R2의 Active 전환 → S의 가상 MAC 포트 → R2의 정방향·반환 경로 → 방화벽/NAT 상태를 확인한다.
+
+## 13일차 — VXLAN: IP 라우터 너머를 같은 LAN으로 잇는 가상 케이블
+
+### 왜 VLAN을 더 크게 만드는 것만으로는 부족했나?
+
+VM(Virtual Machine)이 늘면 물리 서버 한 대 뒤에도 많은 MAC이 생긴다. 여러 고객이 같은 데이터센터를 쓰면 VLAN과 주소를 서로 독립적으로 배정해야 하고, VM을 다른 랙으로 옮겨도 같은 논리 네트워크에 남겨야 할 수 있다. 전통적인 VLAN을 전 구간에 늘리는 설계는 브로드캐스트·장애 영역과 MAC 테이블 부담을 확대한다. STP(Spanning Tree Protocol)는 루프를 막기 위해 일부 링크를 차단하고, 12비트 VLAN ID는 일반적인 사용 가능 VLAN이 4094개라는 한계가 있다. 반대로 랙 간을 순수 IP 라우팅으로 바꾸면 다중 경로를 쓰기 좋지만, 기존 서버가 요구하는 같은 L2 연결을 그대로 제공하지는 못한다.[RFC 7348 §1, §3](https://www.rfc-editor.org/rfc/rfc7348.html#section-3)
+
+**VXLAN(Virtual eXtensible Local Area Network)은 원래 Ethernet 프레임을 UDP/IP의 내용물로 넣어 라우팅 망 위에 논리 L2 세그먼트를 만든다.** 논리망이 overlay, 이를 운반하는 물리·IP 망이 underlay다. «L2냐 L4냐»라는 한 단어 답보다 **L2 연결을 제공하고 UDP/IP로 운반한다**는 구분이 중요하다. 2014년 8월의 [RFC 7348](https://www.rfc-editor.org/rfc/rfc7348.html)은 VMware·Cisco·Arista 등 여러 조직 저자들이 이미 배포된 VXLAN을 문서화한 **Informational RFC**이며 Internet Standards Track 명세라고 부르면 정확하지 않다. 이전·대안으로 VLAN/STP, L2 다중 경로를 다루는 TRILL·SPB, 또는 L2 확장을 포기한 순수 L3 설계가 있었다. VXLAN의 선택 이유는 기존 Ethernet 모델을 유지하면서 IP 패브릭을 활용할 수 있다는 데 있다.
+
+### VTEP·VNI·VLAN ID: 이름만 다른 같은 번호가 아니다
+
+VTEP(VXLAN Tunnel End Point)는 프레임을 캡슐화하고 역캡슐화하는 **기능 역할**이다. 전용 장비 이름이 아니어서 Linux 서버·하이퍼바이저·물리 스위치가 맡을 수 있다. VNI(VXLAN Network Identifier)는 그 프레임이 속한 논리 VXLAN 세그먼트의 24비트 식별자다. 목적지 IP나 목적지 장비 번호가 아니다.[RFC 7348 §1.1, §4](https://www.rfc-editor.org/rfc/rfc7348.html#section-4)
+
+| 비교 | VLAN ID | VNI |
+|---|---|---|
+| 위치 | Ethernet 802.1Q 태그 | VXLAN 헤더 |
+| 폭 | 12비트 | 24비트 |
+| 무엇을 구별하나 | 브리지의 VLAN/브로드캐스트 영역 | IP 터널로 확장하는 논리 세그먼트 |
+| 번호 관계 | 로컬 접속 분류에 사용 | VLAN과의 대응을 운영자가 설정 |
+
+예를 들어 **로컬 VLAN 10 ↔ VNI 10010 ↔ 원격 VLAN 20**으로 구성할 수 있다. 같은 논리 LAN을 제공하도록 양 끝의 매핑을 맞췄다면 로컬 VLAN 번호는 달라도 된다. 반대로 VNI 숫자만 같고 브리지 소속·원격 전달·underlay 경로가 빠졌다면 연결되지 않는다. 큰 식별 공간은 큰 전달 테이블 용량이나 무료 브로드캐스트를 보장하지도 않는다.
+
+설명용 주소는 다음과 같다. A와 C는 VTEP1의 브리지에, B는 VTEP2의 브리지에 연결한다.
+
+| 객체 | 주소·설정 |
+|---|---|
+| A | `192.168.10.10/24`, MAC `02:00:00:00:10:10` |
+| B | `192.168.10.20/24`, MAC `02:00:00:00:10:20` |
+| C | `192.168.10.30/24`, A와 같은 로컬 브리지 |
+| VTEP1 / VTEP2 | underlay `10.0.1.11/24` / `10.0.2.12/24` |
+| 중간 R | `10.0.1.1/24` ↔ `10.0.2.1/24` |
+| 논리 세그먼트 / 예시 그룹 | VNI `10010` / multicast `239.1.1.10` |
+
+**서로 다른 L3 서브넷에 속하는 것은 바깥 VTEP 주소이고, 같은 논리 L2 LAN에 있는 것은 안쪽 A·B다.** 대상과 주소가 다르므로 모순이 없다. 라우터가 Ethernet 브로드캐스트를 원래 모습 그대로 넘기는 것이 아니라, 프레임을 IP 패킷의 내용물로 운반하고 반대편 VTEP가 다시 꺼낸다. 이 구성의 VXLAN 포트는 «다른 LAN의 출구»보다 «같은 LAN을 먼 곳까지 늘인 가상 케이블»에 가깝다.
+
+### 첫 ARP: 모르는 IP라서 아무 인터페이스로나 뿌리는가?
+
+아니다. **호스트가 다음 홉의 MAC을 모르는 문제**와 **브리지가 목적 MAC의 포트를 모르는 문제**부터 나눠야 한다. 아래는 RFC 7348의 multicast와 데이터 평면 학습 방식을 적용한 순서다. 두 VTEP의 양방향 IP 경로뿐 아니라 그룹 참여·멀티캐스트 라우팅도 구성되어 있다고 가정한다.[RFC 7348 §4.1–4.3](https://www.rfc-editor.org/rfc/rfc7348.html#section-4.1)
+
+1. A가 B `192.168.10.20`을 목적지로 조회한다. 일반적인 `/24` 연결 경로에 따라 같은 서브넷이므로 게이트웨이가 아닌 B 자체의 MAC을 찾는다.
+2. A의 ARP 캐시에 B의 MAC이 없으면 A가 **처음부터 목적 MAC `ff:ff:ff:ff:ff:ff`인 ARP 요청**을 만든다. 브리지가 «IP를 모르니 브로드캐스트로 바꾼 것»이 아니다.
+3. 브리지는 같은 VLAN/브리지 영역의 전달 가능한 포트로 복제한다. A의 수신 포트를 제외한 C 포트와, **이 LAN에 소속되도록 설정한 VXLAN 포트**가 대상이다. 시스템의 모든 NIC·다른 VLAN·모든 VXLAN 장치가 대상은 아니다. 차단 상태·격리·플러딩 정책도 적용된다.[Linux bridge 문서](https://docs.kernel.org/networking/bridge.html)
+4. VTEP1은 원래 프레임에 VNI 10010을 붙이고 `10.0.1.11 → 239.1.1.10`, UDP 목적 포트 4789로 감싼다. 안쪽은 **L2 브로드캐스트**, 바깥은 **L3 IP 멀티캐스트**다.
+5. R은 바깥 멀티캐스트 전달 상태에 따라 패킷을 운반한다. VTEP2가 VNI와 수신 조건을 확인하고 역캡슐화하여 B 쪽으로 전달한다. 데이터 평면 학습이 켜졌다면 `A MAC → VTEP1 IP`도 배운다.
+6. B가 A MAC으로 ARP 응답하면 VTEP2는 방금 학습한 위치로 바깥 IP 유니캐스트를 보낸다. VTEP1도 `B MAC → VTEP2 IP`를 배우고 A에 응답을 전달한다.
+
+브리지가 **유니캐스트 목적 MAC의 위치만 모르는 경우**에는 unknown-unicast flooding이 될 수 있다. 이때도 원래 목적 MAC은 유니캐스트로 남으며 `ff:ff:ff:ff:ff:ff`로 바꾸지 않는다. «호스트의 ARP 생성»과 «브리지의 미지 유니캐스트 복제»는 서로 다른 원인과 동작이다.
+
+<figure id="drd-l2l3-13" class="l2l3-panel">
+<figcaption>13일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="13일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### `239.1.1.10`의 239는 무엇이며, 멀티캐스트는 L2인가?
+
+IPv4 멀티캐스트 주소 공간은 `224.0.0.0–239.255.255.255`이며, `239.0.0.0/8`은 administratively scoped 범위다. 이 주소는 서버 한 대의 위치가 아니라 **수신 그룹**을 뜻한다.[RFC 1112 §4](https://www.rfc-editor.org/rfc/rfc1112.html#section-4), [RFC 2365 §4–6](https://www.rfc-editor.org/rfc/rfc2365.html#section-4)
+
+`VNI 10010 → 239.1.1.10`은 규칙에 따라 자동 계산되는 관계가 아니다. 관리 계층이 VTEP에 설정하고 VTEP는 IGMP(Internet Group Management Protocol) 등으로 그룹 참여를 알린다. 여러 서브넷을 지나려면 PIM(Protocol Independent Multicast) 같은 underlay 멀티캐스트 라우팅이 필요하다. 목적지만 `239...`로 쓰면 라우터가 자동으로 모든 수신자에게 보내 주는 것이 아니다.[RFC 7348 §4.2](https://www.rfc-editor.org/rfc/rfc7348.html#section-4.2)
+
+원문과 같은 `239.1.1.10`은 설명용 값을 유지한 것이다. **실제 사설 조직 범위 할당에는 RFC 2365가 지정한 `239.192.0.0/14`를 먼저 검토한다.** 같은 RFC는 `239.0.0.0/10` 등을 향후 확장 전까지 미할당 상태로 남기도록 설명하므로, «239로 시작하니 아무 주소나 쓰자»는 운영 지침으로 옮기면 안 된다.[RFC 2365 §6.2–6.2.1](https://www.rfc-editor.org/rfc/rfc2365.html#section-6.2)
+
+멀티캐스트는 여러 수신자에게 전달한다는 형태라 L2와 L3 모두에 있다. Ethernet에서는 **목적 MAC**이, IP에서는 **목적 IP**가 그룹을 나타낸다. 이 예의 `239.1.1.10`은 L3 그룹이다. 안쪽 broadcast와 바깥 multicast를 혼동하면 «라우터가 ARP를 직접 브로드캐스트한다»는 잘못된 그림을 그리게 된다.
+
+### 학습 후 데이터 헤더와 테이블
+
+| 바깥에서 안쪽 순서 | A→B 유니캐스트의 값 | 해석하는 주체 |
+|---|---|---|
+| Outer Ethernet | VTEP1 MAC → 첫 홉 R MAC | 해당 underlay 링크 |
+| Outer IPv4 | `10.0.1.11 → 10.0.2.12` | R의 IP 라우팅 테이블 |
+| UDP | source는 내부 흐름 기반 해시 권고, destination `4789` | VTEP와 underlay ECMP |
+| VXLAN 8바이트 | Flags 8비트(I=1), reserved 24비트, VNI 24비트, reserved 8비트 | 수신 VTEP |
+| Inner Ethernet | A MAC → B MAC | 양 끝의 논리 브리지/FDB |
+| Inner IP | `192.168.10.10 → 192.168.10.20` | 종단 호스트 |
+
+UDP source port의 엔트로피는 ECMP(Equal-Cost Multipath)가 여러 내부 흐름을 여러 물리 경로로 나누는 데 도움이 된다.[RFC 7348 §5](https://www.rfc-editor.org/rfc/rfc7348.html#section-5) R이 찾는 것은 «바깥 목적 IP→다음 홉»이고 VTEP1이 찾는 것은 «VNI 안의 B MAC→원격 VTEP»다. 따라서 R에 안쪽 `192.168.10.0/24` 경로가 없어도 된다. R에서는 바깥 MAC이 링크마다 바뀌고 바깥 TTL이 감소하지만, **같은 서브넷 브리징인 이 예에서 안쪽 IP는 라우팅되지 않으므로 안쪽 TTL은 줄지 않는다.**
+
+A→C처럼 MAC이 로컬 포트에 있으면 터널 없이 로컬 전달한다. A→`192.168.20.20`처럼 다른 서브넷이면 호스트는 게이트웨이 MAC으로 보내며 별도 라우팅 기능이 필요하다. VXLAN 캡슐화 그 자체가 서브넷 간 라우터를 생성하지는 않는다.
+
+### MTU·보안·대안의 선택 기준
+
+MTU(Maximum Transmission Unit)는 «어느 계층의 크기인가»를 명시해야 한다. IPv4 옵션·내부 VLAN 태그·내부 FCS가 없는 예에서 내부 IP 1500바이트는 내부 Ethernet 14 + VXLAN 8 + UDP 8 + 외부 IPv4 20을 더해 **외부 IP 1550바이트**가 된다. 외부 Ethernet 헤더는 IP MTU에 더하지 않는다. underlay IP MTU가 1500이라면 같은 조건에서 내부 IP MTU를 1450 이하로 맞추거나, underlay 전체를 충분히 키워야 한다. 다른 외부 IP 버전·태그가 있으면 재계산한다. RFC는 VTEP가 VXLAN 패킷을 조각화하지 못하게 하고 수신 VTEP가 조각을 조용히 버릴 수도 있게 하므로, 조각화에 기대지 않는 것이 이유 있는 권고다.[RFC 7348 §4.3](https://www.rfc-editor.org/rfc/rfc7348.html#section-4.3)
+
+| 설계 | 선택할 조건 | 감수할 비용 |
+|---|---|---|
+| 로컬 VLAN | 랙/구간 안에서 충분한 L2 분리 | 물리 L2 확장과 식별 공간의 한계 |
+| 순수 L3 | 같은 L2·주소 유지가 필요 없음 | 기존 L2 의존 워크로드를 바꿔야 할 수 있음 |
+| multicast flood-and-learn VXLAN | 작은·단순한 overlay, underlay multicast 운영 가능 | 초기 학습·BUM과 multicast 상태 운영 |
+| 정적 VXLAN FDB | 소수의 고정된 종단 | 변경 때 수작업·자동화 필요 |
+| EVPN+VXLAN | 원격 위치·이동·다중 연결의 제어가 중요 | BGP 정책과 전달 상태의 복잡성 증가 |
+
+선택표는 구조에서 도출한 운영 판단이다. **VXLAN은 암호화·종단 인증을 제공하는 보안 VPN이 아니다.** VNI의 논리 분리와 악의적 외부 패킷에 대한 보안 경계는 다르므로 trusted underlay·종단 접근 제어와 필요시 별도의 암호화 계층을 설계한다.[RFC 7348 §7](https://www.rfc-editor.org/rfc/rfc7348.html#section-7)
+
+다음은 **미실행·조회용 예시**다. 실제 장치 이름으로 바꾼다.
+
+```bash
+ip -d link show vxlan0
+bridge fdb show dev vxlan0
+ip route get 10.0.2.12
+sudo tcpdump -p -ni eth0 -vv -c 20 'udp dst port 4789'
+sudo tcpdump -p -eni vxlan0 -c 20 'arp or host 192.168.10.20'
+```
+
+Linux는 IANA 포트 선정 이전 구현과의 호환성 때문에 과거 기본 포트를 유지할 수 있으므로 **`dstport 4789`를 명시·확인**한다.[Linux VXLAN 문서](https://docs.kernel.org/networking/vxlan.html) **확인 질문 — R에 내부 호스트 대역 경로가 없어도 되는 이유는?** R은 내부 A→B를 라우팅하는 것이 아니라 외부 VTEP1→VTEP2 패킷을 운반하기 때문이다. 우선 VNI·브리지 매핑 → FDB → 바깥 IP 경로 → UDP 포트·MTU → 내부 프레임 순으로 추적한다.
+
+## 14일차 — EVPN: 운반할 수 있다는 것과 어디로 운반할지 안다는 것
+
+### EVPN이 해결하려던 문제부터 다시 잡기
+
+여러 랙의 서버를 같은 LAN처럼 보이게 하려면 두 가지 문제가 있다. 첫째는 **Ethernet 프레임을 IP 망 너머로 운반**하는 문제이고, 둘째는 **그 프레임의 목적 MAC이 어느 종단 뒤에 있는지 아는** 문제다. VXLAN은 첫째의 포장 형식을 제공한다. 단순 flood-and-learn 구성에서는 둘째를 해결하려고 모르는 목적지의 프레임을 여러 종단에 복제하고, 되돌아오는 프레임의 출발 MAC을 관찰한다. 작은 망에서는 단순하지만 참여자가 늘면 무관한 곳까지 트래픽이 퍼지고 이동·장애에 따른 위치 갱신도 어려워진다.
+
+**EVPN(Ethernet Virtual Private Network)은 각 네트워크 장비가 자신에게 연결된 호스트의 도달 정보를 관련 장비에 명시적으로 알려 주는 제어 체계다.** 여기서 advertise, 즉 «광고»는 사용자 프레임을 보내는 것이 아니라 **«이 논리망의 MAC B는 내 쪽에 있고 내 터널 주소로 보내면 된다»는 위치 정보를 배포**한다는 뜻이다. 호스트 B가 BGP를 실행해야 하는 것이 아니라 VTEP를 맡은 스위치·라우터가 교환한다.[RFC 7432 §4, §9](https://www.rfc-editor.org/rfc/rfc7432.html#section-4)
+
+역사를 «VXLAN의 flooding을 줄이려고 EVPN을 발명했다»로 압축하면 틀린다. 기존 VPLS(Virtual Private LAN Service)는 멀리 떨어진 Ethernet 망을 연결했지만 multihoming, 이중화, multicast 최적화, 흐름 단위 분산과 provisioning에 한계가 있었다. [RFC 7432, 2015년 2월](https://www.rfc-editor.org/rfc/rfc7432.html)은 Cisco의 A. Sajassi 편집자를 비롯해 사업자·벤더의 여러 저자가 참여한 IETF Standards Track 문서이며, 원래 제목은 **BGP MPLS-Based Ethernet VPN**이다. MPLS(Multiprotocol Label Switching) 기반 서비스의 MAC 학습과 다중 연결을 제어 평면으로 옮긴 명세였고, 이후 [RFC 8365, 2018년 3월](https://www.rfc-editor.org/rfc/rfc8365.html)이 VXLAN 등 IP overlay 적용을 정리했다. EVPN과 VXLAN은 서로 대체하는 제품이 아니라 결합할 수 있는 제어·운반 방식이다.
+
+### 왜 BGP로 MAC의 위치를 알릴까?
+
+BGP(Border Gateway Protocol)는 원래 «이 IP 프리픽스를 이 경로로 도달할 수 있다»는 정보를 배포하고 정책으로 선택·철회한다. MP-BGP(Multiprotocol BGP)는 이 틀을 여러 주소군으로 확장한다. EVPN은 **IP 프리픽스에만 머무르지 않고 MAC과 선택적 IP, 네트워크 참여·다중 연결 정보도 BGP 경로로 표현**한다. EVPN NLRI는 AFI(Address Family Identifier) 25와 SAFI(Subsequent Address Family Identifier) 70으로 교환한다. NLRI의 이름에 Network Layer가 들어 있어도 이 주소군에서 담는 대상은 MAC 기반 도달 정보일 수 있다.[RFC 4760 §1, §3–4](https://www.rfc-editor.org/rfc/rfc4760.html), [RFC 7432 §7](https://www.rfc-editor.org/rfc/rfc7432.html#section-7)
+
+이 선택의 이점은 기존 BGP의 정책·경로 철회·배포 체계를 재사용하는 것이다. RR(Route Reflector)를 쓰면 모든 VTEP가 서로 직접 세션을 맺는 full mesh 부담도 줄일 수 있다. **RR이 경로를 반사한다고 사용자 데이터까지 RR을 경유하는 것은 아니다.** 대신 MAC/IP 경로 수, 갱신 빈도, 경로 수입 정책과 실제 테이블 용량을 운영해야 한다. 제어 평면을 추가하면 flooding 비용 일부를 명시적인 상태 배포 비용으로 바꾸는 셈이다.[RFC 8365 §4](https://www.rfc-editor.org/rfc/rfc8365.html#section-4)
+
+| 이름 | 이 구성에서 맡는 역할 | 혼동하면 생기는 오류 |
+|---|---|---|
+| EVPN | 공유할 MAC/IP·연결 정보와 처리 절차 | «그 자체가 프레임 캡슐화 헤더다» |
+| BGP / MP-BGP | EVPN 경로를 TCP 179로 교환 | «사용자 데이터도 BGP 세션에 실린다» |
+| VXLAN | 알아낸 VTEP까지 Ethernet 프레임 운반 | «원격 위치를 알아내는 절차가 모두 자동이다» |
+| VNI | 데이터 패킷의 논리 세그먼트 식별자 | «숫자만 같으면 제어 경로도 수입된다» |
+| RT(Route Target) | BGP 확장 커뮤니티로 경로의 export/import 범위 지정 | «VNI와 같은 필드다» |
+| RD(Route Distinguisher) | BGP 경로 공간에서 출처/인스턴스의 경로를 구별 | «같아야 서로 통신하는 가입 코드다» |
+| MAC-VRF | MAC 도달성과 브리지 상태의 논리 분리 | «IP 라우팅 테이블과 완전히 같다» |
+
+RT·RD·VNI는 자주 비슷한 숫자로 설정하지만 역할이 다르다. 이 글은 **한 EVI(EVPN Instance)에 한 브로드캐스트 도메인**인 단순 모델을 쓴다. 수신 RT가 맞아야 해당 MAC-VRF로 경로를 수입하고, 데이터 패킷에는 수신 VTEP가 해석할 VNI를 싣는다. RFC 8365에는 로컬 의미의 VNI와 변환 시나리오도 있으므로 «모든 EVPN에서는 양 끝 VNI가 무조건 동일해야 한다»로 확대하지 않는다.[RFC 8365 §5.1.1–5.1.3](https://www.rfc-editor.org/rfc/rfc8365.html#section-5.1.1), [FRR EVPN — Route Targets](https://docs.frrouting.org/en/latest/evpn.html#evpn-route-targets)
+
+### Type 2 경로에는 무엇이 들어 있나?
+
+13일차의 A `192.168.10.10`, B `192.168.10.20`, C `192.168.10.30`, VTEP1 `10.0.1.11`, VTEP2 `10.0.2.12`, VNI `10010`을 그대로 쓴다. underlay 양방향 경로와 브리지 매핑에 더해 **EVPN 주소군이 활성화된 BGP 세션**이 있어야 한다. 두 종단의 export/import RT는 설명상 `65000:10010`으로 맞춘다.
+
+| EVPN Type 2 NLRI 필드 | 크기·뜻 |
+|---|---|
+| Route Type / Length | 각 1바이트. 뒤의 구조가 MAC/IP Advertisement임을 표시 |
+| RD | 8바이트. 경로 구별 |
+| ESI(Ethernet Segment Identifier) | 10바이트. 다중 연결한 Ethernet segment 식별에 사용 |
+| Ethernet Tag ID | 4바이트. 서비스 모델에 따른 브로드캐스트 도메인 구별. 여기의 VLAN-based 모델에서는 0 |
+| MAC length / MAC | 길이 필드 1바이트(48비트라는 값) / 주소 6바이트 |
+| IP length / IP | 길이 필드 1바이트, 값 0·32·128 / 주소 0·4·16바이트 |
+| Label1 / 선택적 Label2 | 원래 MPLS 명칭은 각각 3바이트. VXLAN 적용에서는 해당 필드로 VNI 전달 |
+
+이것은 [RFC 7432 §7.2](https://www.rfc-editor.org/rfc/rfc7432.html#section-7.2)의 원래 구조와 [RFC 8365 §5.1.3](https://www.rfc-editor.org/rfc/rfc8365.html#section-5.1.3)의 VXLAN 해석을 함께 적은 표다. VXLAN에서는 VNI를 담는 필드의 **24비트 전체**를 사용하며, MPLS label의 20비트 해석과 섞지 않는다. RT는 Type 2 본문 안의 같은 필드가 아니라 BGP 경로의 extended community이고, 원격 VTEP 주소 `10.0.2.12`는 **MP_REACH_NLRI의 BGP next hop**에 실린다. 이 next hop과 당장 같은 링크에 있는 underlay 다음 홉 라우터는 다를 수 있다.
+
+### 로컬에서 먼저 배우고, 원격에는 제어 메시지로 알린다
+
+1. **로컬 발견:** B가 ARP를 보냈다고 하자. VTEP2가 B의 MAC과 IP 대응을 배운다. 학습 방법은 데이터 평면, 관리·제어 계층 통합 등일 수 있다. EVPN이 로컬 발견까지 없애 주지는 않는다.
+2. **광고:** VTEP2는 B MAC, 선택적으로 B IP, VNI 정보와 next hop `10.0.2.12`를 담은 Type 2 경로를 광고한다.
+3. **수입:** VTEP1은 RT 정책과 경로 유효성을 적용한다. 선택된 정보로 `B MAC → 10.0.2.12`를 전달 상태에 설치할 수 있다. **BGP에 보이는 경로와 FDB에 실제 설치된 항목은 별도 확인 대상**이다.
+4. **호스트의 질문:** A는 B가 같은 `/24`이므로 B의 MAC을 ARP로 묻는다. VTEP1에 올바른 `B IP → B MAC` 대응이 있고 **ARP suppression이 활성화**되어 있으면 A 쪽에서 대리 응답한다. A는 B MAC을 배우며 이 질문을 원격 전체에 보낼 필요가 없다.
+5. **데이터 전달:** A가 B MAC의 Ethernet 프레임을 보내면 VTEP1은 FDB로 원격 위치를 찾는다. 내부는 `A MAC → B MAC`, `192.168.10.10 → 192.168.10.20`, VXLAN은 VNI 10010, 외부는 `10.0.1.11 → 10.0.2.12`다. R은 외부 IP만 라우팅하고 VTEP2는 역캡슐화해 B 포트로 보낸다.
+
+«패킷이 오기 전에 안다»는 말의 정확한 의미는 **VTEP1이 B에서 출발해 터널을 건너오는 실제 데이터 프레임을 기다리지 않아도 VTEP2의 광고로 위치를 알 수 있다**는 것이다. B가 아직 전혀 발견되지 않았는데 모든 장비가 그 위치를 마법처럼 아는 것은 아니다.[RFC 7432 §9–10](https://www.rfc-editor.org/rfc/rfc7432.html#section-9)
+
+<figure id="drd-l2l3-14" class="l2l3-panel">
+<figcaption>14일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="14일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### Type 3와 BUM: EVPN이면 플러딩이 완전히 없어질까?
+
+**MAC-only Type 2 경로는 허용된다.** `B MAC → VTEP2`만 알면 프레임 운반은 가능하지만, «IP B의 MAC은 무엇인가»라는 ARP 질문에는 답할 정보가 없다. IP/MAC 대응이 없거나 suppression을 사용하지 않는다면 이 예에서는 ARP를 원격에도 전파한다.[RFC 7432 §9.2.1, §10](https://www.rfc-editor.org/rfc/rfc7432.html#section-10)
+
+| 경로·트래픽 | 담당 정보·동작 |
+|---|---|
+| Type 2 MAC/IP | 개별 MAC의 도달성과 선택적 IP 대응 |
+| Type 3 IMET(Inclusive Multicast Ethernet Tag) | 같은 논리망의 원격 참여자와 다중 목적지 전달을 위한 정보. 터널 속성도 함께 사용 |
+| BUM(Broadcast, Unknown Unicast, Multicast) | 여러 수신자 또는 아직 모르는 목적지에 대한 전달 문제이며 EVPN에서도 남을 수 있음 |
+| Ingress replication | 입구 VTEP가 대상 원격 VTEP별로 VXLAN 유니캐스트 복사본 생성 |
+| Underlay multicast | 네트워크가 multicast tree를 따라 복제. 별도 multicast 운용 필요 |
+
+Type 3의 NLRI에는 RD, Ethernet Tag ID, IP 길이와 Originating Router IP가 있고, 관련 PMSI(Provider Multicast Service Interface) tunnel attribute가 전달 방식을 신호한다.[RFC 7432 §7.3, §11](https://www.rfc-editor.org/rfc/rfc7432.html#section-7.3), [RFC 8365 §5.1.3](https://www.rfc-editor.org/rfc/rfc8365.html#section-5.1.3) Ingress replication은 underlay multicast를 없애는 대신 참여자가 늘수록 송신자의 복제·대역폭 부담을 키운다. 미지 유니캐스트를 flood할지 drop할지는 정책이다. ARP suppression 역시 알고 있는 대응에 대해서만 동작한다. 따라서 «EVPN=zero flooding»은 일반적인 보장이 아니다.
+
+A→C가 로컬 FDB로 해결되면 터널을 쓸 필요가 없다. A→다른 서브넷은 게이트웨이 MAC으로 보내야 하고 별도의 라우팅이 필요하다. EVPN은 L2뿐 아니라 IRB(Integrated Routing and Bridging)와 L3 서비스도 제어할 수 있지만 **이 절의 패킷 예는 같은 서브넷의 L2 전달**이다. 후속 IP Prefix Advertisement인 Type 5 등을 현재 예에 몰래 가정하지 않는다.
+
+### 이동·이중화가 제어 평면에 들어온 이유
+
+호스트 MAC이 다른 Ethernet segment로 이동하면 예전 위치와 새 위치의 광고가 잠시 공존할 수 있다. EVPN은 MAC Mobility 확장 커뮤니티의 sequence number로 이동 순서를 구분하고 이전 광고의 철회를 유도한다. 같은 segment를 여러 PE(Provider Edge)가 함께 받는 multihoming은 이동과 다르므로 ESI를 이용해 혼동을 줄인다. 반복적인 이동은 정상 VM 이동뿐 아니라 중복 MAC의 증상일 수도 있다.[RFC 7432 §15](https://www.rfc-editor.org/rfc/rfc7432.html#section-15)
+
+또한 Type 1 Ethernet Auto-Discovery는 다중 연결의 경로 식별·빠른 철회 등에, Type 4 Ethernet Segment 경로는 같은 segment 참가자 발견과 DF(Designated Forwarder) 선출 등에 사용한다. DF는 다중 연결된 쪽으로 BUM을 중복 전달하지 않도록 역할을 나누며, split-horizon은 같은 segment로 되돌아가는 루프를 막는다. all-active에서는 알려진 unicast를 여러 연결로 활용할 수 있다. 이것이 EVPN의 원래 문제가 단순 ARP 최적화보다 넓다는 근거다. 세부 VXLAN 다중 연결 절차는 MPLS용 설명을 그대로 적용하지 않고 [RFC 8365 §8](https://www.rfc-editor.org/rfc/rfc8365.html#section-8)과 구현 지원을 함께 확인한다.
+
+### 선택 기준과 Linux에서의 검증 경계
+
+작고 고정된 몇 종단이면 static FDB나 flood-and-learn이 운영상 단순할 수 있다. 여러 랙의 tenant, 호스트 이동, 이중 연결, 경로 수입 정책이 중요하면 EVPN+VXLAN이 유리하다. 애초에 L2 유지가 필요 없다면 순수 L3를 먼저 검토한다. 이는 RFC가 특정 규모의 성능 우위를 실측했다는 뜻이 아니라, 요구 기능과 상태 관리 비용을 비교한 **설계 추론**이다.
+
+FRR/Linux에서는 제어 데몬을 켰다고 suppression이 자동 활성화되지 않는다. 현재 [FRR EVPN — Linux Interface Configuration](https://docs.frrouting.org/en/latest/evpn.html#linux-interface-configuration)은 ARP/ND suppression을 커널 기능으로 설명하며 L2VNI의 SVI(Switched Virtual Interface)와 bridge-slave의 `neigh_suppress`를 요구한다. routing에 쓰지 않는 SVI의 forwarding도 의도에 맞춘다. 또한 EVPN이 원격 위치를 설치하는 VXLAN 인터페이스에서는 커널 bridge의 동적 MAC learning과 VXLAN의 동적 VTEP learning을 구별해 끄도록 권고한다. **로컬 호스트 학습 전체를 없애라는 뜻은 아니다.**
+
+아래는 **미실행·조회용 예시**이며 실제 FRR 버전과 장치명에 맞춰 사용한다.
+
+```bash
+vtysh -c 'show evpn mac vni 10010 detail'
+bridge fdb show dev vxlan0
+bridge -d link show dev vxlan0
+ip -d link show vxlan0
+ip route get 10.0.2.12
+sudo tcpdump -p -ni eth0 -vv -c 20 'udp dst port 4789'
+```
+
+확인 순서는 **EVPN 주소군의 수신·RT 수입 → 제어 데몬의 MAC/IP → 커널 FDB·neighbor 상태 → VNI·suppression → underlay 도달성 → UDP 포트·MTU**다. `VNI가 같다`, `BGP가 Established다`, `Type 2가 보인다`는 각각 필요한 일부 조건이지 end-to-end 통신 검증은 아니다.
+
+**확인 질문 — B의 MAC-only Type 2 경로를 받으면 A의 ARP는 반드시 로컬에서 끝나는가?** 아니다. 원격 MAC의 위치는 알아도 질문받은 IP와의 대응이 없으면 대리 응답할 수 없다. IP가 실린 경로·올바른 binding·suppression 설정을 함께 확인하고, 없을 때의 BUM 전달 정책도 확인한다.
+
+
+## 15일차 — EVPN IRB: 다른 서브넷으로 가는 프레임의 MAC은 누구 것일까?
+
+### 브리징으로 해결되지 않는 경계를 라우팅으로 잇는다
+
+VXLAN(Virtual eXtensible LAN)은 Ethernet 프레임을 UDP/IP로 운반하지만, 터널을 만들었다고 서로 다른 IP 서브넷까지 저절로 연결되지는 않는다. 같은 `/24`의 호스트를 찾는 일은 브리징이고, 다른 `/24`로 나가는 일은 라우팅이다. IRB(Integrated Routing and Bridging, 통합 라우팅·브리징)는 이 둘을 한 장비 안에서 연결한다. EVPN(Ethernet VPN)은 그 연결에 필요한 MAC/IP와 경로 정보를 제어 평면으로 배포하며, VXLAN은 실제 데이터를 운반한다. EVPN을 터널 형식으로, VXLAN을 경로 계산 프로토콜로 바꾸어 이해하면 안 된다.
+
+기존의 중앙 게이트웨이로 모든 서브넷 간 트래픽을 모으면, 원격 호스트와 통신하려고 불필요한 지점을 경유할 수 있다. 접속 Leaf마다 게이트웨이를 두려면 이번에는 원격 호스트를 어느 라우터로 보내고, 테넌트를 어떻게 구분할지가 문제다. [RFC 9135(2021년 10월), 서론·§4](https://www.rfc-editor.org/rfc/rfc9135.html#section-4)는 EVPN의 서브넷 내부 연결과 멀티호밍을 서브넷 간 연결로 확장하면서 **대칭·비대칭 IRB**라는 두 전달 모델을 정리했다. 이 날짜는 해당 표준의 발행 시점이지 IRB라는 발상의 최초 발명 시점이라는 뜻은 아니다.
+
+### 호스트 게이트웨이, 테넌트 라우터, 터널 종단을 구분한다
+
+A와 C는 Leaf1의 `192.168.10.0/24`, B는 Leaf2의 `192.168.20.0/24`에 붙어 있다고 하자. A=`192.168.10.10`, C=`192.168.10.30`, B=`192.168.20.20`이며, A와 B의 MAC은 각각 `02:00:00:00:10:10`, `02:00:00:00:20:20`이다. Leaf1/VTEP1의 IP는 `10.0.1.11`, Leaf2/VTEP2는 `10.0.2.12`다. Underlay 라우터 R이 `10.0.1.1 ↔ 10.0.2.1`로 두 VTEP(VXLAN Tunnel End Point, 터널 종단)를 연결한다.
+
+| 전달 영역 | 이 예의 식별자 | 맡은 역할 |
+|---|---|---|
+| 서브넷 10의 브리지 | L2VNI `10010`, 게이트웨이 `192.168.10.1` | 같은 Ethernet 브로드캐스트 도메인 |
+| 서브넷 20의 브리지 | L2VNI `10020`, 게이트웨이 `192.168.20.1` | B가 속한 브로드캐스트 도메인 |
+| 테넌트 IP 라우팅 영역 | VRF `blue`, L3VNI `50000` | 테넌트별 IP 경로 조회 |
+| 호스트가 쓰는 게이트웨이 MAC | `02:00:00:00:ff:01` | 호스트 프레임을 로컬 라우팅으로 진입시킴 |
+| 터널 안쪽 라우터 MAC | RMAC1=`02:00:00:00:01:01`, RMAC2=`02:00:00:00:02:02` | 원격 라우터로 보내는 안쪽 Ethernet 헤더 |
+
+VNI(VXLAN Network Identifier)는 VXLAN 망 식별자이며, VRF(Virtual Routing and Forwarding)는 분리된 라우팅·전달 문맥이다. 여러 L2VNI가 하나의 IP-VRF/L3VNI에 속할 수 있다. 같은 서브넷이 여러 Leaf에 놓이면 게이트웨이 IP와 MAC을 동일하게 둬 각 Leaf가 로컬에서 응답하는 **Anycast gateway**를 쓸 수 있다. VRRP(Virtual Router Redundancy Protocol)처럼 활성 장비 하나를 선출한다는 의미가 아니다. RFC는 같은 IP·MAC을 쓰는 방식과 같은 IP에 서로 다른 MAC을 쓰는 방식을 모두 설명하지만, 구성 단순성과 이동 시 ARP/ND 갱신 부담 때문에 전자를 권고한다. 호스트에게 보이는 게이트웨이 MAC과 터널 사이 RMAC(Router MAC)은 역할이 다르며, 이 예에서는 이해를 위해 값도 구분했다. [RFC 9135 §4.1](https://www.rfc-editor.org/rfc/rfc9135.html#section-4.1)
+
+### A→B에서 MAC은 바뀌지만 최종 IP는 유지된다
+
+A는 B가 자신의 `/24` 밖임을 알므로 **B의 MAC이 아니라 게이트웨이의 MAC을 ARP(Address Resolution Protocol)로 묻는다.** 첫 프레임은 `A MAC → 게이트웨이 MAC`, IP는 `A IP → B IP`다. Leaf1은 게이트웨이 MAC을 보고 브리지에서 VRF `blue`로 넘기고 B의 IP 경로를 조회한다. Leaf2가 B의 MAC/IP를 EVPN Type 2로 광고했고, Leaf1이 IP-VRF의 RT(Route Target, 경로 수입 대상을 정하는 태그) 정책에 따라 B의 `/32`를 수입했다고 가정한다. 이 경로는 원격 VTEP, L3VNI와 RMAC2를 제공해야 한다. **호스트 경로를 수입하는 일과 원격 B의 MAC을 로컬 ARP 테이블에 보관하는 일은 같지 않다.** RT는 제어 평면의 수입 정책이고 VNI는 수신 데이터의 전달 문맥 선택자다. [RFC 9135 §§5.1–5.2](https://www.rfc-editor.org/rfc/rfc9135.html#section-5.1), [FRR EVPN 문서](https://docs.frrouting.org/en/latest/evpn.html)
+
+| A→B의 위치 | 안쪽 Ethernet | 안쪽 IP / VNI | 바깥 전달 |
+|---|---|---|---|
+| A→Leaf1 | A MAC → 게이트웨이 MAC | A IP → B IP / 없음 | 호스트 LAN |
+| Leaf1→터널 | RMAC1 → RMAC2 | A IP → B IP / L3VNI `50000` | VTEP1 IP → VTEP2 IP, 바깥 목적 MAC은 R |
+| Leaf2→B | 게이트웨이 MAC → B MAC | A IP → B IP / 터널 제거 | B의 로컬 LAN |
+
+**대칭 IRB의 터널 안쪽 목적 MAC은 B가 아니라 원격 라우터 RMAC2다.** Leaf2도 라우팅해야 하기 때문이다. Leaf1은 안쪽 TTL(Time To Live)을 하나 줄이고 캡슐화한다. R은 바깥 IP와 바깥 TTL·Ethernet 헤더만 처리한다. Leaf2는 역캡슐화한 VNI로 IP-VRF를 선택하고 B IP를 다시 조회한 다음, 안쪽 TTL을 또 하나 줄이고 로컬 이웃 정보로 B MAC을 붙인다. NAT(Network Address Translation)는 없으므로 A·B IP는 유지되지만 안쪽 TTL과 IPv4 헤더 체크섬까지 불변인 것은 아니다. RFC의 논리적 대칭 모델은 두 끝에서 각각 한 번 감소한다. [RFC 9135 §4·§§5.4–5.5](https://www.rfc-editor.org/rfc/rfc9135.html#section-5.4)
+
+<figure id="drd-l2l3-15" class="l2l3-panel">
+<figcaption>15일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="15일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 대칭이라는 말은 왕복 경로가 같다는 뜻이 아니다
+
+| 선택 | 송신 Leaf / 수신 Leaf | 터널 운반 | 상태와 선택 기준 |
+|---|---|---|---|
+| 대칭 IRB | 라우팅 / 라우팅 | IP-VRF 사이 L3VNI, 원격 RMAC | 로컬 서브넷의 브리지·이웃만 필요해 많은 서브넷을 분산 배치하기 유리 |
+| 비대칭 IRB | 라우팅 후 목적 브리지 조회 / 브리징 | 목적 서브넷 L2VNI, 목적 호스트 MAC | 송신 Leaf에도 원격 서브넷의 브리지·IRB·IP–MAC 바인딩 필요; 전체 상태가 작고 기능 제약이 맞을 때 검토 |
+
+대칭성은 **양 끝의 조회·전달 역할**을 말한다. 왕복이 같은 Spine을 지나거나 동일한 ECMP 경로를 쓴다는 보장은 없다. 비대칭은 수신 측 라우팅이 없으므로 송신 측에서 이미 목적 호스트 MAC을 알아야 하고, 목적 서브넷이 로컬에 없어도 관련 상태를 유지한다. 다만 RFC의 ARP·조회 단계는 논리 모델이다. EVPN으로 얻은 IP–MAC 바인딩을 구현이 별도 adjacency 테이블에 넣거나 여러 조회를 합칠 수도 있어, 화면의 ARP 항목 개수만으로 모델 준수를 단정할 수 없다. [RFC 9135 §4](https://www.rfc-editor.org/rfc/rfc9135.html#section-4)
+
+A→C는 같은 서브넷의 로컬 브리징이라 L3VNI를 사용하지 않는다. B의 호스트 경로가 아직 없으면 Leaf2의 Type 5 서브넷 경로 `192.168.20.0/24`가 부트스트랩 경로가 될 수 있다. 원격 서브넷이 일부 Leaf에만 구성되는 RFC 시나리오에서는 이 서브넷 광고가 필요하며, 수신 Leaf가 gleaning을 통해 ARP 탐색을 촉발한다. 첫 패킷 전달까지 보장하는 장치는 아니다. 호스트·서브넷·기본/요약 경로가 모두 없으면 라우팅 실패이지, 다른 모든 L2VNI로 IP 목적지를 찾아 플러딩하는 것이 아니다. [RFC 9135 §5.3](https://www.rfc-editor.org/rfc/rfc9135.html#section-5.3)
+
+### 미실행 관측 명령과 확인 질문
+
+아래는 FRR과 Linux VRF `blue`, Underlay `eth0`가 있는 실습 환경의 **미실행·조회용 예시**다. FRR은 Netlink로 커널 인터페이스 상태를 배우지만 인터페이스 자체를 생성·관리하지 않는다. 따라서 EVPN 제어 정보와 Linux 전달 상태를 별도로 대조한다. VNI의 L2/L3 역할 → VRF 경로 → 로컬 이웃 → 캡처의 안쪽 MAC과 VNI 순서가 실용적이다. [FRR EVPN](https://docs.frrouting.org/en/latest/evpn.html)
+
+```bash
+ip -d link show type vrf
+ip -d link show type vxlan
+vtysh -c 'show evpn vni'
+ip route show vrf blue
+ip neigh show vrf blue
+sudo tcpdump -p -ni eth0 -vv -c 20 'udp dst port 4789'
+```
+
+**확인 질문 — Leaf1에 서브넷 20의 브리지가 없으면 A→B는 불가능할까?** 아니다. 대칭 IRB에서는 VRF의 원격 IP 경로와 터널 정보로 Leaf2에 넘기고, Leaf2가 로컬 서브넷으로 라우팅한다. 다만 원격 경로·L3VNI·RMAC·Underlay 도달성 중 하나가 빠지면 그 장점만으로 전달이 성립하지 않는다.
+
+## 16일차 — ECMP: 링크가 두 개인데 왜 한 연결은 빨라지지 않을까?
+
+### 병렬 경로의 존재와 병렬 경로의 사용은 다르다
+
+ECMP(Equal-Cost Multi-Path, 등비용 다중 경로)는 라우팅으로 얻은 여러 같은 비용의 다음 홉을 전달에 이용하는 방식이다. 경로를 광고하는 프로토콜도, 죽은 경로를 탐지하는 프로토콜도 아니다. Leaf1–Spine1–Leaf2와 Leaf1–Spine2–Leaf2의 총 라우팅 비용이 같고, Leaf2 VTEP의 `/32`에 두 다음 홉이 **한 ECMP 그룹으로 실제 설치되어야** 한다. 케이블이 두 개라는 사실이나 BGP 화면에 후보 두 개가 보인다는 사실만으로 충분하지 않다. 여기서 비용이 같다는 것은 라우팅 메트릭이 같다는 뜻이지 링크 속도·지연·현재 혼잡이 같다는 뜻이 아니다.
+
+왜 매 패킷을 번갈아 보내지 않을까? 서로 다른 경로의 지연이 다르면 뒤 패킷이 먼저 도착하고, 경로 MTU(Maximum Transmission Unit)가 다르면 크기 제약도 흔들린다. 재정렬을 손실로 오인하는 전송 계층 반응과 진단 도구의 혼란까지 생긴다. 2000년 11월의 [RFC 2991 §§2–4](https://www.rfc-editor.org/rfc/rfc2991.html#section-2)는 이 문제를 정리하면서 같은 flow를 같은 경로에 유지하고 경로 변경의 영향을 줄이는 기준을 제시했다. 같은 달의 [RFC 2992](https://www.rfc-editor.org/rfc/rfc2992.html)은 그중 hash-threshold 알고리즘의 분석이다. 둘 다 Informational 문서이며 모든 장비에 단일 해시 구현을 강제하는 표준은 아니다.
+
+### VXLAN의 UDP 송신 포트는 분산할 재료를 밖으로 내보낸다
+
+이번 예의 A=`192.168.10.10`, B=`192.168.10.20`, C=`192.168.10.30`은 같은 서브넷과 L2VNI `10010`에 속한다. A·C는 Leaf1, B는 Leaf2에 붙고, VTEP IP는 `10.255.0.11/32`, `10.255.0.12/32`다. Leaf1의 `eth1=172.16.1.1/30`은 Spine1 `172.16.1.2`, `eth2=172.16.2.1/30`은 Spine2 `172.16.2.2`로 이어진다.
+
+A는 게이트웨이가 아니라 B의 MAC을 알아내 프레임을 보낸다. Leaf1은 이미 학습한 `B MAC → VTEP2` 브리지 정보를 사용해 캡슐화한다. 안쪽은 `A MAC → B MAC`, `A IP → B IP`, VXLAN VNI는 `10010`이다. 바깥 IP는 `10.255.0.11 → 10.255.0.12`, UDP(User Datagram Protocol) 목적 포트는 `4789`, 송신 포트는 `p`다. Leaf1은 바깥 목적 IP의 ECMP 그룹에서 다음 홉을 선택한 후, 예컨대 Spine1을 골랐다면 이웃 테이블에서 `172.16.1.2`의 MAC을 얻어 **바깥** Ethernet 목적 MAC으로 쓴다. 원격 VTEP IP와 지금 케이블 너머 이웃 MAC은 다른 단계의 주소다.
+
+Spine은 바깥 IP로 라우팅하고 바깥 TTL과 Ethernet 헤더를 처리한다. Leaf2는 터널을 벗겨 B로 브리징한다. 이 예는 양 끝이 L2 전달만 하므로 안쪽 IP TTL은 감소하지 않는다. A→C는 로컬 브리징이어서 터널도 Underlay ECMP도 필요 없다.
+
+동일한 VTEP 쌍의 바깥 IP는 여러 VM 통신에 걸쳐 같다. Underlay가 두 IP만 해시하면 VM 수가 많아도 같은 경로에 몰릴 수 있다. 그래서 [RFC 7348 §5(2014년)](https://www.rfc-editor.org/rfc/rfc7348.html#section-5)는 안쪽 패킷 필드의 해시로 바깥 UDP 송신 포트를 만들고 `49152–65535` 범위를 사용할 것을 권고한다. 목적 포트는 VXLAN 서비스 식별자이고, 송신 포트는 내부 흐름의 다양성인 entropy를 밖으로 드러내는 재료다. 단, 중간 장비가 UDP 포트를 해시에 포함해야 효과가 있다. 터널 내부를 직접 해시하는 장비라면 그 실제 필드도 확인해야 한다.
+
+<figure id="drd-l2l3-16" class="l2l3-panel">
+<figcaption>16일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="16일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 흐름을 고정하는 이유와 장애 때 다시 움직이는 이유
+
+flow는 구현이 동일한 전달 단위로 취급하는 패킷 묶음이다. 흔히 5-tuple, 즉 송신·목적 IP와 송신·목적 포트 및 전송 프로토콜을 쓰지만 항상 그렇지는 않다. Linux IPv4의 `fib_multipath_hash_policy`는 문서상 `0=L3(기본)`, `1=L4`, `2=L3 또는 존재하면 안쪽 L3`, `3=사용자 지정 필드`다. 커널 빌드의 multipath 지원도 전제다. [Linux IP Sysctl](https://docs.kernel.org/networking/ip-sysctl.html#fib-multipath-hash-policy-integer)
+
+동일 입력과 동일 그룹에서는 같은 다음 홉을 고르는 것이 순서 유지에 유리하다. 그래서 단일 TCP(Transmission Control Protocol) 연결의 대역폭이 병렬 링크를 합친 값으로 자동 증가하지 않는다. 여러 연결은 다른 포트 등으로 분산될 수 있지만, 해시 충돌과 큰 흐름·작은 흐름의 전송량 차이 때문에 **흐름 수의 균등 분산도 바이트 수의 반반 분산은 아니다.** 역방향은 다른 장비가 독립적으로 선택하므로 왕복이 같은 Spine을 지난다고도 가정할 수 없다.
+
+| 방법 | 안정된 상태 | 다음 홉 추가·삭제 때의 절충 |
+|---|---|---|
+| 패킷별 round-robin | 한 흐름도 여러 경로로 분리 | 경로 지연 차에 따른 지속적 재정렬 위험 |
+| hash-threshold | 해시 공간의 구간으로 다음 홉 선택 | 구간 재분할로 정상 다음 홉을 쓰던 흐름도 이동 가능 |
+| HRW(Highest Random Weight) | 각 다음 홉별 해시 중 가장 큰 값 선택 | 변경 영향을 줄이는 대신 다음 홉 수에 따른 계산 부담 |
+| Linux resilient next-hop group | 해시→버킷→다음 홉의 간접 매핑 | 삭제된 홉의 버킷 재배치, idle/불균형 타이머로 안정성과 재균형 절충 |
+
+마지막 두 설명의 근거는 [RFC 2991 §4](https://www.rfc-editor.org/rfc/rfc2991.html#section-4)와 [Linux Resilient Next-hop Groups](https://docs.kernel.org/networking/nexthop-group-resilient.html)다. resilient hashing도 실패한 홉으로 가던 흐름의 이동을 막지는 못하고, 불균형 타이머 만료에 따른 이동도 있을 수 있다. 장애 후 **탐지 → 그룹 변경 → 해시 매핑 변경**이 일어나면 전환 중 유실·재정렬이 가능하다. “평소 flow를 고정한다”와 “장애에도 flow가 절대 움직이지 않는다”는 전혀 다른 주장이다. [RFC 2992 §2.2](https://www.rfc-editor.org/rfc/rfc2992.html#section-2.2)
+
+### 선택 기준과 미실행 관측
+
+ECMP와 LACP(Link Aggregation Control Protocol)를 같은 것으로 보면 안 된다. 전자는 IP의 여러 다음 홉 선택이고, 후자는 하나의 논리 링크를 만들 멤버 결합을 협상한다. 둘 다 보통 해시 분산이 관여할 수 있지만 대상과 제어가 다르다. 다수 호스트·연결의 총량을 분산하려면 ECMP가 맞고, 단일 연결의 한계를 바꾸려면 병렬 연결이나 별도 다중경로 전송 설계까지 검토해야 한다는 것이 이 모델에서의 선택상 추론이다. 순서 민감성이 높다면 단순 대역폭 수치보다 재매핑 범위와 그룹 변경 정책을 먼저 확인한다.
+
+다음은 Linux Leaf1을 가정한 **미실행·조회용 예시**다. 다중 다음 홉 설치 → 해시 정책 → 조회된 경로 → 이웃 → 실제 UDP 송신 포트와 인터페이스를 대조한다. `route get`은 패킷을 보내는 종단 간 통신 시험이 아니다. 두 송신 포트가 같은 홉을 골라도 충돌이나 L3 정책 때문일 수 있어 곧바로 분산 실패라고 결론 내리지 않는다. [ip-route(8)](https://man7.org/linux/man-pages/man8/ip-route.8.html)
+
+```bash
+ip route show 10.255.0.12/32
+ip nexthop show
+sysctl net.ipv4.fib_multipath_hash_policy
+ip route get 10.255.0.12 from 10.255.0.11 ipproto udp sport 50001 dport 4789
+ip route get 10.255.0.12 from 10.255.0.11 ipproto udp sport 50002 dport 4789
+ip neigh show
+sudo tcpdump -p -ni any -vv -c 20 'udp dst port 4789'
+```
+
+**확인 질문 — 여러 VM의 VXLAN 트래픽이 한 링크로 몰리면 무엇을 대조할까?** ECMP 다음 홉이 실제 여러 개 설치됐는지, 바깥 UDP 송신 포트가 다양하게 생성되는지, Underlay가 그 포트를 해시하는지를 순서대로 확인한다. 그 뒤에야 흐름별 바이트 편중이나 재균형 정책을 원인 후보로 좁힐 수 있다.
+
+## 17일차 — BFD: 링크가 Up인데도 죽은 경로를 어떻게 빨리 알아낼까?
+
+### 물리 링크 신호와 전달 가능성 사이의 틈
+
+ECMP 해시는 선택할 다음 홉이 살아 있다는 전제 위에서 움직인다. 케이블이 뽑히면 링크 신호로 알 수 있지만, 링크는 Up인 채 상대 처리 기능이 멈추거나 검사 경로가 차단될 수도 있다. 라우팅 프로토콜의 자체 생존 타이머만 기다리는 동안에는 실패한 홉으로 계속 보낼 수 있다. BFD(Bidirectional Forwarding Detection, 양방향 전달 감지)는 이 틈을 메워 **검사 경로의 생존 상태를 라우팅 프로토콜 등에 제공**한다. 경로를 광고·계산하거나 스스로 우회 경로를 설치하는 프로토콜은 아니다.
+
+2010년 6월의 [RFC 5880](https://www.rfc-editor.org/rfc/rfc5880.html)은 Katz와 Ward가 작성한 BFD 기본 명세이며, [RFC 5881](https://www.rfc-editor.org/rfc/rfc5881.html)은 IPv4/IPv6 단일 홉 적용, [RFC 5883](https://www.rfc-editor.org/rfc/rfc5883.html)은 다중 홉 적용을 나눈다. 하나의 빠른 감지 기제를 여러 라우팅 프로토콜이 사용할 수 있게 하는 구조이므로, UDP/IP를 운반 수단으로 쓴다는 사실과 경로 광고가 목적이 아니라는 사실을 함께 기억해야 한다.
+
+### 데이터 패킷과 BFD Control은 서로 다른 흐름이다
+
+오늘은 VXLAN 없이 일반 IP 라우팅이다. A=`192.168.10.10/24`, C=`192.168.10.30/24`는 Leaf1 LAN, B=`192.168.20.20/24`는 Leaf2 LAN에 있다. A의 게이트웨이는 Leaf1 `192.168.10.1`, MAC은 `02:00:00:00:10:01`이다. Leaf1–Spine1은 `172.16.1.1 ↔ 172.16.1.2`, Leaf1–Spine2는 `172.16.2.1 ↔ 172.16.2.2`로 연결된다. B의 `/24`에 두 등비용 홉이 설치되어 있고, 라우터 인접 구간마다 BFD를 구성해 OSPF(Open Shortest Path First, 링크 상태 기반 내부 라우팅)와 연동했다고 가정한다.
+
+A→C는 ARP 후 로컬 스위칭이므로 라우터 간 BFD 검사 대상이 아니다. A→B는 목적 MAC을 게이트웨이로, IP 목적지를 B로 둔다. Leaf1은 ECMP로 다음 홉을 고르고 그 이웃의 MAC으로 헤더를 바꾸며 TTL을 줄인다. 이후 Spine→Leaf2→B로 각 홉이 라우팅한다. 이 데이터 흐름과 별도로 Leaf1↔Spine1은 **상대 장비를 IP 목적지로 하는 BFD Control**을 독립적으로 주기 송신한다. 비동기 모드(Asynchronous mode)는 ping 요청 하나에 응답 하나를 기다리는 반복이 아니다. 여기서는 Echo를 사용하지 않는다. [RFC 5880 §3.2](https://www.rfc-editor.org/rfc/rfc5880.html#section-3.2)
+
+| Leaf1→Spine1 Control 헤더 | 값과 의미 |
+|---|---|
+| Ethernet | Leaf1 `eth1` MAC → Spine1 접속 MAC |
+| IP | `172.16.1.1 → 172.16.1.2` |
+| UDP | 송신 `49152–65535` 중 세션 동안 고정한 포트 → 목적 `3784` |
+| BFD | 상태, My/Your Discriminator, 송수신 간격, Detect Mult |
+
+Discriminator는 IP 주소와 별도로 세션을 판별하는 식별자다. `My`는 자신이 정하고 `Your`는 상대가 알려 준 값이다. `Down → Init → Up`의 상태 교환은 양방향 통신을 확인하며, 관리적으로 끈 상태 `AdminDown`도 따로 있다. 인증 없는 단일 홉 Control은 TTL/Hop Limit `255`로 보내고 수신값도 `255`여야 한다. 인증을 사용하는 경우에도 송신값은 255지만 수신 검사 강도는 명세가 구분한다. 이는 임의 원격 주입을 줄이는 검사이지 모든 공격을 막는 신원 인증은 아니다. [RFC 5880 §§4.1·6.2](https://www.rfc-editor.org/rfc/rfc5880.html#section-4.1), [RFC 5881 §§4–5](https://www.rfc-editor.org/rfc/rfc5881.html#section-4)
+
+### 탐지 타이머는 양방향에서 각자 계산한다
+
+가장 흔한 함정은 “내 송신 간격 × 내 배수”를 내 탐지 시간으로 이해하는 것이다. 안정된 비동기 세션에서 **수신자 L이 상대 S의 침묵을 기다리는 시간**은 다음과 같다.
+
+`L의 탐지 시간 = S가 광고한 Detect Mult × max(L의 Required Min RX, S의 Desired Min TX)`
+
+S가 얼마나 빨리 보내고 싶은지와 L이 얼마나 빨리 받을 수 있는지 중 더 느린 간격을 사용하고, **송신자 S가 보낸 배수**를 곱한다. 반대 방향에서는 L과 S를 바꾸어 다시 계산한다. 두 방향이 같은 값일 이유는 없다. RFC 헤더의 간격 단위는 마이크로초이고 FRR 설정은 밀리초다. [RFC 5880 §§6.8.2–6.8.4](https://www.rfc-editor.org/rfc/rfc5880.html#section-6.8.4), [FRR BFD, Peer/Profile Configuration](https://docs.frrouting.org/en/latest/bfd.html)
+
+| 안정된 협의값의 예 | Leaf1(L) | Spine1(S) |
+|---|---|---|
+| Desired Min TX | 100ms | 300ms |
+| Required Min RX | 100ms | 50ms |
+| 광고한 Detect Mult | 5 | 3 |
+| 상대 침묵을 기다리는 로컬 탐지 시간 | `3 × max(100,300) = 900ms` | `5 × max(50,100) = 500ms` |
+
+원문의 단순 예처럼 양쪽 TX/RX가 모두 100ms이고 양쪽 배수가 3이면 각각 300ms다. 이는 **마지막 유효 수신 이후의 무수신 시간**이지 장애 발생부터 전체 트래픽 복구까지의 상한이 아니다. 실제 송신에는 jitter가 있고 타이머 변경은 Poll/Final 절차로 안전하게 조율된다. 따라서 패킷을 단순히 세 개 못 봤다는 표현만으로 정확한 타이머 동작을 대체하면 안 된다. 캡처에 보인 패킷도 판별자·인증·TTL 등의 검사를 통과하지 못하면 유효 수신이 아니다. [RFC 5880 §§6.8.3–6.8.7](https://www.rfc-editor.org/rfc/rfc5880.html#section-6.8.3)
+
+<figure id="drd-l2l3-17" class="l2l3-panel">
+<figcaption>17일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="17일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### 빠른 감지와 빠른 복구를 분리해 선택한다
+
+Spine1 쪽 수신이 끊기면 `BFD 타이머 만료 → OSPF에 Down 통지 → 인접·경로 갱신 → FIB 변경 → Spine2 사용`이 필요하다. BFD만 만들고 OSPF 같은 소비자와 연동하지 않았다면 다음 홉이 제거된다고 볼 수 없다. FRR도 인터페이스의 OSPF BFD 연동을 별도로 문서화한다. [FRR BFD, OSPF BFD Configuration](https://docs.frrouting.org/en/latest/bfd.html#ospf-bfd-configuration)
+
+| 선택 | 효과적인 조건 | 주의할 점 |
+|---|---|---|
+| 링크 상태 + 라우팅 자체 생존 확인 | 감지 속도 요구가 완만하고 구조 단순성이 중요 | 링크 Up 상태의 장애를 늦게 알 수 있음 |
+| 비동기 BFD | 인접 전달 경로를 빠르게 감지하고 라우팅과 연동 | 세션 수·CPU·혼잡 대비 타이머 예산 필요 |
+| Echo 기능 | 상대가 돌려보내는 실제 전달 경로를 검사할 필요 | Control과 별도 기능이며 다중 홉에 사용 금지 |
+| Demand mode | 다른 생존 확인 수단이 있고 주기 트래픽 감소가 중요 | 주기 송신을 멈추는 별도 모드라 여기의 비동기 계산을 그대로 대입하지 않음 |
+
+Echo는 UDP `3785`, 다중 홉 Control은 `4784`다. 다중 홉은 TTL이 중간에서 감소하므로 단일 홉의 “수신 TTL=255” 검사를 그대로 적용할 수 없고, 위조 노출이 커 인증을 권고한다. [RFC 5883 §§3·5–6](https://www.rfc-editor.org/rfc/rfc5883.html#section-3) 이는 BFD를 인터넷 애플리케이션 상태 검사로 무작정 쓰라는 뜻도 아니다. RFC 5883은 혼잡 회피가 부족해 일반 인터넷의 애플리케이션 간 감지에 직접 쓰는 것을 적용 범위로 삼지 않는다.
+
+운영 선택상 **추론**은 가장 짧은 타이머보다 부하와 일시 혼잡에서도 지킬 수 있는 타이머가 낫다는 것이다. Leaf1↔Spine1 BFD Up은 그 세션의 검사 경로에 대한 신호일 뿐 Leaf2 이후나 B의 서비스 정상까지 보장하지 않는다. ECMP가 있으면 한 검사 흐름이 모든 대체 경로를 샅샅이 증명하는 것도 아니다.
+
+### 미실행 관측 명령과 확인 질문
+
+아래는 FRR Leaf1의 `eth1`이 Spine1 연결인 **미실행·조회용 예시**다. 링크 → BFD의 로컬·원격 타이머와 진단 → OSPF 인접 → 설치된 홉을 대조한다.
+
+```bash
+ip -br link show dev eth1
+vtysh -c 'show bfd peers'
+vtysh -c 'show ip ospf neighbor'
+ip route show 192.168.20.0/24
+sudo tcpdump -p -ni eth1 -vv -c 20 'udp port 3784'
+```
+
+**확인 질문 — 링크는 Up인데 BFD만 Down을 반복하면?** 실제 전달 장애뿐 아니라 검사 패킷 차단, TTL·인증·세션 식별자의 유효성 검사 실패, 공격적 타이머와 처리 지연을 확인한다. Down은 검사 경로에 대한 이상 신호이지 원인을 확정하는 판결이 아니다.
+
+## 18일차 — 재귀적 다음 홉과 RIB/FIB: BGP 경로가 있는데 왜 못 갈까?
+
+### 경로를 들은 사실과 패킷을 보낼 수 있는 사실 사이
+
+BGP(Border Gateway Protocol, 경계 게이트웨이 프로토콜)가 광고하는 NEXT_HOP은 반드시 케이블 하나 건너의 이웃은 아니다. 내부 BGP(iBGP)에서는 여러 홉 떨어진 라우터의 루프백 주소일 수 있다. “B 대역으로 가려면 R3를 향하라”는 지시를 실행하려면, 다시 R3 주소에 대한 경로를 찾아 **실제 출력 인터페이스와 직접 이웃**까지 풀어야 한다. 이것이 recursive next-hop resolution, 재귀적 다음 홉 해석이다. 이 과정을 MAC 주소 해석과 섞으면 원격 R3 루프백에 ARP를 보내야 한다는 잘못된 결론이 나온다.
+
+[RFC 4271(2006년 1월) §3.2](https://www.rfc-editor.org/rfc/rfc4271.html#section-3.2)는 BGP-4의 RIB(Routing Information Base, 라우팅 정보 기반)를 수신 후보·로컬 선택·광고 대상으로 나누는 개념 모델을 제시한다. [§9.1.2.1](https://www.rfc-editor.org/rfc/rfc4271.html#section-9.1.2.1)은 다음 홉을 해석할 수 없는 경로를 선택 대상에서 제외하도록 권고하고, 자신이나 서로에 의존하는 순환 경로도 해석 성공으로 인정하지 않는다. 이는 광고 수신과 실제 전달 결정을 구분하는 프로토콜상의 안전장치다. 2006년 명세의 발행을 BGP 전체의 탄생 시점으로 해석해서는 안 된다.
+
+### R1이 알아야 할 세 개의 주소를 분리한다
+
+토폴로지는 `A·C — SW — R1 — R2 — R3 — B`이고 터널·NAT·정책 라우팅은 없다고 하자. A=`192.168.10.10/24`, C=`192.168.10.30/24`, B=`192.168.20.20/24`다. A의 게이트웨이는 R1 `192.168.10.1`, MAC은 `02:00:00:00:10:01`이다. R1 `eth1=172.16.12.1/30`은 R2 `172.16.12.2`, MAC `02:00:00:00:12:02`에 연결되고, R2 `172.16.23.1/30`은 R3 `172.16.23.2`에 연결된다. R3의 루프백은 `10.255.0.3/32`, B 쪽 게이트웨이는 `192.168.20.1`이다.
+
+R3가 R1에 iBGP로 B의 `/24`와 NEXT_HOP=`10.255.0.3`을 광고하도록 구성했고, R1은 OSPF로 그 루프백을 안다고 가정한다. 모든 iBGP 광고가 자동으로 이 NEXT_HOP 값을 만드는 것은 아니다. **R2도 B 대역의 경로를 알고 역방향 경로도 있다**는 전제가 필요하다.
+
+| R1의 개념적 정보 — 실행 출력 아님 | 뜻 |
+|---|---|
+| BGP `192.168.20.0/24 → 10.255.0.3` | 최종 목적지 대역과 광고된 다음 홉 |
+| OSPF `10.255.0.3/32 → 172.16.12.2, eth1` | 광고된 다음 홉까지의 실제 내부 경로 |
+| 직결 `172.16.12.0/30 → eth1` | 직접 붙은 링크 |
+| 이웃 `172.16.12.2 → 02:00:00:00:12:02` | 그 링크에서 Ethernet으로 보낼 대상 |
+
+재귀 해석의 결과는 “B 대역은 eth1에서 R2로”다. 원격 R3 루프백 MAC을 알아내는 것이 아니다. 목적지 경로와 다음 홉 경로의 조회에서는 해당 주소에 가장 길게 일치하는 prefix를 고려하며, 더 구체적인 해석 경로가 바뀌면 의존하는 BGP 경로도 영향을 받는다. [RFC 4271 §9.1.2.1](https://www.rfc-editor.org/rfc/rfc4271.html#section-9.1.2.1)
+
+<figure id="drd-l2l3-18" class="l2l3-panel">
+<figcaption>18일차: 버튼을 눌러 상황별 패킷·제어 상태를 비교하세요.</figcaption>
+<svg viewBox="0 0 900 420" role="img" aria-label="18일차 처리 단계와 헤더·테이블 변화"></svg>
+<noscript>그림에는 JavaScript가 필요합니다. 같은 단계와 조건은 바로 앞뒤 본문·표에 설명했습니다.</noscript>
+</figure>
+
+### RIB 후보, 선택, FIB 설치, 이웃 해석은 네 개의 관문이다
+
+FIB(Forwarding Information Base, 전달 정보 기반)는 데이터 패킷 전달에 사용하는 정보다. Linux/FRR에서는 BGP 데몬의 선택과 Zebra의 여러 프로토콜 간 선택, 커널 설치를 구분해야 한다. 패킷마다 BGP 데몬에 질문하는 것이 아니라, 제어 측에서 계산·설치한 결과를 커널 데이터 경로가 사용한다. [FRR Zebra, FIB push interface](https://docs.frrouting.org/en/latest/zebra.html#zebra-fib-push-interface)
+
+| 관문 | 확인해야 하는 상태 | 그 상태만으로 증명하지 못하는 것 |
+|---|---|---|
+| 수신 후보 | Adj-RIBs-In의 경로·속성, 입력 정책과 검증 | 후보가 로컬 최선이라는 사실 |
+| BGP 선택 | Loc-RIB에 반영할 경로, 해석 가능한 NEXT_HOP | 다른 출처를 고려한 Zebra 선택·커널 설치 |
+| 통합 선택·설치 | Zebra RIB의 선택 경로와 dataplane 반영, Linux 경로 | 직접 이웃 MAC 해석과 실제 프레임 송신 |
+| 이웃 해석 | 출력 링크의 R2 IP–MAC 바인딩과 상태 | 이후 R2·R3 및 B 서비스의 정상 |
+
+Adj-RIBs-Out은 여기서 다시 이웃에게 광고할 정보를 뜻하며 FIB의 다른 이름이 아니다. RFC는 이들을 개념적으로 나눌 뿐 반드시 메모리 복사본 세 개를 만들라고 요구하지 않는다. Zebra는 각 프로토콜이 제시하는 경로를 모아 같은 prefix에 대해 선택하고, Linux를 dataplane으로 쓸 때 커널에 반영한다. FRR의 administrative distance는 경로 출처 간 선호도이지 IP 패킷 헤더 필드가 아니다. 커널의 route metric과 FRR의 RIB metric·distance도 그대로 같은 수치로 읽으면 안 된다. [RFC 4271 §3.2](https://www.rfc-editor.org/rfc/rfc4271.html#section-3.2), [FRR Zebra, Administrative Distance·Route Replace Semantics](https://docs.frrouting.org/en/latest/zebra.html)
+
+A→C는 ARP 후 SW의 로컬 스위칭이므로 이 경로를 쓰지 않는다. A→B에서는 A가 R1 MAC으로 프레임을 보내되 IP 목적지는 B로 둔다. R1은 설치된 경로로 `eth1, 172.16.12.2`를 선택하고, R2 MAC으로 Ethernet 헤더를 교체하며 TTL을 하나 줄인다. **IP 목적지는 계속 `192.168.20.20`**이다. NEXT_HOP은 전달 지시이지 새 IP 목적지가 아니다. R2도 B IP를 조회해 R3로, R3도 조회해 B로 보낸다. BGP 속성을 데이터 패킷에 붙여 운반하지 않으므로, 터널 없는 이 예에서 R2가 B 대역을 몰라도 된다는 주장은 틀리다.
+
+### 재귀는 의존성이지 무한한 조회 루프가 아니다
+
+R1–R2 장애 후 R3 루프백 경로가 사라지고 사용할 대체 해석 경로도 없으면 BGP NEXT_HOP은 미해결 상태가 된다. BGP 경로 자체가 수신 목록에 남아 있더라도 사용할 수 있다는 뜻은 아니다. 서로를 가리키는 두 경로 역시 재귀 종료점이 없으므로 유효하지 않다. NHT(Nexthop Tracking, 다음 홉 추적)는 이 의존 경로의 변화를 추적하는 장치이며, FRR의 `show ip nht`가 보여 주는 **경로 해석 상태**는 ARP/ND 이웃 캐시와 구분해야 한다. 기본 경로를 NHT에 허용하는지는 구현·프로파일·설정에 따라 확인한다. [RFC 4271 §9.1.2.1](https://www.rfc-editor.org/rfc/rfc4271.html#section-9.1.2.1), [FRR Zebra, Nexthop Tracking](https://docs.frrouting.org/en/latest/zebra.html#nexthop-tracking)
+
+반대로 R3 루프백 경로와 B의 커널 경로가 모두 있어도 R2 ARP가 `INCOMPLETE`나 `FAILED`라면 Ethernet으로 내보내지 못할 수 있다. IP 경로가 있다는 것과 같은 링크 이웃의 링크 계층 주소가 준비됐다는 것은 다른 조건이다. [ip-neighbour(8)](https://man7.org/linux/man-pages/man8/ip-neighbour.8.html)
+
+대안으로 광고 NEXT_HOP을 직접 인접한 주소로 만들면 의존 관계를 단순화할 수 있지만, 루프백을 통한 세션·경로의 물리 링크 독립성을 포기하거나 정책을 바꿔야 할 수 있다. 터널을 사용하면 중간 라우터가 테넌트 B 대역 대신 바깥 터널 종단 경로만 알도록 설계를 바꿀 수도 있지만, 그것은 이 예의 무터널 전달과 다른 구조다. 이 비교에서의 선택상 **추론**은 루프백 기반 내부망에서는 재귀와 NHT를 제거하려 하기보다 의존 경로와 dataplane 설치를 관측 가능하게 만드는 편이 일관적이라는 것이다.
+
+### 미실행 관측 명령과 확인 질문
+
+다음은 R1의 `eth0`가 A 쪽, `eth1`이 R2 쪽인 **미실행·조회용 예시**다. BGP 후보·선택 → NEXT_HOP 해석 → Zebra → 커널 → 이웃 → 실제 프레임을 순서대로 대조한다. FRR 화면의 `>`는 선택, `*`는 FIB 상태 표시로 구분하고 실제 Linux 상태도 확인한다. `ip route get`은 지정 조건의 조회이며 실제 패킷을 송신하지 않는다. [FRR Zebra](https://docs.frrouting.org/en/latest/zebra.html), [ip-route(8)](https://man7.org/linux/man-pages/man8/ip-route.8.html)
+
+```bash
+vtysh -c 'show bgp ipv4 unicast 192.168.20.0/24'
+vtysh -c 'show ip nht 10.255.0.3'
+vtysh -c 'show ip route 192.168.20.0/24'
+ip route get 192.168.20.20 from 192.168.10.10 iif eth0
+ip neigh show dev eth1
+sudo tcpdump -p -ni eth1 -e -c 20 'arp or host 192.168.20.20'
+```
+
+**확인 질문 — R3 루프백 경로와 B의 커널 경로가 정상인데 R1에서 송신이 막히면?** 실제 이웃 `172.16.12.2`의 ARP 상태, 링크와 필터를 확인한다. 경로 조회 성공을 종단 간 통신 성공으로 읽지 않는다. 마지막으로 `BFD 감지 → OSPF 변경 → BGP 다음 홉 재평가 → FIB 반영 → 이웃과 실제 송신`은 각각 다른 관문이다. 앞 단계의 빠른 타이머 하나로 전체 복구 시간을 보장할 수 없는 이유가 이 의존성에 있다.
+## 학술적·이론적 배경을 하나로 연결하기
+
+### 그래프의 최단 경로와 정책 경로는 다른 문제다
+
+OSPF의 설명용 모델에서는 라우터·네트워크를 정점과 링크로 나타내고 출력 cost를 가중치로 둔다. SPF는 이 지도에서 각 목적지까지 가중치 합이 작은 길을 계산한다. 물리 홉 수가 많아도 cost 합이 작으면 이길 수 있다. 반면 BGP에서는 각 AS가 자신의 정책으로 경로를 선호하고 허용한다. AS_PATH는 루프 제거와 선택에 쓰이지만 전체 인터넷을 하나의 동일한 지연시간 최적화 문제로 만들지 않는다. [RFC 2328 §16](https://www.rfc-editor.org/rfc/rfc2328.html#section-16), [RFC 4271 §9](https://www.rfc-editor.org/rfc/rfc4271.html#section-9)
+
+### Flood-and-learn과 명시적 제어 상태
+
+기본 Ethernet 학습은 프레임의 출발 MAC을 보고 위치를 배운다. 목적 위치가 없으면 제한된 같은 브리지 영역에 복제하는 동작이 필요할 수 있다. EVPN은 원격 위치를 제어 메시지로 미리 공유해 이 비용을 줄인다. 다만 원격 상태 배포·수입 정책·이동 처리라는 다른 비용을 치른다. 따라서 **플러딩 비용이 제어 상태 비용으로 일부 이동한다**는 것이 적절한 해석이며, “EVPN은 언제나 더 단순하고 빠르다”는 결론은 아니다. [RFC 7432 §§9–11](https://www.rfc-editor.org/rfc/rfc7432.html#section-9)
+
+### 캡슐화는 주소 공간과 전달 책임을 분리한다
+
+VXLAN의 안쪽은 테넌트의 Ethernet 연결이고 바깥은 VTEP 사이 IP 연결이다. 이 덕분에 underlay 라우터는 테넌트 MAC이나 IP를 전부 알지 않고도 운반할 수 있다. 대신 안쪽·바깥쪽마다 주소·TTL·크기·필터·관측 지점이 생긴다. IP 터널을 얻는 대신 디버깅해야 할 계층을 하나 더 만든 셈이다. 논리 분리를 얻었다고 암호학적 보호까지 생기는 것은 아니다. [RFC 7348 §§4–5, §7](https://www.rfc-editor.org/rfc/rfc7348.html#section-4)
+
+### 타임아웃은 원인을 증명하지 않고 상태 전환을 촉발한다
+
+NUD, VRRP, BFD는 모두 시간이 지났을 때 상태를 바꿀 수 있지만 검사 대상과 반응은 다르다. 이웃의 도달 상태, 첫 홉 역할, 지정된 전달 경로의 생존을 각각 다룬다. 패킷이 안 온 이유는 장비 고장뿐 아니라 혼잡·필터·수신 처리 지연일 수도 있다. 짧은 타이머는 탐지를 빠르게 할 여지가 있지만 오탐과 처리 비용도 높인다. 따라서 감지 시간을 전체 복구 시간으로 발표하지 말고 **감지 → 제어 상태 갱신 → 계산·선택 → 설치 → 실제 전달 재개**를 나눠 측정해야 한다. 이는 앞의 규격 동작을 합쳐 도출한 운영 원칙이다.
+
+## 대안 비교표: 서로 대체하는 것과 함께 쓰는 것
+
+| 비교 | 같은 문제를 푸는가? | 선택의 핵심 |
+|---|---|---|
+| ARP와 NDP | IPv4/IPv6의 링크 이웃 해석이라는 공통점이 있지만 범위가 다름 | NDP는 라우터 발견·도달 상태 관리도 포함. IPv6에 ARP를 그대로 가정하지 않음 |
+| LACP와 ECMP | 아님. 링크 집성 조율 대 IP 다음 홉 선택 | 같은 논리 상대의 선 묶기와 여러 라우팅 경로 사용을 분리. 둘을 함께 쓸 수도 있음 |
+| OSPF와 BGP | 일부 경로 배포 영역은 겹치나 목표·모델이 다름 | 내부 토폴로지와 비용 수렴 대 정책적 도달 정보. iBGP의 다음 홉을 IGP가 제공할 수도 있음 |
+| VRRP와 Anycast gateway | 게이트웨이 제공이라는 공통점, 전달 구조는 다름 | 한 링크의 담당자 인계 대 여러 Leaf의 로컬 전달. 임의로 섞으면 중복 역할·주소 충돌 위험 |
+| VXLAN과 EVPN | 아님. 운반과 제어 | VXLAN 없이 EVPN의 다른 데이터 평면도 가능하고, EVPN 없는 정적·학습형 VXLAN도 가능 |
+| 대칭과 비대칭 IRB | 같은 서브넷 간 라우팅 문제의 다른 모델 | 양 끝 라우팅·상태 분산 대 송신 측 목적 서브넷 상태 유지. 기능 지원과 규모를 함께 비교 |
+| ICMP 기반 PMTUD와 PLPMTUD | 경로 크기 탐색 목적은 겹침 | ICMP 전달 정책과 전송 계층의 탐색 지원. 단순 MSS clamp만으로 UDP·모든 경로를 해결하지 못함 |
+| 라우팅 자체 생존 확인과 BFD | 생존 감지 일부가 겹침 | 요구 감지 시간, 세션 수, CPU·혼잡 내성, 라우팅 연동. BFD는 경로 계산을 대체하지 않음 |
+
+표의 “선택”은 규격의 기능 차이에서 도출한 **설계 판단**이지, 모든 환경에서의 성능 순위나 특정 벤더 권장 설정을 뜻하지 않는다.
+
+## 상황별 최적 선택
+
+- **작고 고정된 사내망:** 필요한 분리와 가용성만 구현한다. 정적 경로·로컬 VLAN으로 충분하면 EVPN을 학습했다는 이유로 도입하지 않는다. 운영할 상태와 고장 모드가 늘어나는지도 비용이다.
+- **여러 내부 라우터와 장애 우회:** 내부 경로 수렴에는 OSPF 같은 IGP를 검토한다. 첫 홉 장애와 전체 내부 경로 장애를 나누고, 호스트가 고정 게이트웨이를 쓴다면 VRRP 같은 인계가 추가로 필요할 수 있다.
+- **여러 사업자·출구 정책:** BGP import/export 필터, LOCAL_PREF, 다음 홉 도달성을 설계한다. 짧은 AS_PATH를 최저 지연 보장으로 사용하지 않는다.
+- **기존 L2 워크로드를 여러 랙에 분산:** VXLAN으로 운반하고, 원격 위치·이동·다중 연결을 관리해야 하면 EVPN을 더한다. L2 연장이 필수가 아니라면 순수 L3가 더 단순한지 먼저 비교한다.
+- **가상 서브넷이 많은 분산 데이터센터:** 대칭 IRB의 상태 범위 이점이 유효한지, L3VNI·VRF·RMAC·하드웨어 지원이 맞는지 검토한다. “대칭”만으로 왕복 경로 동일성이 확보되는 것은 아니다.
+- **다수 연결의 합산 처리량:** LAG나 ECMP의 입력 헤더 다양성과 실제 분산 상태를 본다. 단일 연결의 속도가 목표라면 병렬 전송이나 별도 다중경로 전송 설계가 요구되는지 구분한다.
+- **짧은 장애 감지 목표:** BFD를 라우팅과 연동하되 실패 시 FIB까지 바뀌는 시간을 검증한다. 장비의 세션 수·CPU·보호 정책을 고려하지 않은 타이머 축소는 가용성을 오히려 낮출 수 있다.
+
+이는 환경별 요구를 기능에 매핑한 추론이다. 측정 없이 “몇 대부터 EVPN”, “몇 ms면 충분” 같은 수치 경계를 만들지 않는다.
+
+## 실전 베스트 프랙티스: 증상에서 확인 관문으로
+
+### BGP는 정상인데 VXLAN 통신이 안 된다
+
+1. BGP의 **EVPN 주소군**까지 열렸는지 본다. IPv4 unicast 세션만 있는 것은 다르다.
+2. Type 2/3 경로가 존재하는지, RT import가 원하는 MAC-VRF에 적용됐는지 확인한다.
+3. 제어 데몬에 있는 상태가 커널 FDB·VRF의 경로와 neighbor에 설치됐는지 본다.
+4. 로컬 포트의 VLAN/브리지 연결과 VNI·L2/L3 역할을 확인한다.
+5. 원격 VTEP까지 underlay 경로·직결 이웃이 있는지 본다.
+6. 실제 VXLAN UDP 포트·허용 정책·방향별 MTU를 본다. 작은 BGP 메시지 통과는 큰 UDP 데이터 통과의 증거가 아니다.
+7. 양 끝에서 바깥 패킷과 안쪽 프레임을 대조하고 반환 경로까지 확인한다.
+
+### 링크가 여러 개인데 트래픽이 한쪽으로 몰린다
+
+LAG라면 LACP의 집성·Collecting/Distributing 상태를 먼저 보고, ECMP라면 실제 여러 다음 홉의 설치를 먼저 본다. 그 뒤 해시가 어떤 필드를 쓰는지, 실제 패킷의 그 필드가 다양한지 확인한다. 터널 바깥 IP가 같은 상황에서 내부 VM이 많다는 사실만으로 분산될 것이라고 기대하지 않는다. 마지막으로 흐름 수와 바이트 수의 편중을 분리한다. 연결이 여러 개여도 해시 충돌이나 소수의 큰 흐름 때문에 균등 바이트 분산이 되지 않을 수 있다.
+
+### 작은 ping은 되는데 큰 전송이 멈춘다
+
+인터페이스 MTU와 터널 오버헤드를 계산하고, 송신 크기를 바꾼 시험과 ICMP/ICMPv6 오류 캡처로 경계를 좁힌다. 단, PMTU 캐시 때문에 큰 패킷이 송신 호스트에서 거절됐는지 중간 장비에서 버려졌는지도 구분한다. MSS는 TCP에만 해당하고, ICMP 차단을 그대로 둔 채 무작정 큰 MTU나 MSS clamp를 적용하는 것은 원인 확인을 대신하지 못한다.
+
+### 장애 감지는 빠른데 서비스 복구는 느리다
+
+검사 패킷의 마지막 유효 수신, BFD/VRRP 상태 변경, 라우팅 후보 변경, NHT 재평가, FIB 반영, 첫 실제 데이터 성공을 같은 시간축에 남긴다. 첫 성공 한 번뿐 아니라 전환 중 손실·재정렬·반환 경로·기존 연결 상태도 본다. “링크 Up”, “세션 Established”, “경로 best”는 각 관문의 관측치이지 복구 완료 도장 세 개가 아니다.
+
+## 함정과 안티패턴
+
+- **역할과 운반 계층을 한 단어로 분류한다:** OSPF는 IP Protocol 89, BGP는 TCP 179, BFD Control은 UDP를 사용하지만 이 정보만으로 각 프로토콜의 목적이 설명되지는 않는다. IP Protocol 번호와 TCP/UDP 포트도 구분한다.
+- **브로드캐스트·미지 유니캐스트를 같은 것으로 취급한다:** 둘 다 복제될 수 있지만 원래 목적 MAC과 원인은 다르다. 같은 브리지의 허용된 포트라는 경계가 있다.
+- **VXLAN·EVPN의 VPN을 암호화라는 뜻으로 읽는다:** 가상 사설 서비스의 논리 분리와 암호학적 인증·기밀성은 다른 요구다.
+- **모든 MAC을 하나의 MAC이라고 부른다:** 호스트 MAC, 가상 게이트웨이 MAC, RMAC, 바깥 다음 홉 MAC의 역할을 구분한다.
+- **NDP STALE을 실패로 취급해 캐시부터 지운다:** 최근 도달 확인이 오래됐다는 상태이며 즉시 송신 금지와 다르다. 관측 증거를 지우기 전에 원인을 좁힌다.
+- **TTL이 그대로인 터널 예를 모든 VXLAN에 일반화한다:** 같은 서브넷 L2 운반과 양 끝에서 라우팅하는 대칭 IRB는 안쪽 TTL 처리가 다르다.
+- **경로가 있다는 이유로 중간 라우터의 경로를 생략한다:** 무터널 전달에서 중간 홉은 최종 목적지 IP를 조회한다. VXLAN underlay가 바깥 주소만 알면 되는 경우와 다르다.
+- **타이머 계산을 전체 복구 실측으로 보고한다:** 이 글의 300ms BFD, VRRP 대기 계산, MTU 산술은 교육용 계산이다. 실제 장비의 end-to-end 측정이 아니다.
+
+## 빅테크 실전 사례
+
+### 공개 운영 사례 — 2019년 Cloudflare route leak: 더 구체적인 경로가 틀린 곳으로 트래픽을 끌어갔다
+
+BGP의 정책 선택과 FIB의 최장 프리픽스 일치는 실제 장애에서도 구분해야 한다. Cloudflare가 공개한 2019년 6월 24일 장애 분석에 따르면, DQE Communications(AS33154)가 사용하던 route optimizer는 큰 프리픽스를 더 구체적인 프리픽스로 나누었다. 예를 들어 Cloudflare의 `104.20.0.0/20`은 `104.20.0.0/21`과 `104.20.8.0/21`로 갈라졌다. 이 경로가 고객 Allegheny Technologies(AS396531)를 거쳐 다른 transit 사업자 Verizon(AS701)으로 전달되고 인터넷으로 퍼졌다. 트래픽이 작은 망으로 몰리면서 장애가 생겼다.[Cloudflare 당시 분석](https://blog.cloudflare.com/how-verizon-and-a-bgp-optimizer-knocked-large-parts-of-the-internet-offline-today/)
+
+이 사례를 «더 짧은 AS_PATH가 이겼다»고 설명하면 원인을 놓친다. 설치된 `/21`은 해당 주소에 대해 `/20`보다 먼저 최장 일치하므로, **같은 프리픽스의 best-path를 잘 고르는 것만으로는 잘못 수입한 more-specific을 방어하지 못한다.** 문제의 경로는 사용자 패킷이 아니라 제어 정보로 퍼졌지만, 그 결과가 각 라우터의 전달 결정을 바꾸었다.
+
+Cloudflare는 사건 최악 시점에 Cloudflare의 전 세계 트래픽 약 15%의 손실을 관찰했다고 보고했다. 이는 **당사 운영자가 당시 보고한 관측치**이며 독립 재현한 벤치마크나 인터넷 전체 손실률이 아니다. 당사 상태 페이지도 route leak의 영향을 기록하고 정상화 후 resolved로 종료했다.[공식 사건 기록](https://www.cloudflarestatus.com/incidents/46z55mdhg0t5)
+
+| 당시 보고에서 제시한 방어 | 무엇을 확인하는가 | 일반화하면 안 되는 주장 |
+|---|---|---|
+| Max-prefix | 이웃에게서 받는 경로 수의 이상 증가 | 허용 수 이내의 모든 잘못된 경로까지 막는 것은 아님 |
+| IRR(Internet Routing Registry) 기반 필터 | 고객이 광고할 것으로 허용한 프리픽스·경로 범위 | 레지스트리 데이터와 생성 정책이 정확해야 함 |
+| RPKI(Resource Public Key Infrastructure) 기반 origin validation | 프리픽스의 기원 ASN과 허용 최대 프리픽스 길이 | AS_PATH 전체나 모든 route leak의 적법성을 검증하지 않음 |
+
+당시 Cloudflare가 제시한 ROA(Route Origin Authorization)의 최대 길이가 `/20`인 대역에서 `/21` 광고를 받았다면 prefix-origin validation상 Invalid가 될 수 있었다는 것이 이 사례의 방어 조건이다. «RPKI만 켜면 모든 leak이 막힌다»는 결론은 아니다. RFC 6811은 origin validation이 경로 전체를 검증하지 않는다고 명시한다.[RFC 6811 §2, §6](https://www.rfc-editor.org/rfc/rfc6811.html#section-6)
+
+**설계 교훈(추론):** 정상 BGP 세션·정상 best-path 알고리즘보다 앞단에 «애초에 이 고객에게서 이 프리픽스를 받을 것인가»라는 경계를 세워야 한다. 명시적 import/export 정책, 프리픽스 허용 목록, 경로 수 상한과 RPKI 검증은 서로 다른 오류를 보완한다. 사건 보고의 책임·영향 서술은 Cloudflare의 자체 분석 범위로 인용했고 다른 사업자의 내부 설정까지 독립 조사한 것은 아니다.
+
+검토일: 2026-10-17 KST. 이 사례는 BGP 운영 사례이며 Cloudflare가 EVPN·VXLAN·VRRP를 그 방식으로 사용했다는 증거로 전용하지 않는다.
+
+### 빅테크 실전 사례 — Google Jupiter는 링크 수보다 제어·설치·수렴을 함께 설계했다
+
+Google 연구진의 SIGCOMM 2015 원문 *Jupiter Rising*은 단일 고가 스위치의 규모에 묶이는 대신, 범용 스위치 실리콘을 다단 Clos 패브릭으로 연결한 여러 세대의 운영 경험을 보고한다. 논문 Table 2는 Jupiter 첫 배치를 2012년으로 기록하며, §3.5는 최대 구성의 서버 간 **bisection bandwidth를 1.3Pbps**로 설명한다. Bisection bandwidth는 네트워크를 양분했을 때 가로지를 수 있는 집계 용량이지 단일 TCP 연결의 전송률이 아니다. 이 수치를 “ECMP로 한 연결이 1.3Pbps”라고 읽으면 16일차의 흐름 고정 원리를 거꾸로 적용한 셈이다. [Google 공식 논문 페이지](https://research.google/pubs/jupiter-rising-a-decade-of-clos-topologies-and-centralized-control-in-googles-datacenter-network/), [SIGCOMM 2015 원문, Table 2·§3.5](https://conferences.sigcomm.org/sigcomm/2015/pdf/papers/p183.pdf)
+
+이 사례의 핵심은 “Google도 ECMP를 쓴다”보다 **누가 상태를 모으고, 누가 전달표를 설치하며, 장애 때 어느 범위까지 바뀌는가**다. 논문의 Firepath는 중앙 집중식 토폴로지 상태 배포와 분산된 전달표 계산을 결합한다. 각 스위치의 client가 로컬 인터페이스 상태를 master에 알리고, master는 LSD(Link State Database, 링크 상태 데이터베이스)를 CPN(Control Plane Network, 제어 평면 네트워크)으로 배포한다. client는 새 LSD를 받아 최단 경로와 ECMP를 계산하고 자기 스위치 하드웨어의 전달표를 프로그램한다. 따라서 “중앙 제어”가 모든 데이터 패킷을 중앙에서 처리한다거나 중앙이 모든 전달표 계산까지 독점한다는 뜻은 아니다. [원문 §5.2.2, 인쇄면 192–193](https://conferences.sigcomm.org/sigcomm/2015/pdf/papers/p183.pdf)
+
+경로 다양성이 충분하면 장애 인접 장비가 ECMP 그룹에서 실패한 링크/다음 홉을 제거하는 **로컬 수렴**으로 끝날 수 있다. 반대로 ToR(Top of Rack)–S2 링크 장애처럼 더 먼 장비의 특정 목적지 선택까지 바꾸어야 하면 비로컬 수렴이 필요하다. 저자들은 client 간 전환이 동시에 일어나지 않으므로 짧은 과도 손실이 생길 수 있다고 명시한다. 이는 17–18일차의 “감지 → 경로 계산 → FIB 반영”을 한 덩어리의 즉시 사건으로 취급할 수 없다는 실제 운영 보고다. [원문 §5.2.3](https://conferences.sigcomm.org/sigcomm/2015/pdf/papers/p183.pdf)
+
+| 원문이 직접 말하는 범위 | 본문에서 얻을 수 있는 교훈 |
+|---|---|
+| 사전 계획된 단일 운영자 데이터센터와 다단 Clos | 일반 인터넷의 임의 토폴로지와 제어 선택을 무조건 동일시하지 않는다 |
+| 중앙 상태 배포 + 각 스위치의 최단 경로·ECMP 계산·설치 | 제어 상태의 위치와 실제 FIB 설치 주체를 분리해서 본다 |
+| 다수 장애의 로컬 수렴, 일부 장애의 비로컬 수렴 | 링크 개수보다 실패 영향 범위와 재계산·설치 범위를 함께 설계한다 |
+
+**근거 경계:** 원문의 Table 4에 있는 125ms·325ms·4000ms는 **Saturn 클러스터**의 장애별 수렴 사례다. Jupiter의 일반 복구 SLA나 BFD 타이머, Linux/FRR 실험 결과로 옮겨 쓰면 안 된다. 이 읽기 범위만으로 Google이 본문의 EVPN IRB·FRR·BFD 구성을 사용했다고 주장할 근거도 없다. 위의 교훈은 해당 운영 보고에서 도출한 설계상 해석이며, 현재 Google 내부 운영을 확인한 결과가 아니다.
+
+
+
+
+## 조사 범위와 한계
+
+조사 기준일은 **2026-10-17 KST**다. 실제 Discord 7~18일차 공개 스레드 12개와 그 안의 추가 질의응답을 읽었고, 프로토콜 동작은 링크한 RFC 원문과 공개 IEEE 자료, Linux·FRRouting·Keepalived 공식 문서에 근거했다. 모든 채팅 메시지를 그대로 옮기지 않고 학습 본문과 질문의 기술적 의미를 재구성했으며 도구 실행 알림 같은 비학습 메시지는 제외했다.
+
+IPv4 OSPFv2 단일 영역, 표준 VRRPv3, 같은 서브넷 VXLAN/EVPN, EVPN 대칭 IRB, 비동기 단일 홉 BFD와 Linux/FRR 전달을 중심으로 설명했다. 최신 구현 문서의 `latest`/`master`는 확인 시점의 문서이지 사용자의 설치 버전을 추정한 것이 아니다. 규격·구현이 정한 기능은 **문헌 확인**, 선택표와 운영 권고의 종합은 **설계 추론**, 그림과 수치는 **교육용 모델·계산**으로 구분한다.
+
+실제 네트워크 토폴로지를 구성하거나 본문의 `vtysh`·`ping`·캡처 명령을 실행한 것은 아니다. 장비별 해시·ARP suppression·TTL 최적화·수렴 성능, 비공개 기업 운용, 특정 규모에서의 우열은 일반화하지 않는다. 공개 사례는 공개 문서의 당시 설계 범위까지만 사용한다. 별도 조사 노트에는 원문 대응표와 근거 장부를 보관한다.
+
+## 참고자료와 원문 범위
+
+### 학습글 원문
+
+Discord 링크는 해당 서버 접근 권한이 필요하다. 이 포스트의 개념 설명과 아래 공개 1차 자료는 Discord 접속 없이도 읽을 수 있다.
+
+| 일차 | 원문 |
+|---|---|
+| 7 | [IPv6/NDP](https://discord.com/channels/1518629139190648923/1556803951721054420) |
+| 8 | [LACP](https://discord.com/channels/1518629139190648923/1557166467781238814) |
+| 9 | [MTU/PMTUD](https://discord.com/channels/1518629139190648923/1557528897715961930) |
+| 10 | [OSPF — 장애 후 우회 경로를 찾는 과정](https://discord.com/channels/1518629139190648923/1557891135207120996) |
+| 11 | [BGP — 왜 더 짧은 AS 경로를 선택하지 않을까?](https://discord.com/channels/1518629139190648923/1558253603188379688) |
+| 12 | [VRRP — 게이트웨이가 죽어도 호스트 설정은 왜 그대로일까?](https://discord.com/channels/1518629139190648923/1558615918068637758) |
+| 13 | [VXLAN — 라우터 너머의 서버가 어떻게 같은 LAN에 있을까?](https://discord.com/channels/1518629139190648923/1558978191891243028) |
+| 14 | [EVPN — 원격 MAC의 위치를 패킷이 오기 전에 어떻게 알까?](https://discord.com/channels/1518629139190648923/1559340547351781448) |
+| 15 | [EVPN IRB — 다른 서브넷으로 가는 프레임의 MAC은 누구 것일까?](https://discord.com/channels/1518629139190648923/1559703023314280598) |
+| 16 | [ECMP — 링크가 두 개인데 왜 한 연결은 빨라지지 않을까?](https://discord.com/channels/1518629139190648923/1560065658589282415) |
+| 17 | [BFD — 링크가 Up인데도 죽은 경로를 어떻게 빨리 알아낼까?](https://discord.com/channels/1518629139190648923/1560427935708618842) |
+| 18 | [재귀적 다음 홉과 RIB/FIB — BGP 경로가 있는데 왜 못 갈까?](https://discord.com/channels/1518629139190648923/1560790033554866369) |
+
+### 프로토콜·구현 1차 자료
+
+- [RFC 1105](https://www.rfc-editor.org/rfc/rfc1105.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 1112](https://www.rfc-editor.org/rfc/rfc1112.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 1191](https://www.rfc-editor.org/rfc/rfc1191.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 1771](https://www.rfc-editor.org/rfc/rfc1771.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 2328](https://www.rfc-editor.org/rfc/rfc2328.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 2338](https://www.rfc-editor.org/rfc/rfc2338.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 2365](https://www.rfc-editor.org/rfc/rfc2365.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 2464](https://www.rfc-editor.org/rfc/rfc2464.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 2991](https://www.rfc-editor.org/rfc/rfc2991.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 2992](https://www.rfc-editor.org/rfc/rfc2992.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 4271](https://www.rfc-editor.org/rfc/rfc4271.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 4760](https://www.rfc-editor.org/rfc/rfc4760.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 4821](https://www.rfc-editor.org/rfc/rfc4821.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 4861](https://www.rfc-editor.org/rfc/rfc4861.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5340](https://www.rfc-editor.org/rfc/rfc5340.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5798](https://www.rfc-editor.org/rfc/rfc5798.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5838](https://www.rfc-editor.org/rfc/rfc5838.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5880](https://www.rfc-editor.org/rfc/rfc5880.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5881](https://www.rfc-editor.org/rfc/rfc5881.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5883](https://www.rfc-editor.org/rfc/rfc5883.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 5942](https://www.rfc-editor.org/rfc/rfc5942.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 6811](https://www.rfc-editor.org/rfc/rfc6811.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 7348](https://www.rfc-editor.org/rfc/rfc7348.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 7432](https://www.rfc-editor.org/rfc/rfc7432.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 8064](https://www.rfc-editor.org/rfc/rfc8064.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 8200](https://www.rfc-editor.org/rfc/rfc8200.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 8201](https://www.rfc-editor.org/rfc/rfc8201.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 8212](https://www.rfc-editor.org/rfc/rfc8212.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 8365](https://www.rfc-editor.org/rfc/rfc8365.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 8899](https://www.rfc-editor.org/rfc/rfc8899.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 9135](https://www.rfc-editor.org/rfc/rfc9135.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [RFC 9568](https://www.rfc-editor.org/rfc/rfc9568.html) — 인용한 절의 내용·적용 조건은 본문 링크와 함께 확인한다.
+- [IEEE Link Aggregation 작업반 기록](https://www.ieee802.org/3/ad/), [802.1AX 이관·승인 기록](https://www.ieee802.org/3/axay/).
+- Linux: [bonding](https://docs.kernel.org/networking/bonding.html), [bridge](https://docs.kernel.org/networking/bridge.html), [VXLAN](https://docs.kernel.org/networking/vxlan.html), [IP sysctl](https://docs.kernel.org/networking/ip-sysctl.html), [resilient next-hop](https://docs.kernel.org/networking/nexthop-group-resilient.html), [segmentation offloads](https://docs.kernel.org/networking/segmentation-offloads.html).
+- FRRouting: [BGP](https://docs.frrouting.org/en/latest/bgp.html), [OSPFv2](https://docs.frrouting.org/en/latest/ospfd.html), [EVPN](https://docs.frrouting.org/en/latest/evpn.html), [BFD](https://docs.frrouting.org/en/latest/bfd.html), [Zebra](https://docs.frrouting.org/en/latest/zebra.html). 일부 문서 접근 제한은 [공식 저장소 고정 리비전](https://github.com/FRRouting/frr/tree/953210b2dda0f850859377c2e4352dc548e6b45d/doc/user)으로 대조했다.
+- [Keepalived 설정 매뉴얼 원본](https://raw.githubusercontent.com/acassen/keepalived/master/doc/man/man5/keepalived.conf.5.in), [ip-route(8)](https://man7.org/linux/man-pages/man8/ip-route.8.html), [ip-neighbour(8)](https://man7.org/linux/man-pages/man8/ip-neighbour.8.html), [ping(8)](https://man7.org/linux/man-pages/man8/ping.8.html).
+- 공개 운영 사례: [Cloudflare PMTUD](https://blog.cloudflare.com/path-mtu-discovery-in-practice/), [Cloudflare BGP route leak](https://blog.cloudflare.com/how-verizon-and-a-bgp-optimizer-knocked-large-parts-of-the-internet-offline-today/), [Google Jupiter Rising 논문 원문](https://conferences.sigcomm.org/sigcomm/2015/pdf/papers/p183.pdf).
+
+
+마지막으로 전체를 한 문장으로 압축하면 이렇다. **목적지와 다음 홉을 결정하고, 그 홉을 현재 링크의 프레임 주소로 해석하고, 필요하면 터널로 운반하며, 그 결정을 만든 제어 정보와 실제 전달 상태가 일치하는지 확인한다.** 7~18일차의 모든 약자는 이 흐름 중 서로 다른 책임을 담당한다.
+
+<script>
+(function () {
+  if (!window.d3) return;
+  const configs = {
+    7: {nodes:['호스트 A','경로 판단','다음 홉 해석','Ethernet 송신'],steps:[
+      ['같은 링크',2,['IPv6 목적지: B','다음 홉: B의 IPv6','NS Target: B / solicited-node multicast','Ethernet 목적지: B MAC']],
+      ['다른 링크',2,['IPv6 목적지: C (유지)','다음 홉: fe80::1 (라우터 R)','NS Target: R / RA로 알면 생략','Ethernet 목적지: R MAC']],
+      ['STALE 이웃',3,['IPv6 목적지: C (유지)','이웃 캐시: STALE → DELAY → PROBE','기존 MAC으로 먼저 송신 가능','오래된 확인 ≠ 즉시 전송 금지']]]},
+    8: {nodes:['물리 링크 Up','LACPDU 교환','동기화·선택','데이터 분산'],steps:[
+      ['협상 대기',1,['active / passive: 시작 방식','Actor / Partner / Key 교환','Key는 집성 호환 값 (암호 키 아님)','물리 Up ≠ Collecting / Distributing']],
+      ['같은 흐름',3,['두 멤버: 각각 10 Gb/s','한 연결: 해시 결과 eth1에 고정','일반 흐름 분산: 한 멤버 용량 이내','응답 방향: 스위치가 별도로 선택']],
+      ['여러 흐름',3,['흐름별 헤더가 다르면 분산 가능','해시 충돌·전송량 차이 존재','합산 명목 용량 20 Gb/s','20 Gb/s 실측·보장이라는 뜻 아님']]]},
+    9: {nodes:['A: 1500 B 송신','R1: MTU 1400','ICMP 오류','A: 크기 조절'],steps:[
+      ['IPv4 DF=1',1,['IP 패킷 1500 B > 출력 MTU 1400','DF=1: R1은 단편화할 수 없음','원본 폐기 → ICMP Type 3 / Code 4','Next-Hop MTU = 1400']],
+      ['IPv6',2,['IPv6 라우터는 단편화하지 않음','원본 폐기 → ICMPv6 Packet Too Big','IPv6에는 DF 비트가 없음','송신자가 크기 조절 또는 단편화']],
+      ['블랙홀',2,['MTU 오류가 중간에서 차단됨','작은 패킷·연결 수립은 통과 가능','큰 패킷은 반복해서 폐기될 수 있음','ICMP 정책·PMTUD·PLPMTUD 확인']]]},
+    10: {nodes:['장애 감지','LSA 전파','SPF 재계산','FIB 반영'],steps:[
+      ['감지만 완료',0,['링크 이벤트 / Hello timeout / BFD','자기 주변 링크 상태 변경 감지','아직 모든 라우터가 아는 것은 아님','데이터 우회 완료가 아님']],
+      ['토폴로지 공유',1,['LSA: 링크 상태 광고','LSDB: 영역 내 토폴로지 정보','변경 내용을 관련 이웃에 flooding','Ethernet 데이터 flooding과 별개']],
+      ['우회 반영',3,['SPF: 비용 합이 작은 경로 계산','RIB 선택 → FIB 설치','패킷은 새 다음 홉으로 전달','각 단계 지연·일시 손실 가능']]]},
+    11: {nodes:['BGP 경로 수신','정책 적용','동일 prefix 선택','FIB에 설치'],steps:[
+      ['LOCAL_PREF 우선',1,['동일 prefix 경로 A: LOCAL_PREF 200','A의 AS_PATH: 65001 65002 65003','경로 B: LOCAL_PREF 100 / 짧은 AS_PATH','예제에서는 A 선호 (다른 조건 동일)']],
+      ['선호도 같음',2,['LOCAL_PREF가 같다고 가정','AS_PATH 등 후속 비교를 수행','짧은 AS_PATH가 선택될 수 있음','구현별 추가 기준·정책을 확인']],
+      ['전달 조회',3,['먼저 목적 IP에 longest prefix match','그 prefix에 설치된 다음 홉 사용','LOCAL_PREF와 prefix 길이는 다른 축','데이터 패킷에 AS_PATH를 붙이지 않음']]]},
+    12: {nodes:['호스트 A','가상 게이트웨이','활성 라우터','상위망'],steps:[
+      ['정상',2,['A 기본 경로: 가상 IP (VIP)','VIP → 가상 MAC으로 ARP 해석','R1 Active / R2 Backup','사용자 데이터는 현재 Active가 전달']],
+      ['Active 장애',1,['R1 광고 수신 중단','Backup의 타이머 만료·역할 전환','R2가 VIP·가상 MAC의 전달 역할 인수','전환 중 손실 가능 / 무중단 보장 아님']],
+      ['전환 후',2,['A의 기본 게이트웨이 IP는 유지','스위치의 가상 MAC 위치는 갱신','R2 상위망 경로도 정상이어야 함','VRRP ≠ NAT·방화벽 세션 복제']]]},
+    13: {nodes:['A의 원래 프레임','VTEP1 캡슐화','IP Underlay','VTEP2 해제'],steps:[
+      ['첫 ARP',1,['안쪽 목적 MAC: ff:ff:ff:ff:ff:ff','VXLAN: VNI 10010','바깥 IP: 10.0.1.11 → 239.1.1.10','같은 브리지의 VXLAN 포트로 전달']],
+      ['B 위치 학습 후',2,['안쪽 Ethernet: A MAC → B MAC','안쪽 IP: A → B (같은 /24)','바깥 IP: 10.0.1.11 → 10.0.2.12','바깥 Ethernet 목적지: 현재 홉 R']],
+      ['중간 라우터',2,['R은 바깥 IP를 조회','바깥 TTL 감소 / 홉별 MAC 교체','안쪽 Ethernet·IP는 운반 내용물','이 L2 브리징 예: 안쪽 TTL 유지']],
+      ['로컬 C 목적지',0,['FDB가 C를 로컬 포트로 가리킴','로컬 브리지에서 바로 C로 전달','원격 VXLAN으로 보낼 이유 없음','모르는 IP를 모든 NIC로 뿌리지 않음']]]},
+    14: {nodes:['Y: 로컬 B 학습','BGP EVPN 광고','X: FDB 설치','VXLAN 데이터'],steps:[
+      ['주소 공유',1,['Y가 B MAC / 선택적 B IP 학습','Type 2: B MAC → Y VTEP IP','RT import 정책으로 관련 망에 수입','서버 B 자체가 BGP를 할 필요 없음']],
+      ['MAC-only',2,['원격 MAC 위치는 알고 있음','하지만 B IP ↔ B MAC은 모름','A의 ARP에 항상 대리 응답 불가','Type 2 수신 ≠ suppression 활성화']],
+      ['MAC+IP',2,['유효한 B IP ↔ B MAC 대응 확보','suppression 설정 시 로컬 대리 ARP','A가 B MAC으로 프레임 송신','실제 운반은 BGP가 아니라 VXLAN']],
+      ['미지·BUM',3,['Type 3 IMET로 참여 정보 공유','멀티캐스트 또는 ingress replication','미지 유니캐스트 전달은 정책 확인','EVPN ≠ 모든 flooding의 제거']]]},
+    15: {nodes:['호스트 A','Leaf1 라우팅','VXLAN 터널','Leaf2 처리'],steps:[
+      ['대칭: A→Leaf1',1,['A IP → B IP (다른 서브넷)','A MAC → 로컬 게이트웨이 MAC','Leaf1 VRF blue에서 경로 조회','호스트는 원격 B의 MAC을 ARP하지 않음']],
+      ['대칭: 터널',2,['안쪽 MAC: RMAC1 → RMAC2','안쪽 IP: A → B / Leaf1에서 TTL 감소','VNI 50000: 테넌트 L3VNI','바깥 IP: VTEP1 → VTEP2']],
+      ['대칭: Leaf2',3,['L3VNI로 VRF blue 선택','Leaf2도 IP 라우팅 / TTL 감소','로컬 이웃 해석: B IP → B MAC','새 프레임: 게이트웨이 MAC → B MAC']],
+      ['비대칭 IRB',2,['송신 Leaf가 목적 호스트 MAC 해석','목적 서브넷의 L2VNI 사용','수신 Leaf는 브리징만 수행','송신 측의 원격 서브넷 상태 부담 증가']]]},
+    16: {nodes:['경로 조회','ECMP 그룹','흐름 해시','선택된 다음 홉'],steps:[
+      ['한 연결',2,['같은 흐름 + 안정된 그룹 → 같은 경로','분산 단위는 보통 packet 아닌 flow','한 연결의 대역폭 자동 합산 아님','ECMP는 경로 광고 프로토콜이 아님']],
+      ['터널 엔트로피',2,['VTEP 쌍의 바깥 IP는 고정','안쪽 흐름 → 바깥 UDP 송신 포트 해시','UDP 목적 포트 4789는 고정','Underlay가 UDP 포트를 해시해야 효과']],
+      ['경로 장애',1,['BFD·라우팅이 실패 다음 홉 제거','변경된 ECMP 그룹으로 다시 선택','일부 흐름 재배치·유실·재정렬 가능','해시 함수 스스로 장애를 감지하지 않음']]]},
+    17: {nodes:['주기 Control 송신','수신 타이머','BFD Down 알림','라우팅·FIB 갱신'],steps:[
+      ['수신 정상',1,['단일 홉 비동기 Control: UDP 3784','양쪽이 독립적으로 주기 송신','My / Your Discriminator로 세션 식별','인증 없는 단일 홉: 수신 TTL 255 검사']],
+      ['타이머 만료',2,['원격 배수 3 × max(100, 100) ms','마지막 유효 수신 후 300 ms','양방향 설정이 다르면 시간도 다름','로컬 송신 주기만으로 계산하지 않음']],
+      ['우회 완료?',3,['BFD Down은 연동 프로토콜에 알림','OSPF/BGP가 경로·다음 홉 재평가','FIB 설치까지 추가 시간이 필요','BFD Up ≠ 끝단 서비스 정상']]]},
+    18: {nodes:['BGP NEXT_HOP','내부 경로 해석','직결 이웃','실제 Ethernet'],steps:[
+      ['BGP 광고',0,['192.168.20.0/24 → 10.255.0.3','10.255.0.3은 R3의 루프백','직접 케이블로 붙은 이웃이 아님','광고 수신 ≠ 커널 경로 설치']],
+      ['재귀 해석',1,['10.255.0.3/32 → 172.16.12.2','출력 인터페이스 eth1','BGP 다음 홉을 직결 다음 홉까지 해석','FIB에는 사용 가능한 전달 동작 반영']],
+      ['이웃 해석',3,['172.16.12.2 → R2 MAC (ARP)','출력 Ethernet: R1 MAC → R2 MAC','IP 목적지: B (192.168.20.20) 유지','R3 루프백의 MAC을 찾는 것이 아님']],
+      ['경로 단절',1,['루프백 경로 소실 / 대체 해석도 없음','BGP 다음 홉 사용 불가 → 재평가','RIB 후보·선택·FIB를 각각 확인','순환 의존 경로는 해석 성공이 아님']]]}
+  };
+  function text(svg,content,x,y,width,size,color) {
+    const el=svg.append('text').attr('x',x).attr('y',y).attr('fill',color||'#e6edf3').attr('font-size',size);
+    let line='', row=0,used=0;
+    for (const c of content) {
+      const advance=c.charCodeAt(0)>255?size:size*0.57;
+      if(used+advance>width && line){el.append('tspan').attr('x',x).attr('dy',row?size*1.45:0).text(line);row++;line='';used=0;}
+      line+=c;used+=advance;
+    }
+    el.append('tspan').attr('x',x).attr('dy',row?size*1.45:0).text(line);
+  }
+  Object.entries(configs).forEach(([day,cfg])=>{
+    const root=document.querySelector('#drd-l2l3-'+day); if(!root)return;
+    let selected=0;
+    const controls=d3.select(root).insert('div','svg').attr('class','l2l3-controls');
+    cfg.steps.forEach((s,i)=>controls.append('button').attr('type','button').attr('data-step',i).text(s[0]).on('click',()=>{selected=i;draw();}));
+    const live=d3.select(root).append('p').attr('class','l2l3-live').attr('aria-live','polite');
+    const svg=d3.select(root).select('svg');
+    function draw(){
+      const mobile=root.clientWidth<600,W=mobile?360:900,H=mobile?730:420;
+      const s=cfg.steps[selected];
+      controls.selectAll('button').attr('aria-pressed',(_,i)=>String(i===selected));
+      live.text('선택: '+s[0]+' — 설명용 모델이며 실행·캡처 결과가 아닙니다.');
+      svg.attr('viewBox',`0 0 ${W} ${H}`);svg.selectAll('*').remove();
+      const cw=mobile?320:200,ch=50,gap=mobile?20:20;
+      cfg.nodes.forEach((n,i)=>{
+        const x=mobile?20:20+i*(cw+gap),y=mobile?20+i*70:30;
+        if(i){const px=mobile?180:x-20,py=mobile?y-20:55;svg.append('line').attr('x1',mobile?180:px).attr('y1',mobile?py:55).attr('x2',mobile?180:x-3).attr('y2',mobile?y-4:55).attr('stroke',i<=s[1]?'#64d8cf':'#526079').attr('stroke-width',3);}
+        svg.append('rect').attr('x',x).attr('y',y).attr('width',cw).attr('height',ch).attr('rx',9).attr('fill',i===s[1]?'#244a5f':'#192638').attr('stroke',i===s[1]?'#74e0d4':'#526079').attr('stroke-width',2);
+        text(svg,`${i+1}. ${n}`,x+12,y+30,cw-24,16);
+      });
+      const top=mobile?315:125;
+      text(svg,'이 단계에서 확인할 패킷·테이블',22,top,W-44,18,'#88e3d8');
+      s[2].forEach((row,i)=>{
+        const y=top+25+i*(mobile?84:57);
+        svg.append('rect').attr('x',18).attr('y',y).attr('width',W-36).attr('height',mobile?74:47).attr('rx',7).attr('fill',i%2?'#1b2b3d':'#152334');
+        text(svg,row,30,y+25,W-60,16);
+      });
+      root.dataset.ready='true';
+    }
+    new ResizeObserver(draw).observe(root);draw();
+  });
+})();
+
+</script>
