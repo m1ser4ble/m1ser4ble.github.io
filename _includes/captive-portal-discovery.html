@@ -1,0 +1,130 @@
+<div id="captive-portal-discovery" class="drd-d3-panel" role="group" aria-label="운영체제가 포털 주소를 알아내는 두 경로">
+  <p class="cd-intro">HTTP 리디렉션과 CAPPORT는 대안입니다. DHCP option 114가 없어도 HTTP 경로로 포털을 발견할 수 있습니다.</p>
+  <div class="cd-modes" hidden>
+    <button type="button" data-mode="http" aria-pressed="true">HTTP 리디렉션</button>
+    <button type="button" data-mode="capport" aria-pressed="false">DHCP 114 · CAPPORT</button>
+  </div>
+  <div class="cd-controls" hidden>
+    <button type="button" data-action="previous">이전</button>
+    <button type="button" data-action="next">다음</button>
+    <button type="button" data-action="reset">처음</button>
+    <span class="cd-progress"></span>
+  </div>
+  <div class="cd-explanation" aria-live="polite" aria-atomic="true" hidden>
+    <p class="cd-title"></p>
+    <p class="cd-source"></p>
+  </div>
+  <svg hidden role="img" aria-label="현재 단계의 송신자와 수신자"></svg>
+  <pre class="cd-message" tabindex="0" aria-label="현재 단계의 메시지 예시" hidden><code></code></pre>
+  <details class="cd-fallback">
+    <summary>두 경로를 글로 보기</summary>
+    <p>HTTP 경로: 운영체제가 미리 아는 시험 URL로 요청 → 네트워크의 리디렉션 응답 → Location에서 포털 URL 획득 → 로그인 UI와 포털 접속.</p>
+    <p>CAPPORT 경로: DHCP option 114에서 API URI 획득 → 운영체제가 HTTPS로 상태 조회 → API JSON의 user-portal-url에서 포털 URL 획득 → 로그인 UI와 포털 접속. 별도의 push 프로토콜을 가정하지 않습니다.</p>
+  </details>
+  <p class="cd-note">제품 문서의 동작 모형이며 현장 장비를 특정한 결과가 아닙니다. example.org 계열 주소는 예시입니다.</p>
+</div>
+<style>
+#captive-portal-discovery{box-sizing:border-box;max-width:100%;margin:1.5rem 0;padding:20px;border:1px solid #526877;border-radius:12px;background:#172431;color:#eaf4f7;font-family:inherit;overflow-wrap:anywhere}
+#captive-portal-discovery *{box-sizing:border-box}
+#captive-portal-discovery [hidden]{display:none!important}
+#captive-portal-discovery p{margin:0 0 12px;font-size:16px;line-height:1.7}
+#captive-portal-discovery .cd-intro,#captive-portal-discovery .cd-source{color:#d0dfe7}
+#captive-portal-discovery .cd-modes,#captive-portal-discovery .cd-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}
+#captive-portal-discovery button{min-height:44px;min-width:54px;max-width:100%;margin:0;padding:8px 14px;border:1px solid #95b5c7;border-radius:6px;background:#244052;color:#f4fbff;font:inherit;font-size:16px;font-weight:600;line-height:1.5;cursor:pointer}
+#captive-portal-discovery button[aria-pressed="true"],#captive-portal-discovery button[data-action="next"]{background:#b5e8f4;color:#132733;border-color:#b5e8f4}
+#captive-portal-discovery button:disabled{opacity:.45;cursor:default}
+#captive-portal-discovery button:focus-visible,#captive-portal-discovery summary:focus-visible,#captive-portal-discovery pre:focus-visible{outline:3px solid #f6cc78;outline-offset:3px}
+#captive-portal-discovery .cd-progress{margin-left:auto;font-size:15px;color:#c6d8e2;font-variant-numeric:tabular-nums}
+#captive-portal-discovery .cd-explanation{padding:14px 0 0;border-top:1px solid #526877}
+#captive-portal-discovery .cd-title{font-size:19px;font-weight:700;line-height:1.5}
+#captive-portal-discovery svg{display:block;width:100%;height:auto;font-family:inherit}
+#captive-portal-discovery svg text{fill:#eaf4f7;font-size:16px;font-family:inherit}
+#captive-portal-discovery svg .cd-node-detail{fill:#c6d8e2;font-size:14px}
+#captive-portal-discovery .cd-message{max-width:100%;margin:12px 0;padding:12px;overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#10202c;color:#eaf4f7;border:1px solid #526877;border-radius:6px}
+#captive-portal-discovery .cd-message,#captive-portal-discovery .cd-message code{font-size:14px;line-height:1.8}
+#captive-portal-discovery .cd-message code{padding:0;background:transparent;color:inherit;white-space:inherit;overflow-wrap:inherit}
+#captive-portal-discovery .cd-fallback{margin:12px 0;border-top:1px solid #526877}
+#captive-portal-discovery .cd-fallback summary{min-height:44px;padding:10px 0;font-size:16px;line-height:1.6;cursor:pointer}
+#captive-portal-discovery .cd-note{margin:12px 0 0;color:#b6c8d2;font-size:14px}
+@media(max-width:600px){#captive-portal-discovery{padding:14px}#captive-portal-discovery button{padding:8px 12px}}
+</style>
+<script>
+(function () {
+  const root = document.querySelector('#captive-portal-discovery');
+  if (!root || !window.d3) return;
+  const select = selector => root.querySelector(selector);
+  const svg = d3.select(root).select('svg');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const flows = {
+    http: [
+      { title:'시험 URL은 운영체제가 이미 압니다', nodes:[['운영체제(OS)','로컬 설정']], source:'주소 출처: 시험 URL과 예상 정상 응답은 운영체제에 미리 설정되어 있습니다. 아직 포털 URL을 받은 것이 아닙니다.', message:'로컬 설정 예시\n시험 URL: http://probe.example.org/check\n예상 정상 응답: HTTP 204\n이 단계에서는 패킷을 보내지 않습니다.' },
+      { title:'시험서버 방향으로 TCP 연결을 시작합니다', nodes:[['운영체제(OS)','요청 송신'],['매장 AP','링크상 경유지']], source:'주소 출처: 앞서 설정된 시험 URL입니다. 목적지 IP는 원래 시험서버이며, AP는 무선 링크의 다음 경유지입니다.', message:'OS → AP → 원래 시험서버 방향\n시험 대상: probe.example.org\n필요하면 DNS 조회\n원래 시험서버 IP의 TCP 포트 80에 SYN 전송\n연결 후 보낼 HTTP GET을 준비합니다.\n포털 URL은 아직 모릅니다.' },
+      { title:'리디렉션 응답에서 포털 주소를 받습니다', nodes:[['매장 AP','대신 응답하는 모형'],['운영체제(OS)','응답 수신']], source:'주소 출처: HTTP 응답의 Location 헤더입니다. 여기서 포털 URL을 알게 됩니다. HTTP 302 또는 307 등이 쓰일 수 있습니다.', message:'AP 인터셉트 모형의 교환 요약(실측 trace 재생 아님)\nAP → OS: TCP SYN+ACK\nOS → AP: ACK, 이어서 HTTP GET\nAP → OS: HTTP/1.1 307 Temporary Redirect\nLocation: https://portal.example.org/login\n307만으로 실제 발신 장비를 특정할 수는 없습니다.' },
+      { title:'예상 응답과 달라 포털로 판단합니다', nodes:[['운영체제(OS)','로컬 판단·UI 표시']], source:'판단 근거: 미리 기대한 정상 응답과 실제 리디렉션 응답의 차이입니다. 포털 화면을 띄우는 것은 운영체제의 처리입니다.', message:'기대한 응답: HTTP 204\n실제 예시 응답: HTTP 307 + Location\n→ 포털 필요 상태로 판단\n→ 로그인 UI 표시\n이 단계 자체는 로컬 처리입니다.' },
+      { title:'받은 포털 URL로 새 HTTPS 요청을 보냅니다', nodes:[['운영체제(OS)','포털 요청 송신'],['포털 서버','페이지 응답']], source:'주소 출처: 앞서 HTTP 응답의 Location에서 받은 URL입니다. 원래 시험 URL과 별개의 접속입니다.', message:'OS → 포털 서버\nhttps://portal.example.org/login\nDNS → TCP 443 → TLS → HTTPS GET\nGET /login\nHost: portal.example.org\nAP·게이트웨이는 네트워크 경유 장비입니다.' },
+    ],
+    capport: [
+      { title:'DHCP가 상태 API 주소를 알려줍니다', nodes:[['DHCP 서버','설정 송신'],['운영체제(OS)','설정 수신']], source:'주소 출처: DHCP option 114입니다. 여기에는 포털 화면 URL 대신 CAPPORT API URI가 들어갑니다.', message:'DHCP 서버 → OS\nDHCPACK: IP 설정 + option 114\nAPI URI: https://capport.example.org/api\noption 114는 선택 사항입니다.\n이 값만으로 포털 화면 주소를 알 수는 없습니다.' },
+      { title:'운영체제가 API에 상태를 조회합니다', nodes:[['운영체제(OS)','조회 요청'],['CAPPORT API','요청 수신']], source:'주소 출처: DHCP option 114에서 받은 API URI입니다. API 서버가 먼저 push하는 방식이 아니라 운영체제가 조회합니다.', message:'OS → API 서버\nDNS → TCP 443 → TLS → HTTPS GET\nGET /api\nHost: capport.example.org\nAccept: application/captive+json' },
+      { title:'API 응답에서 포털 화면 주소를 받습니다', nodes:[['CAPPORT API','JSON 응답'],['운영체제(OS)','응답 수신']], source:'주소 출처: API JSON의 user-portal-url입니다. DHCP로 받은 API URI와 화면 URL을 구별해야 합니다.', message:'API 서버 → OS\nHTTP/1.1 200 OK\nContent-Type: application/captive+json\n{"captive":true,"user-portal-url":"https://portal.example.org/login"}\n상태: captive=true\n포털 URL: user-portal-url 값' },
+      { title:'조회한 상태에 따라 로그인 UI를 표시합니다', nodes:[['운영체제(OS)','로컬 UI 표시']], source:'판단 근거: API의 captive=true 상태와 user-portal-url입니다. 이 단계는 운영체제 내부 처리입니다.', message:'API의 captive=true 확인\n→ 포털 필요 상태로 판단\n→ user-portal-url을 사용할 로그인 UI 표시\n이 단계 자체는 로컬 처리입니다.' },
+      { title:'API가 알려준 포털 URL로 접속합니다', nodes:[['운영체제(OS)','포털 요청 송신'],['포털 서버','페이지 응답']], source:'주소 출처: API JSON의 user-portal-url입니다. DHCP option 114가 이 화면 URL을 직접 전달한 것은 아닙니다.', message:'OS → 포털 서버\nhttps://portal.example.org/login\nDNS → TCP 443 → TLS → HTTPS GET\nGET /login\nHost: portal.example.org' },
+    ],
+  };
+  let mode = 'http';
+  let step = 0;
+  function render(animate) {
+    const width = Math.floor(select('svg').getBoundingClientRect().width);
+    if (width < 100) return;
+    const current = flows[mode][step];
+    const local = current.nodes.length === 1;
+    const vertical = width < 480;
+    const height = local ? 110 : vertical ? 216 : 120;
+    const boxWidth = Math.min(190, vertical || local ? width - 24 : (width - 72) / 2);
+    const boxHeight = 72;
+    const positions = local ? [{x:(width-boxWidth)/2,y:16}] : vertical
+      ? [{x:(width-boxWidth)/2,y:12},{x:(width-boxWidth)/2,y:132}]
+      : [{x:8,y:24},{x:width-boxWidth-8,y:24}];
+    root.dataset.mode = mode;
+    root.dataset.step = String(step);
+    select('.cd-title').textContent = current.title;
+    select('.cd-source').textContent = current.source;
+    select('.cd-message code').textContent = current.message;
+    select('.cd-progress').textContent = (step + 1) + ' / ' + flows[mode].length;
+    select('[data-action="previous"]').disabled = step === 0;
+    select('[data-action="reset"]').disabled = step === 0;
+    select('[data-action="next"]').disabled = step === flows[mode].length - 1;
+    root.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
+    svg.selectAll('*').interrupt().remove();
+    svg.attr('viewBox','0 0 '+width+' '+height).attr('aria-label',current.nodes.map(node=>node[0]).join(' → ') + '. '+current.title);
+    if (!local) {
+      svg.append('defs').append('marker').attr('id','cd-arrow').attr('viewBox','0 -5 10 10').attr('refX',9).attr('refY',0).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto').append('path').attr('d','M0,-5L10,0L0,5').attr('fill','#73c8e1');
+      const [from,to] = positions;
+      const route = vertical ? 'M'+(from.x+boxWidth/2)+','+(from.y+boxHeight)+'V'+to.y : 'M'+(from.x+boxWidth)+','+(from.y+boxHeight/2)+'H'+to.x;
+      const link = svg.append('path').attr('class','cd-link').attr('d',route).attr('fill','none').attr('stroke','#73c8e1').attr('stroke-width',2).attr('marker-end','url(#cd-arrow)');
+      if (animate && !motion.matches) {
+        const path = link.node();
+        const length = path.getTotalLength();
+        svg.append('circle').attr('class','cd-packet').attr('r',5).attr('fill','#eaf4f7').transition().duration(300).ease(d3.easeLinear).attrTween('transform',()=>t=>{const p=path.getPointAtLength(t*length);return 'translate('+p.x+','+p.y+')';}).remove();
+      }
+    }
+    positions.forEach((position,index) => {
+      const group = svg.append('g').attr('class','cd-node').attr('transform','translate('+position.x+','+position.y+')');
+      group.append('rect').attr('width',boxWidth).attr('height',boxHeight).attr('rx',8).attr('fill','#244052').attr('stroke','#698b9f');
+      group.append('text').attr('x',boxWidth/2).attr('y',28).attr('text-anchor','middle').attr('font-weight',700).text(current.nodes[index][0]);
+      group.append('text').attr('class','cd-node-detail').attr('x',boxWidth/2).attr('y',51).attr('text-anchor','middle').text(current.nodes[index][1]);
+    });
+  }
+  ['.cd-modes','.cd-controls','.cd-explanation','.cd-message'].forEach(selector => { select(selector).hidden = false; });
+  select('svg').removeAttribute('hidden');
+  root.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; step = 0; render(false); }));
+  root.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
+    const action = button.dataset.action;
+    step = action === 'reset' ? 0 : Math.max(0, Math.min(flows[mode].length - 1, step + (action === 'next' ? 1 : -1)));
+    render(action === 'next');
+  }));
+  new ResizeObserver(() => render(false)).observe(select('svg'));
+  motion.addEventListener('change', () => render(false));
+  render(false);
+})();
+</script>

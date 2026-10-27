@@ -1,6 +1,6 @@
 # Captive Portal DRD 근거 메모
 
-조사일: 2026-10-27. 대상: `_posts/2026-10-27-captive-portal-wifi.markdown`과 해당 글의 교육용 시각화. 공개 1차 자료 원문을 확인했으며 실제 매장 접속·패킷 측정은 수행하지 않았다.
+조사일: 2026-10-27. 대상: `_posts/2026-10-27-captive-portal-wifi.markdown`과 해당 글의 교육용 시각화. 초기에는 문헌 중심으로 확인했고, 이후 단일 Mac 연결의 DHCP 응답과 HTTP·HTTPS·포털 HTML·HEAD 응답을 관찰했다. 실제 무선 프레임·장비 내부 관리 패킷 캡처와 승인 요청 실행은 수행하지 않았다. 문헌 확인과 직접 관찰은 아래 후속 표에서 구분한다.
 
 ## 질문과 선정 기준
 
@@ -18,7 +18,7 @@
 | HTTPS API·captive 필수·나머지 선택 필드와 재조회 | RFC 8908 §3–§6 | 2020-09 Standards Track | 확인 |
 | IP·MAC 등 식별과 포털→집행 장비 연동 | RFC 8952 §2.4·§3·§4 | 아키텍처 설명 | 확인 |
 | 6단계 상태 모델과 순간 이동 시간 | 위 흐름을 설명용으로 재구성 | 실제 패킷·성능 실험 아님 | 추론/모형 |
-| Meraki Continue·grant URL·쿠키·클라우드/AP 승인·만료 | https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting | 해당 제품 문서 | 확인, 카페 채택 근거 아님 |
+| Meraki Continue·grant URL·쿠키·클라우드/AP 승인·만료 | https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting | 해당 제품 문서 | 제품 설명 확인. 단일 현장 관찰은 아래 후속 표와 구분 |
 | Android 5.0 기존 감지, 11 Beta 2 API 일부·DHCP 114 | https://developer.android.com/about/versions/11/features/captive-portal Improved captive portal detection | 설명 대상 버전, 확인일 페이지 갱신 표시는 2026-10-23 | 확인 |
 | Apple iOS 14·Big Sur 포털 API/발견 안내 | https://developer.apple.com/news/?id=q78sq5rv | 2020-06-22 공지 | 확인 |
 | Windows NCSI active/passive probe | https://learn.microsoft.com/en-us/windows-server/networking/ncsi/ncsi-overview | 문서 버전별 적용표 및 Windows 11 본문 | 확인, 전체 Windows 버전 동일 구현 주장 제외 |
@@ -31,7 +31,7 @@
 | HTTPS 콘텐츠 암호화와 HSTS 인증서 오류 처리 | https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security 및 https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security | 웹 프로토콜 설명 | 확인 |
 | VPN/프록시 때문에 포털 절차가 방해될 수 있음 | https://support.mozilla.org/en-US/kb/captive-portal VPN or proxy | 문제 해결 안내 | 확인, 항상 VPN 해제 권고는 제외 |
 | DNS 변경이 특정 카페 포털에 미치는 영향 | 직접 자료·실험 미확보 | 매장별 구성 | 미확인, 일반화 제외 |
-| 폴 바셋·스타벅스 현행 장비·API 채택·수집목록·보유기간 | 최신 해당 서비스 1차 근거 미확보 | SSID/매장별 차이 가능 | 미확인 |
+| 폴 바셋·스타벅스 전체의 장비·API 채택·수집목록·보유기간 | 한 연결의 표시·응답만 후속 관찰 | 전체 SSID/매장 정책과 개인정보 저장은 미확인 | 단일 관찰에서 전체로 일반화하지 않음 |
 
 ## 버전·불일치 주의
 
@@ -62,7 +62,7 @@ CAPPORT_SITE_URL=http://127.0.0.1:8872 PLAYWRIGHT_MODULE=/tmp/captive-portal-too
 - 독립 기술 리뷰에서 확인한 주요 RFC·OS·제품 문서와 본문 주장을 대조했으며 출판을 막는 기술 오류는 발견하지 못했다. 시각화와 표 스크린샷을 직접 확인했다.
 - `node --check test/captive_portal_browser.cjs`와 Git 공백 검사 통과.
 
-실제 매장망, iOS Safari 실기기, Firefox, 스크린리더 실사용, 유료/과부하/성능 실험은 검증하지 않았다. 로컬 검사와 공개 게시 후 검사는 구별한다.
+이 초기 게시 전 검증에서는 실제 매장망을 관찰하지 않았다. 같은 날 후속으로 수행한 단일 연결 관찰은 아래 절에 기록했다. iOS Safari 실기기, Firefox, 스크린리더 실사용, 유료/과부하/성능 실험은 검증하지 않았다. 로컬 페이지 검사와 공개 게시 후 검사도 구별한다.
 
 ## 후속 보강: 프로토콜과 동의 데이터의 전달 절차
 
@@ -88,3 +88,41 @@ CAPPORT_SITE_URL=http://127.0.0.1:8872 PLAYWRIGHT_MODULE=/tmp/captive-portal-too
 추가 출처도 2026-10-27 기준으로 원문을 확인했다. 실제 매장의 동의 저장소·인가 프로토콜·패킷과 현재 노트북 OS의 probe 정책은 확인하지 않았다.
 
 후속 검증에서도 Jekyll 전체 빌드와 실제 렌더 페이지의 320·390·1440px 브라우저 회귀가 통과했다. 새 프로토콜 상세의 기본 닫힘·단계별 메시지 변경·열었을 때 글씨 크기/가로 넘침·JS/CDN 실패를 검사했다. stable anchor `protocol-walkthrough`, HTTP 예시와 11개 접근 가능한 표도 확인했다. 독립 리뷰는 주요 추가 표준·제품 원문과 절차를 대조했고 수정이 필요한 문제를 발견하지 못했다. 새 실제 매장 실험을 수행한 것은 아니다.
+
+## HTTP 리디렉션·방화벽·관리 연결과 단일 현장 관찰의 통합
+
+사용자의 명시적인 DRD 보강 요청에 따라 같은 `/network/captive-portal/` 글에 추가했다. 별도 포스트나 URL을 만들지 않는다. 추가 질문은 시험 URL의 출처, 307 Location 전달, AP의 TCP 중간 처리, 차단의 실제 구현, DHCP 확장의 역할, 사설망 장비의 클라우드 연결, 일반 예시와 현장 화면의 차이다.
+
+### 문서 확인
+
+| 주장 | 실제 읽은 원문 | 적용 범위·상태 |
+|---|---|---|
+| OS는 설정된 시험 URL·예상 응답을 사용, AP가 포털로 안내 | Meraki Splash Page Traffic Flow, Fetching the Splash URL / Android Captive portal API support | 문서 확인. 현재 macOS 자동 UI 이벤트는 직접 미캡처 |
+| Meraki가 원래 서버 대신 SYN+ACK과 HTTP307을 처리 | 같은 Meraki 문서 §Fetching the Splash URL | 제품 동작 확인. 현재 AP의 무선 프레임 미캡처 |
+| 307은 Location으로 메서드·본문 유지 | https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/307 | 프로토콜 설명 확인 |
+| DHCP114는 API 위치를 싣는 확장 옵션 | https://www.rfc-editor.org/rfc/rfc8910.html §1·§2.1 | 확인, 별도 푸시 프로토콜이나 포트 번호 아님 |
+| 접근 제한은 장비 규칙, 특정 구현은 표준이 강제하지 않음 | RFC8952 §2.4 / openNDS v10.3.0 config Firewall Restart hook / Meraki ACL 설명 | 문서 확인. nftables가 현장 Meraki 내부 구현이라는 주장 제외 |
+| 장비가 먼저 시작한 보안 관리 터널로 양방향 관리 | https://documentation.meraki.com/Platform_Management/Dashboard_Administration/Design_and_Configure/Configuration_Guides/Routing_and_Firewall/Upstream_Firewall_Rules_for_Cloud_Connectivity 도입부 | 제품 구조 확인. 현재 관리 채널 패킷·포트 직접 미측정 |
+| HTTP 리디렉션과 HTTPS 허용이 동시 가능한 정책 | Meraki Splash Page Traffic Flow, Captive portal strength / Traffic Shaping and Firewall Rules | 기능 확인. 현장 콘솔 설정값은 추론에 그침 |
+
+### 실제 관찰과 원본 위치
+
+관찰일은 2026-10-27, 로컬 파일 기준 약 17:16–17:21 KST. `en0`에 직접 바인딩한 curl과 현재 DHCP ACK·인터페이스 정보를 사용했다. curl은 리디렉션 자동 추적을 하지 않았고, `/grant`는 요청하지 않았다. 원본 쿠키·클라이언트 주소·접속별 key 및 path는 공개 저장소에 복사하지 않았다. 로컬 원본 파일은 작업 당시 `/tmp/wifi-check-*`에 남겨 두었다.
+
+| 관찰 | 실제 읽은 로컬 근거 | 상태·한계 |
+|---|---|---|
+| en0 활성, 5GHz802.11ac, 보안None, SSID표시가림 | networksetup / scutil / ifconfig / system_profiler 출력 | 직접 관찰. 현재 SSID 문자열 미확인 |
+| 현재 IPv4 DHCP ACK에 옵션114 없음 | ipconfig getpacket en0 출력 | 직접 관찰. 모든 과거 응답·다른 망으로 일반화 불가 |
+| Apple·Microsoft HTTP시험 모두307 | wifi-check-apple.headers / wifi-check-ms.headers | 직접 관찰. 자동OS시험 캡처는 아님 |
+| Location호스트 apac.network-auth.com, client_ip/client_mac/acl_ver 등 필드 | 위 응답의 Location을 파싱 | 직접 관찰. 값은 게시하지 않음 |
+| example.com HTTPS200·TLS검증성공 | curl --interface en0 실행 출력, wifi-check-https.body | 직접 관찰. 시험한 목적지 한정 |
+| 게이트웨이 로컬HTML에Meraki표시 | wifi-check-gateway.body | 직접 관찰. 모델/펌웨어/정책 테이블 미확인 |
+| 포털HTML에폴바셋이미지, form없고grant링크 | wifi-check-portal.body의 img/a/form 구조 | 직접 관찰. 모든 매장·개인정보 수집 방식으로 일반화 불가 |
+| Secure·HttpOnly clickthrough-sessions계열 쿠키 | wifi-check-portal.headers의 쿠키 이름·속성 | 직접 관찰. 쿠키 값 비공개 |
+| 클릭코드 HEAD→Continue-Url읽기→grant이동 | wifi-check-portal.body의 첫 a.onclick 핸들러 | 코드 직접 확인. 클릭 자체·grant 실행 미수행 |
+| HEAD에200과폴바셋/store/wifi.pb Continue-Url | wifi-check-portal-head.headers | 같은 포털·발급 쿠키로 HEAD 직접 수행 |
+| Allow non-HTTP 설정과 관찰이 부합 | HTTP307·HTTPS200 + 제품 기능 설명 | 추론. 콘솔 설정 조회로 보고하지 않음 |
+
+새 도식은 HTTP 리디렉션과 DHCP114/CAPPORT의 주소 전달 위치를 비교하는 교육용 모형이다. 실측 프레임의 재생으로 표현하지 않는다. 기존 6단계 도식도 엄격한 차단 정책의 예시임을 명시해 관찰한 연결과 혼동을 줄인다.
+
+통합 검증: Jekyll 전체 빌드 성공, 같은 URL에서 기존 6단계와 새 2모드×5단계의 320·390·1440px 브라우저 회귀 통과. 모드 전환·단계 경계·로컬 처리의 단일 노드·글씨/버튼 크기·가로 넘침·키보드·reduced motion·JS/CDN 실패 fallback을 확인했다. HTML에는 두 SVG 패널, D3 1회 로딩, 기존 protocol-walkthrough와 새 http-redirect/observed-network 앵커, 초점·이름을 갖춘 13개 표가 있다. 독립 리뷰에서 문서·관찰·추론 구분과 모바일 캡처를 확인했으며 치명·중요 오류는 발견하지 못했다. 로컬 원본의 실제 MAC/IP/세션·쿠키·사이트 경로 값을 출력하지 않고 공개 소스와 렌더 HTML에 대조했으며 일치가 없었다. Safari 실기기·스크린리더·승인 후 상태 변화는 이번에도 미검증이다.

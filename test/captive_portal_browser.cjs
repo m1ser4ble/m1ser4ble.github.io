@@ -5,6 +5,7 @@ const path = require('node:path');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const output = process.env.CAPPORT_REVIEW_DIR || '/tmp/captive-portal-review';
 const include = path.join(__dirname, '../_includes/captive-portal-lab.html');
+const discoveryInclude = path.join(__dirname, '../_includes/captive-portal-discovery.html');
 fs.mkdirSync(output, { recursive: true });
 
 (async () => {
@@ -14,7 +15,7 @@ fs.mkdirSync(output, { recursive: true });
     server = http.createServer((request, response) => {
       if (!fs.existsSync(include)) { response.writeHead(404).end('visual not implemented'); return; }
       response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.end('<!doctype html><html lang="ko"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;background:#252a34;color:#eee;font-family:system-ui}article{box-sizing:border-box;max-width:900px;margin:auto;padding:16px}p{line-height:1.7}</style><article>' + fs.readFileSync(include, 'utf8') + '</article></html>');
+      response.end('<!doctype html><html lang="ko"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;background:#252a34;color:#eee;font-family:system-ui}article{box-sizing:border-box;max-width:900px;margin:auto;padding:16px}p{line-height:1.7}</style><article>' + fs.readFileSync(include, 'utf8') + (fs.existsSync(discoveryInclude) ? fs.readFileSync(discoveryInclude, 'utf8') : '') + '</article></html>');
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     base = 'http://127.0.0.1:' + server.address().port;
@@ -36,6 +37,8 @@ fs.mkdirSync(output, { recursive: true });
       assert.equal(response.status(), 200, 'article or include fixture must exist');
       const root = page.locator('#captive-portal-lab');
       await root.locator('button[data-action="next"]').waitFor({ state: 'visible' });
+      const discovery = page.locator('#captive-portal-discovery');
+      assert.equal(await discovery.count(), 1, 'discovery panel explains where portal addresses come from');
       if (process.env.CAPPORT_SITE_URL && width === 320) {
         const tables = await page.locator('.page__content table').evaluateAll(nodes => nodes.map(table => ({
           width: table.clientWidth,
@@ -115,6 +118,51 @@ fs.mkdirSync(output, { recursive: true });
       await root.locator('button[data-action="reset"]').focus();
       await page.keyboard.press('Enter');
       assert.equal(await root.getAttribute('data-step'), '0', 'keyboard reset');
+      assert.equal(await discovery.getAttribute('data-step'), '0', 'discovery never auto-advances');
+      for (const mode of ['http', 'capport']) {
+        await discovery.locator('[data-mode="' + mode + '"]').click();
+        assert.equal(await discovery.getAttribute('data-mode'), mode);
+        assert.equal(await discovery.getAttribute('data-step'), '0', 'changing mode resets its stage');
+        assert.equal(await discovery.locator('[data-action="previous"]').isDisabled(), true);
+        const messageTerms = mode === 'http'
+          ? [['로컬 설정', '시험 URL'], ['TCP', '80', 'probe.example.org'], ['307', 'Location:', 'SYN+ACK'], ['로컬 처리', '로그인 UI'], ['HTTPS GET', 'portal.example.org']]
+          : [['DHCPACK', 'option 114', 'API URI'], ['HTTPS GET', 'capport.example.org'], ['captive=true', 'user-portal-url'], ['로컬 처리', '로그인 UI'], ['HTTPS GET', 'portal.example.org']];
+        for (let step = 0; step < 5; step++) {
+          assert.equal(await discovery.getAttribute('data-step'), String(step));
+          const message = await discovery.locator('.cd-message').innerText();
+          for (const term of messageTerms[step]) assert.ok(message.includes(term), mode + ' step ' + step + ' explains ' + term);
+          const local = step === 3 || mode === 'http' && step === 0;
+          assert.equal(await discovery.locator('.cd-node').count(), local ? 1 : 2, 'local processing has no invented receiver');
+          assert.equal(await discovery.locator('.cd-link').count(), local ? 0 : 1, 'local processing has no invented network link');
+          if (step === 2) assert.ok((await discovery.locator('.cd-source').innerText()).includes(mode === 'http' ? 'Location' : 'user-portal-url'), 'portal URL source differs by mode');
+          const geometry = await discovery.evaluate(node => {
+            const svg = node.querySelector('svg').getBoundingClientRect();
+            return {
+              overflow: document.documentElement.scrollWidth - innerWidth,
+              readable: [...node.querySelectorAll('svg text')].every(text => {
+                const r = text.getBoundingClientRect();
+                const box = text.parentElement.querySelector('rect').getBoundingClientRect();
+                return parseFloat(getComputedStyle(text).fontSize) >= 14 && r.left >= box.left - 1 && r.right <= box.right + 1 && r.top >= box.top - 1 && r.bottom <= box.bottom + 1 && r.left >= svg.left - 1 && r.right <= svg.right + 1;
+              }),
+              messageSize: parseFloat(getComputedStyle(node.querySelector('.cd-message code')).fontSize),
+              controls: [...node.querySelectorAll('button')].every(button => button.getBoundingClientRect().height >= 44),
+            };
+          });
+          assert.ok(geometry.overflow <= 1 && geometry.readable && geometry.messageSize >= 14 && geometry.controls, mode + ' mobile-safe discovery stage ' + step + ': ' + JSON.stringify(geometry));
+          if (step === 2) await discovery.screenshot({ path: path.join(output, 'discovery-' + mode + '-' + width + '.png') });
+          if (step < 4) await discovery.locator('[data-action="next"]').click();
+        }
+        assert.equal(await discovery.locator('[data-action="next"]').isDisabled(), true);
+      }
+      await discovery.locator('[data-action="reset"]').focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await discovery.getAttribute('data-step'), '0', 'keyboard resets discovery');
+      await discovery.locator('[data-action="next"]').click();
+      await discovery.locator('[data-action="previous"]').click();
+      assert.equal(await discovery.getAttribute('data-step'), '0', 'discovery previous navigation');
+      await discovery.locator('[data-mode="http"]').focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await discovery.getAttribute('data-mode'), 'http', 'keyboard switches discovery mode');
       assert.deepEqual(errors, []);
       results.push({ width, passed: true });
       await context.close();
@@ -126,21 +174,28 @@ fs.mkdirSync(output, { recursive: true });
       const page = await context.newPage();
       await page.goto(url, { waitUntil: 'domcontentloaded' });
       const root = page.locator('#captive-portal-lab');
+      const discovery = page.locator('#captive-portal-discovery');
       if (condition === 'reduced-motion') {
         await root.locator('button[data-action="next"]').click();
         assert.equal(await root.getAttribute('data-step'), '1');
         assert.equal(await root.locator('.cp-packet').count(), 0, 'motion preference removes travelling packet');
+        await discovery.locator('[data-action="next"]').click();
+        assert.equal(await discovery.getAttribute('data-step'), '1');
+        assert.equal(await discovery.locator('.cd-packet').count(), 0, 'discovery respects reduced motion');
       } else {
         assert.equal(await root.locator('button:visible').count(), 0, 'no dead controls without script');
         assert.equal(await root.locator('.cp-protocol:visible').count(), 0, 'no empty protocol controls without script');
         assert.ok((await root.innerText()).includes('인터넷 사용 승인'), 'readable fallback');
+        assert.equal(await discovery.locator('button:visible').count(), 0, 'discovery has no dead script controls');
+        await discovery.locator('.cd-fallback summary').click();
+        assert.ok((await discovery.innerText()).includes('user-portal-url'), 'native discovery fallback remains readable');
       }
       await root.screenshot({ path: path.join(output, condition + '.png') });
       results.push({ condition, passed: true });
       await context.close();
     }
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ url, results }, null, 2));
-    console.log('PASS: mobile layout, six approval states, keyboard, reduced motion, and fallbacks (' + url + ')');
+    console.log('PASS: mobile layout, six approval states, two discovery flows, keyboard, reduced motion, and fallbacks (' + url + ')');
   } finally {
     await browser.close();
     if (server) await new Promise(resolve => server.close(resolve));

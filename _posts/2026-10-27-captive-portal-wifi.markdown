@@ -13,7 +13,7 @@ source: "카페 와이파이 접속 경험에 관한 질문과 IETF RFC, Apple·
 
 ## 핵심 요약
 
-카페에서 와이파이를 선택하면 비밀번호는 묻지 않는데, ‘무료 인터넷 사용하기’나 정보 수집 동의를 눌러야 인터넷이 된다. 이때 동의 화면이 열린 기기는 이미 매장 네트워크와 통신하고 있다. 네트워크 장비가 **외부 인터넷 사용을 승인하기 전의 제한 상태**로 두는 것이다.
+카페에서 와이파이를 선택하면 비밀번호는 묻지 않는데, ‘무료 인터넷 사용하기’나 정보 수집 동의를 요구할 수 있다. 이때 동의 화면이 열린 기기는 이미 매장 네트워크와 통신하고 있다. 네트워크 장비가 **기기별 승인 상태에 따라 통신을 제한하거나 포털로 안내**하는 것이다. 제한 범위는 설정에 따라 달라진다. 아래 단일 연결 관찰에서는 HTTP가 포털로 리디렉션되는 동안 외부 HTTPS 접속은 성공했다.
 
 - **무선 연결:** 휴대폰이 매장 AP와 통신할 수 있는가.
 - **사용 승인:** 네트워크 장비가 이 기기의 외부 통신을 허용하는가.
@@ -22,7 +22,7 @@ source: "카페 와이파이 접속 경험에 관한 질문과 IETF RFC, Apple·
 
 이 네 가지는 구별해야 한다. Captive Portal은 사용 승인을 다루며, 동의 버튼만으로 무선 암호화가 추가되지는 않는다. 반대로 비밀번호가 없어도 OWE로 무선 구간을 암호화할 수 있다. [RFC 8952 §1.2](https://www.rfc-editor.org/rfc/rfc8952.html#section-1.2), [RFC 8110 §1](https://www.rfc-editor.org/rfc/rfc8110.html#section-1), [Mozilla TLS 설명](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security)
 
-폴 바셋·스타벅스에서 관찰한 경험을 이해하기 위한 일반적인 구조를 설명한다. 두 회사의 모든 매장이 같은 장비나 최신 CAPPORT API를 사용한다고 확인한 것은 아니다.
+폴 바셋·스타벅스에서 접할 수 있는 경험을 이해하기 위한 일반 구조와, 폴 바셋 이미지가 표시된 한 연결의 관찰 결과를 다룬다. 두 회사의 모든 매장이 같은 장비나 최신 CAPPORT API를 사용한다고 확인한 것은 아니다. [실제 연결의 관찰 범위](#observed-network)에서 문서로 확인한 동작과 직접 관찰한 응답을 구분한다.
 
 실제 메시지를 차례로 보고 싶다면 [노트북 접속을 패킷 순서로 따라가기](#protocol-walkthrough)부터 읽으면 된다. 무선 연결, IP 할당, 화면 표시, 동의 전송·저장, 장비 승인까지 이어서 설명한다.
 
@@ -50,6 +50,8 @@ source: "카페 와이파이 접속 경험에 관한 질문과 IETF RFC, Apple·
 | RA | Router Advertisement | IPv6 라우터가 네트워크 설정 등을 알리는 메시지 |
 | MAC address | Media Access Control address | 접속 구간에서 장치를 구분하는 주소. 영구적인 사람 신원과 동일하지 않음 |
 | OWE | Opportunistic Wireless Encryption | 비밀번호 입력과 사용자 인증 없이 무선 구간을 암호화하는 방식 |
+| ACL | Access Control List | 기기·주소·포트 등의 조건에 따라 통신을 허용·차단하는 규칙 |
+| 관리 채널 / Control plane | 장비 설정·상태를 전달하는 제어 경로 | 방문객의 웹 데이터 경로와 구분. 장비가 먼저 클라우드에 연결할 수 있음 |
 {: .cp-readable-table tabindex="0" aria-label="와이파이와 포털 용어 사전"}
 
 용어의 직역은 이해를 위한 설명이다. Captive Portal이라는 이름을 누가 처음 지었는지는 이번 조사에서 입증하지 못했다. [RFC 8952 용어·구성요소](https://www.rfc-editor.org/rfc/rfc8952.html#section-1.2), [Meraki Walled Garden 설명](https://documentation.meraki.com/Wireless/Design_and_Configure/Configuration_Guides/Access_Control), [RFC 8110](https://www.rfc-editor.org/rfc/rfc8110.html)
@@ -99,7 +101,7 @@ source: "카페 와이파이 접속 경험에 관한 질문과 IETF RFC, Apple·
 
 ### 연결과 승인은 어느 순간 갈라질까
 
-일반적인 IPv4 예에서는 무선 연결 뒤 DHCP로 IP 설정을 받지만, 아직 일반 인터넷 통신은 제한된다. 포털과 상태 API, 인증서 검증에 필요한 통신 등은 접근할 수 있게 둔다. 포털 서버가 인터넷 트래픽 전체를 중계하는 것은 아니며, 실제 패킷의 통과 여부는 접근 제한 장비가 결정한다. [RFC 8952 §2](https://www.rfc-editor.org/rfc/rfc8952.html#section-2)
+일반적인 IPv4 예에서는 무선 연결 뒤 DHCP로 IP 설정을 받아도 인터넷 사용 승인은 별개로 남는다. 포털과 상태 API, 인증서 검증에 필요한 통신 등은 접근할 수 있게 둔다. 미승인 기기의 다른 통신을 얼마나 제한할지는 정책에 따라 다르다. 포털 서버가 인터넷 트래픽 전체를 중계하는 것은 아니며, 실제 패킷의 통과 여부는 접근 제한 장비가 결정한다. [RFC 8952 §2](https://www.rfc-editor.org/rfc/rfc8952.html#section-2)
 
 아래 그림에서 ‘다음 단계’를 누르면 동의 요청과 장비의 승인이 별도로 진행되는 모습을 볼 수 있다. 화면이 좁으면 노드가 세로로 재배치된다. 자동 재생은 없으며 이동 효과는 사용자 조작 때만 짧게 나타난다.
 
@@ -118,7 +120,7 @@ source: "카페 와이파이 접속 경험에 관한 질문과 IETF RFC, Apple·
 
 포털의 웹 세션과 장비가 보는 접속을 연결해야 한다. IP·MAC 주소 등 기기 식별 정보가 쓰일 수 있으며, 무엇을 쓰는지는 제품과 네트워크 배치에 따라 달라진다. 브라우저 쿠키만으로 모든 앱의 인터넷이 열리는 것은 아니다. **웹 세션을 식별한 뒤 네트워크의 승인 상태도 갱신**해야 한다. [RFC 8952 §3](https://www.rfc-editor.org/rfc/rfc8952.html#section-3)
 
-공개된 구현 예로 Meraki의 Click-through Splash Page는 계정 정보 대신 Continue 버튼으로 진행한다. grant URL과 세션 쿠키를 사용하고, 클라우드가 AP들에 승인 상태를 전달한다. 이는 해당 제품의 설명이며, 폴 바셋·스타벅스가 이 제품을 쓴다는 근거는 아니다. [Meraki 실제 처리 흐름](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
+공개된 구현 예로 Meraki의 Click-through Splash Page는 계정 정보 대신 Continue 버튼으로 진행한다. grant URL과 세션 쿠키를 사용하고, 클라우드가 AP들에 승인 상태를 전달한다. 아래 단일 연결에서도 Meraki 표시·해당 포털 주소·grant 링크를 관찰했지만, 두 프랜차이즈 전체의 공통 구성으로 일반화하지 않는다. [Meraki 실제 처리 흐름](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
 
 ### 휴대폰은 동의 화면을 어떻게 자동으로 열까
 
@@ -185,26 +187,35 @@ DNS 서버가 같은 `/24`에 있으므로, 캐시가 없다면 먼저 **ARP(Add
 
 미승인 기기도 이런 준비 통신과 포털에 필요한 통신은 허용받아야 한다. 어느 주소까지 허용할지는 해당 네트워크의 제한 정책이다. 실제 순서는 ARP·DNS 캐시, 목적지 위치, 기존 연결 유무에 따라 일부 생략되거나 달라진다.
 
-### 4-A. 기존 방식: HTTP 접속 시험과 302 Location
+### 4-A. HTTP 리디렉션: 시험 URL → AP의 307 → Location {#http-redirect}
 
-OS가 접속 확인용 주소에 HTTP 요청을 보낸다고 하자. 먼저 목적지 TCP/80에 **SYN → SYN+ACK → ACK**로 연결을 만들고 HTTP 요청을 보낸다. 이 TCP 연결이 성공해도 매장 인터넷 전체가 승인된 것은 아니다. [RFC 9293 §3.5](https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5)
+**첫 시험 URL은 OS가 미리 알고 있다.** AP가 그 주소를 DHCP로 알려 줘야 하는 것은 아니다. 네트워크 연결 변화가 생기면 OS가 설정된 시험 주소에 요청하고, 미리 정한 정상 코드·본문과 응답을 비교할 수 있다. Windows NCSI는 `Microsoft Connect Test` 같은 예상 본문을 사용한다고 설명한다. Android도 알려진 목적지로 HTTP 시험을 보내 리디렉션을 감지한다고 설명한다. 정확한 주소·판정·UI는 OS와 버전에 따라 달라진다. [Microsoft NCSI](https://learn.microsoft.com/en-us/windows-server/networking/ncsi/ncsi-overview), [Android 포털 감지](https://developer.android.com/about/versions/11/features/captive-portal)
 
-정상 응답은 OS마다 다르다. 예를 들어 응답 코드나 미리 정해 둔 본문을 확인한다. Windows NCSI는 `Microsoft Connect Test` 같은 예상 본문을 사용한다고 설명한다. Android 역시 알려진 목적지로 시험 요청을 보내 리디렉션을 감지하는 방식을 설명한다. [Microsoft NCSI](https://learn.microsoft.com/en-us/windows-server/networking/ncsi/ncsi-overview), [Android 포털 감지](https://developer.android.com/about/versions/11/features/captive-portal)
-
-기존 포털 장비는 요청을 중간에서 처리해 시험 서버 대신 다음과 같은 HTTP 응답을 보낼 수 있다. 아래 URI와 토큰은 설명용이다.
+우리가 시험한 Apple 주소로 예를 들면 다음과 같다. 이 요청과 뒤의 307은 직접 관찰했지만, 현재 OS가 자동으로 같은 요청을 보내는 순간을 캡처한 것은 아니다.
 
 ```http
-HTTP/1.1 302 Found
-Location: https://portal.example.org/start?ticket=opaque-example
+GET /hotspot-detect.html HTTP/1.1
+Host: captive.apple.com
 ```
 
-`Location`은 다음에 방문할 주소다. **이 응답을 받은 OS가 포털 필요 여부를 판단하고 로그인 창·브라우저·알림을 표시한다.** AP나 DHCP 서버가 노트북에 임의의 창을 직접 실행하는 프로토콜은 아니다. 일반 브라우저에서 시작한 요청이라면 브라우저가 리디렉션을 따라갈 수도 있다. UI 종류와 표시 조건은 OS별이다. [MDN 302](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302), [Apple 포털 안내](https://developer.apple.com/news/?id=q78sq5rv)
+노트북은 DNS로 얻은 원래 서버 IP의 TCP/80에 연결하려 한다. **DNS가 포털 IP로 바뀔 필요는 없다.** Meraki가 문서화한 구현에서는 TCP SYN이 AP를 지날 때 AP가 원래 서버를 대신해 SYN+ACK을 보내고, 이어지는 HTTP GET에 포털 리디렉션으로 응답한다. 노트북은 원래 목적지와 연결한 것으로 보지만 실제 처리는 중간 장비가 맡는다. TCP 연결 설정의 일반 원리와 이 제품의 중간 처리는 구분해야 한다. 이 TCP 내부 흐름은 제품 문서로 확인했고 현재 장비의 무선 프레임을 직접 캡처하지 않았다. [TCP 연결 설정](https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5), [Meraki Fetching the Splash URL](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting#Fetching_the_Splash_URL)
 
-이는 HTTP 감지의 예다. 임의의 HTTPS 웹사이트 연결을 정상인 척 바꿔서 동의 화면을 넣을 수 있다는 뜻은 아니다.
+현재 연결의 실제 응답은 `307 Temporary Redirect`였다. 다음은 접속별 경로·쿼리 값을 제거한 발췌다.
+
+```http
+HTTP/1.1 307 Temporary Redirect
+Location: https://apac.network-auth.com/splash/<site>/?<parameters>
+```
+
+**이 경로에서 포털 주소를 받는 곳은 HTTP 응답의 `Location` 헤더다.** OS는 예상한 정상 시험 응답과 다른 결과를 보고 포털을 안내할 수 있다. 일반 브라우저가 시작한 요청이면 브라우저가 이동을 따라갈 수도 있다. AP가 노트북에서 임의의 프로그램을 직접 실행하는 것은 아니다.
+
+307은 요청 메서드·본문을 유지하는 리디렉션이며, GET을 옮기는 이 예에서는 GET이 이어진다. 302를 사용하는 포털도 있으므로 코드 하나를 모든 제품의 고정 규격으로 보면 안 된다. [MDN 307](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/307), [MDN 302](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302)
+
+이후 `Location`의 포털 주소에는 **별도의 HTTPS 연결**을 만든다. 처음의 평문 HTTP 시험을 중간에서 처리하는 것과, HTTPS 포털의 정상 인증서를 검증하는 것은 다른 단계다. 원래 시험 사이트에 대한 HTTPS 통신을 가로채 정상인 척하려면 그 사이트의 TLS 인증까지 통과해야 한다. 목적지 IP를 보고 차단할 수 있다는 사실이 HTTPS 응답을 정상으로 위조할 수 있다는 뜻은 아니다.
 
 ### 4-B. CAPPORT 방식: DHCP 옵션 → HTTPS 상태 API → 포털 URL
 
-4-A와 **다른 발견 경로**다. 두 경로를 반드시 순서대로 모두 수행하는 것은 아니다. 지원 환경에서는 DHCP 옵션 114로 받은 다음 API 주소를 조회한다.
+4-A와 **다른 발견 경로**다. 두 경로를 반드시 순서대로 모두 수행하는 것은 아니다. DHCP는 포털과 별개로 IP 설정을 전달하는 프로토콜이지만 확장 옵션을 제공한다. RFC 8910은 그 확장에 포털 API 위치를 알리는 옵션 114를 정의했다. **114는 포트 번호가 아니라 DHCP 메시지 안의 정보 항목 번호**다. 지원 환경에서는 다음과 같은 API 주소를 DHCP로 받아 조회한다. [RFC 8910 §2.1](https://www.rfc-editor.org/rfc/rfc8910.html#section-2.1)
 
 ```text
 https://portal.example.org/api/sessions/net-example
@@ -224,6 +235,12 @@ Cache-Control: private
 ```
 
 기기는 이 정보를 읽고 사용자 포털을 안내한다. **API 응답은 제한 상태와 포털 위치를 알려 주며, 동의를 대신하거나 장비를 승인하는 요청은 아니다.** HTTPS와 상태 형식은 [RFC 8908 §4–§6](https://www.rfc-editor.org/rfc/rfc8908.html#section-4)에 정의돼 있다.
+
+CAPPORT라는 별도 푸시 프로토콜이 창을 실행하는 것으로 이해하면 안 된다. 이 예의 전달은 **DHCP로 API URI 수신 → HTTPS GET으로 상태·포털 URL 수신 → OS의 안내**다. 반면 HTTP 방식은 **OS가 알고 있던 시험 URL → HTTP 응답의 Location에서 포털 URL 수신**이다.
+
+아래에서 두 모드를 바꾸면 포털 주소를 어느 응답에서 얻는지 비교할 수 있다. 첫 그림과 마찬가지로 교육용 메시지 모형이며 실제 OS 이벤트·TCP 프레임 캡처의 재생은 아니다.
+
+{% include captive-portal-discovery.html %}
 
 ### 5. 화면을 받아 표시: HTTPS GET과 웹 세션
 
@@ -288,7 +305,27 @@ HTTPS를 사용하므로 위 헤더와 본문은 TLS 안에서 전송된다. 서
 
 포털 서버는 기기별 승인 결과를 접근 제한 장비에 전달해야 한다. ACL(Access Control List)·필터·역할 같은 정책에서 `net-example`의 외부 통신을 허용하도록 바뀌는 것이다. 허용 뒤에도 게스트망의 다른 제한 정책은 남을 수 있다.
 
+**패킷을 실제로 제한하는 기술은 방화벽·ACL 등이다.** 포털 소프트웨어는 웹 절차와 기기별 승인 상태를 관리하고, 전달 경로의 장비가 패킷에 규칙을 적용한다. 승인 때 관리자가 수동으로 방화벽을 편집해야 한다는 뜻은 아니다. 소프트웨어가 기기별 상태나 규칙을 자동 갱신할 수 있다. 예를 들어 openNDS의 OpenWrt 구성은 nftables 규칙을 FW4 규칙 집합에 넣는다고 설명한다. Meraki는 AP의 ACL과 승인 통보를 설명한다. nftables가 현재 Meraki 장비의 내부 구현이라는 뜻은 아니다. [openNDS v10.3.0 Firewall Restart hook](https://opennds.readthedocs.io/en/stable/config.html#firewall-restart-hook), [Meraki ACL 설명](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
+
+일반적인 판단 모델은 패킷을 접속 세션에 연결하고, 그 세션의 승인 상태와 목적지·프로토콜·포트 정책을 확인하는 것이다. HTTPS여도 배달에 필요한 목적지 IP는 보이므로 TLS 본문을 복호화하지 않고 전달 여부를 판단할 수 있다. **라우터가 암호화된 웹 쿠키나 동의 값을 읽어 승인 여부를 확인하는 것은 아니다.** 기기 식별자와 네트워크 위치가 바뀔 때의 처리는 구현에서 고려해야 한다. [RFC 8952 §2.4·§3](https://www.rfc-editor.org/rfc/rfc8952.html#section-2.4)
+
 이 **백엔드→장비 구간의 프로토콜은 CAPPORT가 하나로 정하지 않는다.** 제품의 컨트롤러/API나 제어 채널을 사용할 수 있다. 확인된 Meraki 예에서는 `grant URL 요청 → 클라우드 승인 → AP들에 승인 통보 → 기기 제한 해제`가 이어진다. [Meraki 처리 흐름](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
+
+#### 사설망 장비는 클라우드에서 오는 승인을 어떻게 받을까
+
+**연결을 시작하는 방향과 그 연결 안에서 정보를 보내는 방향은 다르다.** 장비가 먼저 외부 서버에 연결하면, 그 연결을 통해 서버의 응답·제어 정보도 받을 수 있다. 모든 서버 알림마다 인터넷에서 사설 IP로 새 연결을 시작해야 하는 것은 아니다.
+
+Meraki의 공식 구조에서는 관리 장비가 먼저 클라우드로 보안 터널을 만들고 유지하며, 그 터널이 양방향 관리·보고 트래픽을 전달한다. 따라서 이 구조를 위해 방문객에게 장비 관리 포트를 공개할 필요는 없다. 제품·서비스별 목적지와 포트는 공식 방화벽 안내를 따라야 하며, 모든 제품이 같은 전송을 쓴다고 일반화하지 않는다. [Meraki의 장비 발신 관리 연결](https://documentation.meraki.com/Platform_Management/Dashboard_Administration/Design_and_Configure/Configuration_Guides/Routing_and_Firewall/Upstream_Firewall_Rules_for_Cloud_Connectivity)
+
+| 구간 | 연결·메시지 방향 | 근거 범위 |
+|---|---|---|
+| 관리 연결 준비 | 매장 장비 → Meraki 클라우드 | 장비가 먼저 시작한다는 공식 구조 |
+| 사용자 승인 요청 | 브라우저 → 포털·승인 URL | 웹 경로. 아래 관찰에서는 grant 링크 코드까지 확인 |
+| 승인 전달 | 클라우드 → AP의 관리 경로 | 제품 문서의 승인 통보. 현재 AP의 관리 패킷은 미관찰 |
+| 실제 집행 | AP의 기기별 접근 제어 갱신 | 제품 문서. 현장 내부 ACL 규칙 자체는 미조회 |
+{: .cp-readable-table tabindex="0" aria-label="클라우드 관리 연결과 사용자 승인 경로"}
+
+방문객의 통신 제한과 장비 자체의 관리 통신은 구분해서 다룰 수 있다. 포털이 방문객의 외부 접속을 제한한다고 해서 AP도 클라우드에 연결할 수 없는 것은 아니다. 이 분리는 앞의 제품 구조에서 도출한 설명이며, 현재 장비의 VLAN·관리망 구성을 조회한 결과는 아니다.
 
 RADIUS(Remote Authentication Dial-In User Service)를 쓰는 구성이라면 다음 메시지도 등장할 수 있다. **모든 카페가 거치는 고정 3단계는 아니다.**
 
@@ -328,6 +365,47 @@ AAA는 Authentication, Authorization, Accounting, CoA는 Change of Authorization
 802.11 관리 프레임 확인에는 무선 어댑터·드라이버와 monitor mode 등 별도 캡처 조건이 필요할 수 있다. 동의가 실제로 저장됐는지는 포털의 서버 로그·DB에서도, 허용됐는지는 장비의 세션·정책 상태에서도 확인해야 한다. [Wireshark DHCP 필터](https://www.wireshark.org/docs/dfref/d/dhcp.html), [RADIUS 필터](https://www.wireshark.org/docs/dfref/r/radius.html), [Cisco 무선 캡처 설명](https://www.cisco.com/c/en/us/support/docs/wireless-mobility/wireless-lan-wlan/116493-technote-technology-00.html)
 
 IPv6에서는 DHCPv4 DORA가 필수가 아니다. RA의 Prefix Information을 이용한 SLAAC(Stateless Address Autoconfiguration)나 DHCPv6 등으로 구성이 달라진다. CAPPORT 안내는 RA 옵션 37 또는 DHCPv6 옵션 103으로도 전달할 수 있다. [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.html), [RFC 8910 §2.2–§2.3](https://www.rfc-editor.org/rfc/rfc8910.html#section-2.2)
+
+## 실제 연결에서 관찰한 HTTP 리디렉션 {#observed-network}
+
+**2026-10-27에 한 Mac의 Wi-Fi 인터페이스 `en0`에서 확인한 사례**다. 폴 바셋 도메인의 PC·모바일 이미지를 참조하는 포털이 표시됐다. SSID 이름은 OS가 가린 상태였으므로 특정 SSID 문자열이나 지점을 확인했다고 주장하지 않는다. 이 결과를 모든 폴 바셋·스타벅스 매장에 적용해서도 안 된다.
+
+`ipconfig getpacket en0`로 현재 DHCP ACK를 읽고, `curl`을 Wi-Fi 인터페이스에 묶어 HTTP·HTTPS를 시험했다. HTTP 리디렉션은 자동 추적하지 않고 `Location`의 포털 페이지를 별도로 읽었다. OS의 자동 감지 순간이나 무선 관리 프레임을 캡처한 실험은 아니다. 아래에서는 MAC·사설 IP·세션 키·접속별 경로와 쿠키 값을 제거했다.
+
+| 확인 대상 | 실제 관찰 | 해석 범위 |
+|---|---|---|
+| 무선 정보 | 5GHz·802.11ac, 무선 보안 방식 `None` | 당시 인터페이스 상태. 다른 매장의 보안 설정을 뜻하지 않음 |
+| DHCP ACK | IP·게이트웨이·DNS 등 수신, 옵션 114 없음 | 현재 IPv4 임대 응답에는 CAPPORT API URI가 없었음 |
+| Apple HTTP 시험 | `captive.apple.com/hotspot-detect.html` 요청에 307 | 원래 시험 응답 대신 포털 리디렉션 관찰 |
+| Microsoft HTTP 시험 | `www.msftconnecttest.com/connecttest.txt` 요청에 307 | 두 HTTP 시험이 같은 포털 호스트로 안내됨 |
+| 포털 주소 | `apac.network-auth.com/splash/<site>/` | 실제 Location의 호스트. 경로 식별값·쿼리 값은 비공개 |
+| 외부 HTTPS 시험 | `https://example.com/`에 200, 인증서 검증 성공 | 시험한 목적지의 HTTPS는 당시 통과. 모든 외부 목적지 허용을 입증하지는 않음 |
+| 게이트웨이의 로컬 페이지 | Meraki 로고·관리 페이지 코드 표시 | 장비 페이지의 제품 표시 확인. 모델·펌웨어·내부 ACL은 미조회 |
+| 포털 HTML | 폴 바셋 이미지 참조, 사용하기 링크, HTML form 없음 | 받은 HTML의 구조. 전체 개인정보 처리·저장을 입증하지 않음 |
+{: .cp-readable-table tabindex="0" aria-label="단일 Wi-Fi 연결의 실제 관찰과 해석 범위"}
+
+따라서 이 사례에서는 **HTTP 307 안내를 직접 관찰했으며 옵션 114가 쓰였다고 설명할 수 없다.** 또한 HTTP 리디렉션과 특정 외부 HTTPS 성공이 동시에 관찰됐다. ‘동의 전에는 포털 외의 모든 패킷을 항상 차단한다’는 일반화는 이 결과에 맞지 않는다.
+
+Meraki에는 `Allow non-HTTP traffic prior to sign-on`과 `Block all access until sign-on is complete` 같은 제한 정책이 있다. 관찰은 전자와 부합하지만, **관리자 콘솔에서 정확한 설정을 읽은 결과는 아니므로 설정값 판정은 추론**이다. [Meraki Captive portal strength 설명](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
+
+### 이 페이지의 사용하기 버튼은 무엇을 보낼까
+
+현재 받은 HTML에는 POST 폼 대신 링크와 클릭 핸들러가 있었다. 원본 JavaScript를 읽어 다음 순서를 확인했다.
+
+1. 현재 포털 페이지에 `XMLHttpRequest`로 **HEAD** 요청을 보낸다.
+2. 응답의 `Continue-Url` 헤더를 읽는다.
+3. 그 값을 승인용 `…/grant?continue_url=…` 주소에 넣고 `window.location.href`로 이동한다.
+
+1번 HEAD도 같은 포털의 세션 쿠키를 붙여 직접 시험했다. 응답은 다음과 같았다.
+
+```http
+HTTP/1.1 200 OK
+Continue-Url: https://www.baristapaulbassett.co.kr/store/wifi.pb
+```
+
+처음 포털 응답에는 `clickthrough-sessions` 계열의 Secure·HttpOnly 쿠키가 포함됐다. 여기서는 쿠키 이름과 코드의 흐름만 공개하고 쿠키 값·접속별 키·기기 주소는 싣지 않는다. **HEAD 응답과 이동 코드는 확인했지만 grant 자체를 요청하지 않았으므로 승인 후 패킷 변화는 측정하지 않았다.** 클라우드가 승인 후 AP에 알리는 부분은 제품 문서로 확인한 동작이다.
+
+앞의 `POST /consents`·동의 DB 예시는 웹 앱의 일반 설계로 남겨 두되, 이 현장 화면의 구현으로 읽으면 안 된다. 여기서 직접 확인한 것은 페이지·쿠키·HEAD 응답·grant 이동 코드이며, 동의 기록의 저장소·법적 항목·보유기간이나 실제 장비의 인가 변경은 확인하지 않았다.
 
 ## 대안 비교표
 
@@ -413,9 +491,9 @@ TLS(Transport Layer Security)를 사용하는 HTTPS에서 검색어·비밀번�
 
 ## 조사 범위와 한계
 
-조사일은 **2026-10-27**이다. 사용 승인 메커니즘, 포털 감지, 표준화 이력, 암호화 경계와 대안을 1차 문서 중심으로 확인했다. ‘확인’은 출처가 해당 동작을 설명한다는 의미이며, 여기서 실험으로 검증했다는 뜻은 아니다. 상황별 선택과 일부 장애 원인은 추론으로 표시했다.
+조사일은 **2026-10-27**이다. 사용 승인 메커니즘, 포털 감지, 표준화 이력, 암호화 경계와 대안을 1차 문서 중심으로 확인했다. 문서의 ‘확인’은 출처가 해당 동작을 설명한다는 의미다. 별도로 단일 Mac 연결의 DHCP 응답·HTTP/HTTPS 응답·포털 HTML·HEAD 요청을 관찰한 결과를 [실제 연결 절](#observed-network)에 구분했다. 상황별 선택과 일부 장애 원인은 추론으로 표시했다.
 
-폴 바셋·스타벅스의 현재 SSID별 장비, CAPPORT 채택 여부, 개인정보 수집 항목·보유기간과 실제 매장 패킷은 확인하지 않았다. 최초 발명자, 비용·접속 지연·처리량 비교 수치도 입증하지 않았다. 그림의 패킷 이동 시간과 서버 배치는 설명을 위한 모형이다. 두 카페의 실제 접속 화면·약관과 일치한다고 가정해서는 안 된다.
+관찰한 연결 외의 SSID·매장·OS에는 결과를 일반화하지 않는다. 실제 무선 프레임, AP의 내부 ACL과 클라우드 관리 패킷, 승인 후 상태 변화, 개인정보 저장 항목·보유기간은 확인하지 않았다. 최초 발명자, 비용·접속 지연·처리량 비교 수치도 입증하지 않았다. 그림의 이동 시간과 서버 배치는 교육용 모형이며 측정값이 아니다. 접속별 식별 정보와 원본 쿠키는 게시하지 않았다.
 
 ## 참고자료
 
@@ -438,3 +516,6 @@ TLS(Transport Layer Security)를 사용하는 HTTPS에서 검색어·비밀번�
 17. [MDN — 302](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302), [HTTP 쿠키](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies), [폼 데이터 전송](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data), [checkbox](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox): 포털 화면·클릭 요청을 구성하는 웹 기술.
 18. [RFC 2865](https://www.rfc-editor.org/rfc/rfc2865.html), [RFC 2866](https://www.rfc-editor.org/rfc/rfc2866.html), [RFC 5176](https://www.rfc-editor.org/rfc/rfc5176.html): 선택적인 RADIUS 인증·인가, accounting, 동적 인가.
 19. [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.html), [RFC 5737](https://www.rfc-editor.org/rfc/rfc5737.html): IPv6 주소 자동 구성과 문서용 IPv4 주소.
+20. [MDN — 307 Temporary Redirect](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/307): Location과 요청 메서드 유지.
+21. [Meraki — Upstream Firewall Rules for Cloud Connectivity](https://documentation.meraki.com/Platform_Management/Dashboard_Administration/Design_and_Configure/Configuration_Guides/Routing_and_Firewall/Upstream_Firewall_Rules_for_Cloud_Connectivity): 사설망 장비가 먼저 시작하는 관리 연결.
+22. [openNDS v10.3.0 — Firewall Restart hook](https://opennds.readthedocs.io/en/stable/config.html#firewall-restart-hook): 포털 소프트웨어가 nftables를 사용하는 구현 예.
