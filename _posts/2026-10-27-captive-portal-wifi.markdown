@@ -24,6 +24,8 @@ source: "카페 와이파이 접속 경험에 관한 질문과 IETF RFC, Apple·
 
 폴 바셋·스타벅스에서 관찰한 경험을 이해하기 위한 일반적인 구조를 설명한다. 두 회사의 모든 매장이 같은 장비나 최신 CAPPORT API를 사용한다고 확인한 것은 아니다.
 
+실제 메시지를 차례로 보고 싶다면 [노트북 접속을 패킷 순서로 따라가기](#protocol-walkthrough)부터 읽으면 된다. 무선 연결, IP 할당, 화면 표시, 동의 전송·저장, 장비 승인까지 이어서 설명한다.
+
 ## 용어 사전
 
 <style>
@@ -145,6 +147,188 @@ Accept: application/captive+json
 
 단순 동의 버튼은 조건 수락을 표시할 수 있지만, 그 사람의 실명이나 계정 소유를 입증하지는 않는다. 계정·인증서·별도 본인확인 절차를 요구하는 서비스와 구분해야 한다. 포털이 승인 조건으로 개인정보 동의를 요구할 수는 있지만, 수집 항목·목적·보유기간이나 법적 필요성은 기술 구조만으로 알 수 없다. 실제 화면과 해당 서비스 정책을 확인해야 한다. [Meraki의 Click-through와 Sign-on 구분](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
 
+## 노트북 접속을 패킷 순서로 따라가기 {#protocol-walkthrough}
+
+‘와이파이 동의 프로토콜’ 하나가 모든 과정을 수행하는 것은 아니다. **IEEE 802.11 → DHCP → ARP·DNS → TCP·TLS·HTTP → 웹 애플리케이션 → 장비 접근 제어**가 연결된다. 여기서는 기존 주소 임대와 캐시가 없는 노트북이 **일반 Open System 와이파이에 IPv4로 처음 연결하는 예**를 따라간다. HTTPS 예시는 TCP 위의 HTTP/1.1로 단순화했다. HTTP/2는 HTTP 메시지 표현이 다르며, HTTP/3는 QUIC을 사용하므로 아래 TCP 흐름과 같지 않다.
+
+예시 주소는 실제 매장 설정이 아닌 문서용 주소다. 노트북은 `192.0.2.10/24`, 게이트웨이는 `192.0.2.1`, DHCP 서버는 `192.0.2.2`, DNS 서버는 `192.0.2.53`, 포털은 `portal.example.org`(`198.51.100.20`)라고 가정한다. AP·게이트웨이·DHCP 서버는 한 장비에 함께 있거나 별개일 수 있다. [RFC 5737 문서용 주소](https://www.rfc-editor.org/rfc/rfc5737.html#section-3)
+
+### 1. 무선 접속: IEEE 802.11 관리 프레임
+
+노트북은 Beacon 수신이나 Probe Request/Response로 AP를 찾는다. 이 예의 연결 과정에서는 **Open System Authentication Request/Response**, 이어서 **Association Request/Response**를 교환한다. 성공하면 무선 데이터 프레임을 전달할 링크가 준비된다.
+
+여기서 Authentication이라는 이름은 사람의 본인인증이나 개인정보 동의를 뜻하지 않는다. 이 단계의 프레임에는 **TCP/UDP 포트가 없고, IP 주소도 아직 필요하지 않다.** WPA·OWE 등의 보안 방식에 따른 절차는 따로 구분해야 한다. [Cisco의 Open System Authentication·Association 설명](https://www.cisco.com/c/en/us/support/docs/wireless-mobility/wireless-lan-wlan/116493-technote-technology-00.html)
+
+### 2. 주소 할당: DHCP의 Discover → Offer → Request → ACK
+
+이제 노트북이 DHCP(Dynamic Host Configuration Protocol) 클라이언트로 동작한다. 신규 할당의 대표적인 DORA 교환은 다음과 같다.
+
+| 순서·메시지 | 방향·포트 | 주요 내용 |
+|---|---|---|
+| Discover | 노트북 `UDP 68` → 서버 `UDP 67` | 처음에는 `0.0.0.0 → 255.255.255.255`로 서버 탐색 |
+| Offer | 서버 `UDP 67` → 노트북 `UDP 68` | `yiaddr=192.0.2.10` 등 주소 제안 |
+| Request | 노트북 `UDP 68` → 서버 `UDP 67` | 초기 SELECTING에서는 브로드캐스트. 요청 주소와 선택한 서버를 옵션으로 표시 |
+| ACK | 서버 `UDP 67` → 노트북 `UDP 68` | 임대와 설정 확정 |
+{: .cp-readable-table tabindex="0" aria-label="DHCP 신규 주소 할당 메시지"}
+
+Discover는 아직 자기 IP와 서버 위치를 몰라도 보내도록 설계돼 있다. Offer·ACK가 언제나 브로드캐스트인 것은 아니다. relay, 클라이언트 상태, BROADCAST flag 등에 따라 유니캐스트할 수도 있다. 기존 주소 재검증이나 임대 갱신에서는 네 메시지를 전부 반복하지 않을 수 있다. [RFC 2131 §3.1·§3.2·§4.1](https://www.rfc-editor.org/rfc/rfc2131.html#section-3.1)
+
+받는 정보는 IP 하나에 그치지 않는다. 주소는 DHCP의 `yiaddr` 필드에 있고, 옵션으로는 subnet mask **1**, router **3**, DNS server **6**, IP lease time **51** 등을 전달할 수 있다. CAPPORT를 지원하는 네트워크는 옵션 **114**에 API URI를 추가할 수 있다. [RFC 2132](https://www.rfc-editor.org/rfc/rfc2132.html), [RFC 8910 §2.1](https://www.rfc-editor.org/rfc/rfc8910.html#section-2.1)
+
+**DHCP ACK를 받았다는 것은 IP 설정을 받았다는 뜻이다. 인터넷 사용 동의가 끝났다는 뜻은 아니다.** 또한 DHCP 주소 임대시간과 포털의 인터넷 승인 유효기간은 별도다.
+
+### 3. 다음 홉과 서버 주소 확인: ARP·DNS
+
+DNS 서버가 같은 `/24`에 있으므로, 캐시가 없다면 먼저 **ARP(Address Resolution Protocol)**로 `192.0.2.53`의 MAC 주소를 알아내 DNS 요청을 전달할 수 있다. 일반 DNS 예시는 `노트북의 임시 UDP 포트 → DNS 서버의 UDP 53`이다. 도메인 이름을 질의하면 포털·접속 시험 서버의 IP 주소를 얻는다. DNS는 TCP/53도 지원하며, 암호화 DNS의 전송은 이 예와 다르다. [RFC 826](https://www.rfc-editor.org/rfc/rfc826.html), [RFC 1035 §4.2](https://www.rfc-editor.org/rfc/rfc1035.html#section-4.2)
+
+목적지가 다른 서브넷이면 로컬에서 필요한 주소는 **외부 웹서버의 MAC이 아니라 게이트웨이의 MAC**이다. ARP 캐시가 없으면 `192.0.2.1`을 질의한다. IP 목적지는 외부 서버이고, 로컬 구간에서는 게이트웨이로 전달한다. 무선 프레임의 수신 AP 주소와 IP 다음 홉인 게이트웨이 주소도 같은 개념은 아니다. ARP 자체는 TCP/UDP 포트를 쓰지 않는다. [RFC 1122 §3.3.1](https://www.rfc-editor.org/rfc/rfc1122.html#section-3.3.1)
+
+미승인 기기도 이런 준비 통신과 포털에 필요한 통신은 허용받아야 한다. 어느 주소까지 허용할지는 해당 네트워크의 제한 정책이다. 실제 순서는 ARP·DNS 캐시, 목적지 위치, 기존 연결 유무에 따라 일부 생략되거나 달라진다.
+
+### 4-A. 기존 방식: HTTP 접속 시험과 302 Location
+
+OS가 접속 확인용 주소에 HTTP 요청을 보낸다고 하자. 먼저 목적지 TCP/80에 **SYN → SYN+ACK → ACK**로 연결을 만들고 HTTP 요청을 보낸다. 이 TCP 연결이 성공해도 매장 인터넷 전체가 승인된 것은 아니다. [RFC 9293 §3.5](https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5)
+
+정상 응답은 OS마다 다르다. 예를 들어 응답 코드나 미리 정해 둔 본문을 확인한다. Windows NCSI는 `Microsoft Connect Test` 같은 예상 본문을 사용한다고 설명한다. Android 역시 알려진 목적지로 시험 요청을 보내 리디렉션을 감지하는 방식을 설명한다. [Microsoft NCSI](https://learn.microsoft.com/en-us/windows-server/networking/ncsi/ncsi-overview), [Android 포털 감지](https://developer.android.com/about/versions/11/features/captive-portal)
+
+기존 포털 장비는 요청을 중간에서 처리해 시험 서버 대신 다음과 같은 HTTP 응답을 보낼 수 있다. 아래 URI와 토큰은 설명용이다.
+
+```http
+HTTP/1.1 302 Found
+Location: https://portal.example.org/start?ticket=opaque-example
+```
+
+`Location`은 다음에 방문할 주소다. **이 응답을 받은 OS가 포털 필요 여부를 판단하고 로그인 창·브라우저·알림을 표시한다.** AP나 DHCP 서버가 노트북에 임의의 창을 직접 실행하는 프로토콜은 아니다. 일반 브라우저에서 시작한 요청이라면 브라우저가 리디렉션을 따라갈 수도 있다. UI 종류와 표시 조건은 OS별이다. [MDN 302](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302), [Apple 포털 안내](https://developer.apple.com/news/?id=q78sq5rv)
+
+이는 HTTP 감지의 예다. 임의의 HTTPS 웹사이트 연결을 정상인 척 바꿔서 동의 화면을 넣을 수 있다는 뜻은 아니다.
+
+### 4-B. CAPPORT 방식: DHCP 옵션 → HTTPS 상태 API → 포털 URL
+
+4-A와 **다른 발견 경로**다. 두 경로를 반드시 순서대로 모두 수행하는 것은 아니다. 지원 환경에서는 DHCP 옵션 114로 받은 다음 API 주소를 조회한다.
+
+```text
+https://portal.example.org/api/sessions/net-example
+```
+
+필요한 DNS 조회 뒤 TCP/443 연결을 만들고, TLS 핸드셰이크로 인증서를 검증하며 암호화 통신을 준비한다. 그 위에서 HTTPS GET을 보내고 다음과 같은 응답을 받는다.
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/captive+json
+Cache-Control: private
+
+{
+  "captive": true,
+  "user-portal-url": "https://portal.example.org/start"
+}
+```
+
+기기는 이 정보를 읽고 사용자 포털을 안내한다. **API 응답은 제한 상태와 포털 위치를 알려 주며, 동의를 대신하거나 장비를 승인하는 요청은 아니다.** HTTPS와 상태 형식은 [RFC 8908 §4–§6](https://www.rfc-editor.org/rfc/rfc8908.html#section-4)에 정의돼 있다.
+
+### 5. 화면을 받아 표시: HTTPS GET과 웹 세션
+
+로그인용 브라우저는 포털에 `GET /start`를 보낸다. 서버가 HTML·CSS 등을 돌려주면 브라우저가 약관과 체크박스를 그린다. 필요한 정적 파일도 미승인 상태에서 접근 가능해야 한다.
+
+이후의 **쿠키·POST·저장 필드는 원리를 설명하기 위한 웹 애플리케이션 설계 예**다. CAPPORT의 고정 규격이나 두 카페의 실제 구현이 아니다. 서버는 예를 들어 다음 응답으로 웹 세션 쿠키를 설정할 수 있다. 헤더는 필요한 부분만 표시했다.
+
+```http
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=utf-8
+Set-Cookie: __Host-portal_session=s-example; Path=/; Secure; HttpOnly; SameSite=Lax
+```
+
+브라우저는 조건에 맞는 후속 요청에 `Cookie` 헤더를 붙인다. `Secure`는 HTTPS 전송, `HttpOnly`는 스크립트의 쿠키 읽기 제한과 관련된다. 이 쿠키는 웹 요청을 묶는 식별자이지, 그 자체가 AP의 허용 규칙은 아니다. [MDN HTTP 쿠키](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies)
+
+### 6. 체크·클릭: 선택 값을 HTTP 요청으로 전송
+
+체크박스 선택은 우선 브라우저 안의 상태다. 보통 HTML 폼 제출이나 JavaScript 요청이 실행돼야 서버에 전달된다. 폼의 `name=accepted`, `value=1`인 항목을 선택해 제출하면 아래처럼 보낼 수 있다. 일반 폼에서 선택하지 않은 체크박스는 해당 이름·값이 전송되지 않는다. [MDN checkbox](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox)
+
+```http
+POST /consents HTTP/1.1
+Host: portal.example.org
+Cookie: __Host-portal_session=s-example
+Origin: https://portal.example.org
+Content-Type: application/x-www-form-urlencoded
+
+accepted=1&policy_version=2026-10&csrf_token=t-example
+```
+
+HTTPS를 사용하므로 위 헤더와 본문은 TLS 안에서 전송된다. 서버의 웹 프레임워크는 본문을 파싱해 `accepted`, `policy_version` 등을 읽을 수 있다. 체크박스만 그려 놓는 것으로 끝나는 것이 아니라, **화면의 선택이 요청 데이터로 직렬화돼 서버 핸들러에 도착**하는 것이다. `Content-Length` 같은 전송용 헤더는 예시에서 생략했다. [MDN 폼 전송과 서버 측 처리](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data)
+
+`POST /consents`나 위 필드명은 표준 필수가 아니다. 실제 Meraki의 click-through 예에는 버튼을 눌러 **grant URL로 GET**을 보내는 경로도 있다. 따라서 ‘동의는 반드시 POST’라는 설명도 정확하지 않다. [Meraki Click-through API](https://developer.cisco.com/meraki/captive-portal-api/click-through-api/)
+
+### 7. 서버 수집: 웹 세션을 접속 세션에 연결하고 기록
+
+설명용 서버는 다음 순서로 요청을 처리할 수 있다.
+
+1. 쿠키의 웹 세션을 조회하고 만료 여부와 요청의 유효성을 확인한다. 필요한 CSRF(Cross-Site Request Forgery) 방어와 서버 측 동의 값 검증도 이 층에서 한다.
+2. 웹 세션 `s-example`을 네트워크 접속 세션 `net-example`에 연결한다. 해당 AP·현재 기기 식별 정보·승인 대상은 네트워크 측 정보와 맞춰야 한다.
+3. 선택 항목과 약관 버전, 서버 수신 시각, 접속 연계 ID 등을 DB나 이벤트 저장소에 기록한다.
+4. 해당 접속 세션을 승인하는 장비 연동을 수행한다.
+
+이 중 저장 스키마·내부 DB 프로토콜·보유기간은 사업자가 선택하는 영역이다. 예를 들어 아래 같은 기록을 만들 수 있지만 **필수 수집 항목을 제시하는 것은 아니다.** 항목이 여러 개라면 화면의 각 선택과 기록도 구분해야 한다.
+
+```json
+{
+  "consent_id": "consent-example",
+  "network_session_id": "net-example",
+  "policy_version": "2026-10",
+  "accepted": true,
+  "received_at": "2026-10-27T06:00:00Z"
+}
+```
+
+그렇다면 서버는 노트북의 MAC을 어떻게 아는가? **브라우저가 하드웨어 주소를 직접 읽어야 하는 것은 아니다.** Meraki 외부 포털의 확인된 예에서는 네트워크가 리디렉션 URL에 `client_ip`, `client_mac`, `base_grant_url`을 추가한다. 다른 설계에서는 장비가 만든 불투명한 세션 토큰을 서버가 조회할 수 있다. 인터넷상의 포털 서버가 원격 노트북에 ARP를 보내 MAC을 알아내는 구조로 이해하면 안 된다. 서명·만료·서버 측 연결 검증은 구현상의 보안 설계이며, URL 속 MAC 값을 그대로 믿어도 된다는 뜻이 아니다. NAT 너머의 공인 IP 하나만으로 각 노트북을 구분해서도 안 된다. [Meraki 파라미터 설명](https://developer.cisco.com/meraki/captive-portal-api/click-through-api/), [RFC 8908 §4](https://www.rfc-editor.org/rfc/rfc8908.html#section-4)
+
+**동의 기록 저장과 장비 승인은 별개 처리**다. DB 저장은 성공해도 장비 갱신은 실패할 수 있다. 성공 확인·재시도·중복 처리 방지는 이 경계를 고려해야 한다는 설계 권고다. 실제 매장이 어느 DB에 어떤 순서로 기록하는지는 확인하지 않았다.
+
+서버가 이 예에서 확인한 것은 해당 웹 세션이 동의 값을 제출했다는 사실이다. 이것만으로 사용자의 실명이나 계정 소유까지 확인한 것은 아니다.
+
+### 8. 실제 허용: 장비의 세션·ACL 갱신
+
+포털 서버는 기기별 승인 결과를 접근 제한 장비에 전달해야 한다. ACL(Access Control List)·필터·역할 같은 정책에서 `net-example`의 외부 통신을 허용하도록 바뀌는 것이다. 허용 뒤에도 게스트망의 다른 제한 정책은 남을 수 있다.
+
+이 **백엔드→장비 구간의 프로토콜은 CAPPORT가 하나로 정하지 않는다.** 제품의 컨트롤러/API나 제어 채널을 사용할 수 있다. 확인된 Meraki 예에서는 `grant URL 요청 → 클라우드 승인 → AP들에 승인 통보 → 기기 제한 해제`가 이어진다. [Meraki 처리 흐름](https://documentation.meraki.com/Wireless/Operate_and_Maintain/User_Guides/MR_Splash_Page/Splash_Page_Traffic_Flow_and_Troubleshooting)
+
+RADIUS(Remote Authentication Dial-In User Service)를 쓰는 구성이라면 다음 메시지도 등장할 수 있다. **모든 카페가 거치는 고정 3단계는 아니다.**
+
+| 기능 | 일반적인 UDP 목적지 포트 | 메시지·주체 |
+|---|---|---|
+| 인증·인가 | 1812 | 네트워크 접속 장비와 AAA 서버의 Access-Request / Access-Accept 등 |
+| 이용량·세션 accounting | 1813 | 접속 장비가 Accounting-Request 등으로 세션 기록 전달 |
+| 이미 연결된 세션의 동적 인가 | 3799 | 인가 서버 측이 장비에 CoA-Request, 장비는 CoA-ACK 또는 CoA-NAK |
+{: .cp-readable-table tabindex="0" aria-label="선택적인 RADIUS 서버와 장비 연동"}
+
+AAA는 Authentication, Authorization, Accounting, CoA는 Change of Authorization이다. `Access-Accept`와 `CoA`는 같은 메시지가 아니다. 브라우저가 CoA를 직접 보내는 것도 아니며, accounting이 체크박스 동의 내용을 자동으로 수집하는 프로토콜도 아니다. TLS 기반 전송 등 다른 RADIUS 구성은 별도다. [RFC 2865](https://www.rfc-editor.org/rfc/rfc2865.html), [RFC 2866](https://www.rfc-editor.org/rfc/rfc2866.html), [RFC 5176 §2.2–§2.3](https://www.rfc-editor.org/rfc/rfc5176.html#section-2.2)
+
+‘이용 정보 수집’까지 구분하면, **동의 이벤트는 웹 앱에서, 실제 접속시간·전송량은 네트워크 장비의 세션·카운터 등에서 얻을 수 있다.** RADIUS Accounting을 채택한 예에서는 `Acct-Input-Octets`, `Acct-Output-Octets`, `Acct-Session-Time` 같은 속성으로 종료 시 전송량·이용시간을 보고할 수 있다. 어느 정보를 실제로 수집·저장하는지는 해당 서비스 구현과 정책을 확인해야 한다. [RFC 2866 §5.3·§5.4·§5.7](https://www.rfc-editor.org/rfc/rfc2866.html#section-5.3)
+
+### 9. 완료 확인과 일반 통신
+
+장비 정책이 바뀐 뒤 OS가 접속 시험을 다시 하면 정상 응답을 받을 수 있다. CAPPORT 환경에서는 API 재조회에 `captive: false`가 온다. 설명용 웹 앱은 승인 확인 뒤 완료 페이지로 안내할 수도 있다. 화면의 성공 표시만으로 실제 장비 반영이 보장되는 것은 아니다. [RFC 8908 §6](https://www.rfc-editor.org/rfc/rfc8908.html#section-6)
+
+이후 노트북의 일반 인터넷 패킷은 AP·게이트웨이의 기존 전달 경로를 이용한다. **새 IP를 반드시 다시 받거나 포털 웹서버가 모든 통신의 중계 서버가 되는 것은 아니다.** 게이트웨이에서 NAT를 하더라도 주소·포트 변환과 사용 승인 판단은 별도 기능이다.
+
+정리하면 DHCP ACK는 주소 설정, TCP ACK는 TCP 전달·연결 제어, 체크박스 제출은 웹 요청, 장비 승인은 네트워크 정책 변경이다. 서로 다른 층에서 일어난다.
+
+### 직접 확인할 때 어디에서 무엇을 볼까
+
+노트북의 일반 Wireshark 캡처에서 쓸 수 있는 표시 필터 예시는 다음과 같다. 아래는 이번에 실행한 캡처 결과가 아니라 확인 위치를 안내하는 것이다.
+
+| 확인 대상 | 표시 필터 예 | 관찰 가능한 내용·한계 |
+|---|---|---|
+| DHCP | `udp.port == 67 or udp.port == 68` | 신규 임대 메시지와 DHCP 옵션 |
+| ARP·DNS | `arp or dns` | 다음 홉 주소 확인, 일반 DNS 질의·응답. 캐시·암호화 DNS는 다를 수 있음 |
+| 접속 시험 HTTP | `http` | 평문 HTTP 요청과 리디렉션. 실제 시험 방식에 따라 다름 |
+| HTTPS 연결 | `tcp.port == 443 or tls` | 연결·TLS 교환. 일반 캡처만으로 암호화된 동의 본문은 보이지 않음 |
+| 체크·클릭 요청 | 브라우저 개발자 도구의 Network | 해당 브라우저의 요청 URL·메서드·폼 데이터·쿠키·응답. OS 전용 로그인 창은 별도 확인 필요 |
+| 선택적 RADIUS 연동 | 장비·서버 측에서 `radius` | 노트북↔포털 캡처만으로 보이지 않는 백엔드 구간 |
+{: .cp-readable-table tabindex="0" aria-label="프로토콜별 확인 위치와 캡처 한계"}
+
+802.11 관리 프레임 확인에는 무선 어댑터·드라이버와 monitor mode 등 별도 캡처 조건이 필요할 수 있다. 동의가 실제로 저장됐는지는 포털의 서버 로그·DB에서도, 허용됐는지는 장비의 세션·정책 상태에서도 확인해야 한다. [Wireshark DHCP 필터](https://www.wireshark.org/docs/dfref/d/dhcp.html), [RADIUS 필터](https://www.wireshark.org/docs/dfref/r/radius.html), [Cisco 무선 캡처 설명](https://www.cisco.com/c/en/us/support/docs/wireless-mobility/wireless-lan-wlan/116493-technote-technology-00.html)
+
+IPv6에서는 DHCPv4 DORA가 필수가 아니다. RA의 Prefix Information을 이용한 SLAAC(Stateless Address Autoconfiguration)나 DHCPv6 등으로 구성이 달라진다. CAPPORT 안내는 RA 옵션 37 또는 DHCPv6 옵션 103으로도 전달할 수 있다. [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.html), [RFC 8910 §2.2–§2.3](https://www.rfc-editor.org/rfc/rfc8910.html#section-2.2)
+
 ## 대안 비교표
 
 포털과 암호화는 배타적인 선택지가 아니다. 예를 들어 OWE와 포털을 조합하거나, 암호로 연결한 와이파이에서 다시 포털을 요구할 수 있다.
@@ -248,3 +432,9 @@ TLS(Transport Layer Security)를 사용하는 HTTPS에서 검색어·비밀번�
 11. [Cisco WLC 8.10 — WLAN Security](https://www.cisco.com/c/en/us/td/docs/wireless/controller/8-10/config-guide/b_cg810/wlan_security.html), [WBA OpenRoaming](https://wballiance.com/openroaming/): 무선 보안 방식과 로밍 연합의 역할.
 12. [Apple — Private Wi-Fi addresses](https://support.apple.com/en-us/102509): 버전별 주소 설정과 회전 동작.
 13. [Mozilla — TLS](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Transport_Layer_Security), [HSTS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security), [Captive portal detection](https://support.mozilla.org/en-US/kb/captive-portal), [DNS over HTTPS](https://support.mozilla.org/en-US/kb/firefox-dns-over-https): 웹 암호화와 포털 문제 해결의 범위.
+14. [RFC 2131](https://www.rfc-editor.org/rfc/rfc2131.html), [RFC 2132](https://www.rfc-editor.org/rfc/rfc2132.html): DHCPv4 메시지·임대·옵션.
+15. [RFC 826](https://www.rfc-editor.org/rfc/rfc826.html), [RFC 1122 §3.3.1](https://www.rfc-editor.org/rfc/rfc1122.html#section-3.3.1), [RFC 1035 §4.2](https://www.rfc-editor.org/rfc/rfc1035.html#section-4.2), [RFC 9293 §3.5](https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5): ARP·다음 홉·DNS·TCP 연결의 역할.
+16. [Cisco — 802.11 WLAN](https://www.cisco.com/c/en/us/support/docs/wireless-mobility/wireless-lan-wlan/116493-technote-technology-00.html), [Meraki Click-through API](https://developer.cisco.com/meraki/captive-portal-api/click-through-api/): 관리 프레임과 실제 외부 포털 연동 예.
+17. [MDN — 302](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302), [HTTP 쿠키](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies), [폼 데이터 전송](https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data), [checkbox](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox): 포털 화면·클릭 요청을 구성하는 웹 기술.
+18. [RFC 2865](https://www.rfc-editor.org/rfc/rfc2865.html), [RFC 2866](https://www.rfc-editor.org/rfc/rfc2866.html), [RFC 5176](https://www.rfc-editor.org/rfc/rfc5176.html): 선택적인 RADIUS 인증·인가, accounting, 동적 인가.
+19. [RFC 4862](https://www.rfc-editor.org/rfc/rfc4862.html), [RFC 5737](https://www.rfc-editor.org/rfc/rfc5737.html): IPv6 주소 자동 구성과 문서용 IPv4 주소.

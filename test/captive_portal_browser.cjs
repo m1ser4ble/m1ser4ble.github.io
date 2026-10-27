@@ -47,12 +47,30 @@ fs.mkdirSync(output, { recursive: true });
         assert.ok(tables.some(table => table.contentWidth > table.width), 'wide comparisons scroll within their table');
       }
       assert.equal(await root.getAttribute('data-step'), '0');
+      const protocol = root.locator('.cp-protocol');
+      assert.equal(await protocol.count(), 1, 'each stage exposes protocol details');
+      assert.equal(await protocol.evaluate(node => node.open), false, 'protocol details start collapsed');
       await page.waitForTimeout(400);
       assert.equal(await root.getAttribute('data-step'), '0', 'never auto-advance');
       assert.equal(await root.locator('button[data-action="previous"]').isDisabled(), true);
       for (let step = 0; step < 6; step++) {
         assert.equal(await root.getAttribute('data-step'), String(step));
         assert.equal(await root.getAttribute('data-gate'), step === 4 ? 'allowed' : 'limited');
+        await protocol.locator('summary').click();
+        const protocolText = await protocol.locator('code').innerText();
+        const requiredTerms = [
+          ['Authentication Request', 'Association Request', '본인인증'],
+          ['DHCPDISCOVER', 'DHCPACK', 'UDP 68', 'option 114'],
+          ['기존 방식', 'CAPPORT', '302', 'captive=true', '동시에'],
+          ['POST /consents', 'Cookie', 'policy_version', '저장', '예시'],
+          ['ACL', 'captive=false', '쿠키'],
+          ['DHCP', '별개', '만료'],
+        ];
+        for (const term of requiredTerms[step]) assert.ok(protocolText.includes(term), 'step ' + step + ' explains ' + term);
+        assert.ok(await protocol.locator('code').evaluate(node => parseFloat(getComputedStyle(node).fontSize) >= 14), 'protocol text remains readable');
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'expanded protocol does not overflow page');
+        if (step === 3) await protocol.screenshot({ path: path.join(output, `protocol-step-${step}-${width}.png`) });
+        await protocol.locator('summary').click();
         if (step === 4) await page.waitForFunction(() => getComputedStyle(document.querySelector('#captive-portal-lab .cp-status')).color === 'rgb(103, 216, 186)');
         const measurements = await root.evaluate(node => {
           const svg = node.querySelector('svg').getBoundingClientRect();
@@ -114,6 +132,7 @@ fs.mkdirSync(output, { recursive: true });
         assert.equal(await root.locator('.cp-packet').count(), 0, 'motion preference removes travelling packet');
       } else {
         assert.equal(await root.locator('button:visible').count(), 0, 'no dead controls without script');
+        assert.equal(await root.locator('.cp-protocol:visible').count(), 0, 'no empty protocol controls without script');
         assert.ok((await root.innerText()).includes('인터넷 사용 승인'), 'readable fallback');
       }
       await root.screenshot({ path: path.join(output, condition + '.png') });

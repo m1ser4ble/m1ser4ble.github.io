@@ -63,3 +63,28 @@ CAPPORT_SITE_URL=http://127.0.0.1:8872 PLAYWRIGHT_MODULE=/tmp/captive-portal-too
 - `node --check test/captive_portal_browser.cjs`와 Git 공백 검사 통과.
 
 실제 매장망, iOS Safari 실기기, Firefox, 스크린리더 실사용, 유료/과부하/성능 실험은 검증하지 않았다. 로컬 검사와 공개 게시 후 검사는 구별한다.
+
+## 후속 보강: 프로토콜과 동의 데이터의 전달 절차
+
+같은 날 사용자가 패킷·요청 수준의 설명 누락을 지적했다. 기존 구성요소 설명을 보존하면서 신규 Open System/IPv4 접속의 메시지 절차, 발견 경로 분기, 웹 세션·동의 기록·장비 승인 구분을 추가했다. 예시 HTTP/1.1과 DB 필드는 합성한 설계이며 실제 카페 캡처가 아니다.
+
+| 주장 | 실제 읽은 추가 근거 | 상태·조건 |
+|---|---|---|
+| Open System 인증·Association은 IP 설정 전 802.11 관리 프레임 | https://www.cisco.com/c/en/us/support/docs/wireless-mobility/wireless-lan-wlan/116493-technote-technology-00.html Open System/Association | 확인, WPA3 등 전체 인증 방식으로 일반화하지 않음 |
+| DHCP DORA·UDP67/68·초기 REQUEST broadcast·Offer/ACK 조건 | https://www.rfc-editor.org/rfc/rfc2131.html §3.1·§3.2·§4.1 | 확인, 신규 임대 예. 재접속·갱신은 흐름 다름 |
+| yiaddr와 mask/router/DNS/lease 옵션 | https://www.rfc-editor.org/rfc/rfc2132.html §3.3·§3.5·§3.8·§9.2 | 확인, API URI option114는 RFC8910 |
+| ARP로 로컬 다음 홉, DNS로 이름 해석, TCP 연결은 별도 | https://www.rfc-editor.org/rfc/rfc826.html, https://www.rfc-editor.org/rfc/rfc1122.html §3.3.1, https://www.rfc-editor.org/rfc/rfc1035.html §4.2, https://www.rfc-editor.org/rfc/rfc9293.html §3.5 | 확인, 캐시/주소구성/전송에 따라 생략·순서 변화 |
+| HTTP302 Location은 이동 안내이고 OS가 포털 UI 판단 | https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302, Android·Apple 공식 문서, Microsoft NCSI overview | 확인, OS별 probe 정상 응답·UI 차이 |
+| DHCP114→API→user-portal-url, HTTPS API는 인가 명령 아님 | RFC8910 §2, RFC8908 §3–§6 | 확인 |
+| Set-Cookie→후속Cookie, 폼값본문전송과서버파싱 | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies 및 https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data | 확인, POST/경로/필드명은 예시 설계 |
+| unchecked checkbox의 name/value는 일반 폼 제출에서 생략 | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox | 확인 |
+| Meraki가 client_ip/client_mac/base_grant_url 파라미터 추가, grant는 GET | https://developer.cisco.com/meraki/captive-portal-api/click-through-api/ Logic Flow·Splash Page URL·Login URL | 확인, 브라우저 하드웨어 MAC 조회가 아님 |
+| 동의DB 기록·세션 매핑·서버측검증·장비갱신 성공확인·중복방지 | 위 웹/장비 경계를 바탕으로 합성 | 추론/설명용 설계. 실제 매장 스키마·보유기간 미확인 |
+| RADIUS1812/Accounting1813/CoA3799와ACK/NAK | https://www.rfc-editor.org/rfc/rfc2865.html Implementation Note·§4, https://www.rfc-editor.org/rfc/rfc2866.html, https://www.rfc-editor.org/rfc/rfc5176.html §2.2·§2.3 | 확인, 선택 구성이고 모든 포털의 필수 고정 단계 아님 |
+| 이용시간·전송량 속성과 웹 동의 이벤트 구별 | RFC2866 §5.3·§5.4·§5.7 | 확인, 종료 시 보고 예. 실제 매장 수집 목록 아님 |
+| Wireshark 표시 필터·웹개발자도구·백엔드 캡처 위치 구분 | https://www.wireshark.org/docs/dfref/d/dhcp.html, https://www.wireshark.org/docs/dfref/r/radius.html, Cisco 캡처 설명 | 확인/진단 안내, 실제 매장 캡처 미실행 |
+| IPv6 SLAAC/RA는 DHCPv4 DORA와 별도 | https://www.rfc-editor.org/rfc/rfc4862.html | 확인, 본문은 IPv4 예시로 한정 |
+
+추가 출처도 2026-10-27 기준으로 원문을 확인했다. 실제 매장의 동의 저장소·인가 프로토콜·패킷과 현재 노트북 OS의 probe 정책은 확인하지 않았다.
+
+후속 검증에서도 Jekyll 전체 빌드와 실제 렌더 페이지의 320·390·1440px 브라우저 회귀가 통과했다. 새 프로토콜 상세의 기본 닫힘·단계별 메시지 변경·열었을 때 글씨 크기/가로 넘침·JS/CDN 실패를 검사했다. stable anchor `protocol-walkthrough`, HTTP 예시와 11개 접근 가능한 표도 확인했다. 독립 리뷰는 주요 추가 표준·제품 원문과 절차를 대조했고 수정이 필요한 문제를 발견하지 못했다. 새 실제 매장 실험을 수행한 것은 아니다.
