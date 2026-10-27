@@ -1,0 +1,143 @@
+<div id="captive-portal-lab" class="drd-d3-panel" role="group" aria-label="와이파이 연결과 인터넷 사용 승인 단계">
+  <p class="cp-intro">와이파이는 연결돼도 인터넷 사용 승인은 따로 남아 있습니다.<span class="cp-hint" hidden> 다음 버튼으로 기기별 제한이 바뀌는 순간을 확인하세요.</span></p>
+  <div class="cp-controls" hidden>
+    <button type="button" data-action="previous">이전</button>
+    <button type="button" data-action="next">다음</button>
+    <button type="button" data-action="reset">처음</button>
+    <span class="cp-progress"></span>
+  </div>
+  <div class="cp-explanation" aria-live="polite" aria-atomic="true">
+    <p class="cp-title">인터넷 사용 승인까지의 흐름</p>
+    <p class="cp-description">무선 연결 → 제한 상태 확인 → 동의 웹요청 → 장비의 허용 규칙 변경. 세션이 만료되면 다시 제한 상태로 돌아갈 수 있습니다.</p>
+    <p class="cp-status">동의 페이지는 제한 상태에서도 접근하도록 허용합니다.</p>
+  </div>
+  <svg hidden role="img" aria-label="기기, 접속장비, 인터넷과 포털 사이의 연결"></svg>
+  <p class="cp-legend" hidden>실선: 이용 통신 · 파란 점선: 포털 요청과 승인 제어<br>노란색: 제한 중 · 초록색: 인터넷 허용</p>
+  <p class="cp-note">실제 매장 패킷을 캡처한 화면이 아닌 개념 모델입니다. AP와 게이트웨이는 한 상자로, 포털과 상태 API는 한 상자로 묶었습니다.</p>
+</div>
+<style>
+#captive-portal-lab{box-sizing:border-box;max-width:100%;margin:1.5rem 0;padding:20px;border:1px solid #526877;border-radius:12px;background:#172431;color:#eaf4f7;font-family:inherit;overflow-wrap:anywhere}
+#captive-portal-lab *{box-sizing:border-box}
+#captive-portal-lab [hidden]{display:none!important}
+#captive-portal-lab p{margin:0 0 12px;font-size:16px;line-height:1.7}
+#captive-portal-lab .cp-intro{color:#c6d8e2}
+#captive-portal-lab .cp-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}
+#captive-portal-lab button{min-height:44px;min-width:54px;margin:0;padding:8px 14px;border:1px solid #95b5c7;border-radius:6px;background:#244052;color:#f4fbff;font:inherit;font-size:16px;font-weight:600;cursor:pointer}
+#captive-portal-lab button[data-action="next"]{background:#b5e8f4;color:#132733;border-color:#b5e8f4}
+#captive-portal-lab button:disabled{opacity:.45;cursor:default}
+#captive-portal-lab button:focus-visible{outline:3px solid #f6cc78;outline-offset:3px}
+#captive-portal-lab .cp-progress{margin-left:auto;font-size:15px;color:#c6d8e2;font-variant-numeric:tabular-nums}
+#captive-portal-lab .cp-explanation{min-height:165px;padding:14px 0;border-top:1px solid #526877}
+#captive-portal-lab .cp-title{font-size:19px;font-weight:700;line-height:1.5}
+#captive-portal-lab .cp-description{color:#d0dfe7}
+#captive-portal-lab .cp-status{margin-bottom:0;font-size:15px;color:#f6cc78;font-weight:600}
+#captive-portal-lab[data-gate="allowed"] .cp-status{color:#67d8ba}
+#captive-portal-lab svg{display:block;width:100%;height:auto;font-family:inherit;overflow:visible}
+#captive-portal-lab svg text{fill:#eaf4f7;font-size:16px;font-family:inherit}
+#captive-portal-lab svg .cp-node-detail{fill:#c6d8e2;font-size:14px}
+#captive-portal-lab .cp-legend{margin-top:8px;color:#d0dfe7;font-size:14px}
+#captive-portal-lab .cp-note{margin:12px 0 0;color:#b6c8d2;font-size:14px}
+@media(max-width:600px){#captive-portal-lab{padding:14px}#captive-portal-lab .cp-explanation{min-height:215px}#captive-portal-lab button{padding:8px 12px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>
+(function () {
+  const root = document.querySelector('#captive-portal-lab');
+  if (!root || !window.d3) return;
+  const select = selector => root.querySelector(selector);
+  const svg = d3.select(root).select('svg');
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const steps = [
+    ['무선 연결 전', '휴대폰은 아직 매장 네트워크에 연결되지 않았습니다. 비밀번호 없는 네트워크도 우선 AP와의 무선 연결이 필요합니다.', '무선 미연결 · 인터넷 접근 불가'],
+    ['와이파이와 IP 설정 준비', 'AP에 연결하고 IP 설정을 받았습니다. 접속장비는 이 기기를 아직 미승인 상태로 두고, 포털 등 필요한 주소만 허용합니다.', '무선 연결됨 · 인터넷 사용 미승인'],
+    ['운영체제가 포털을 안내', '운영체제가 접속 시험 또는 상태 API로 제한 상태를 확인하고 동의 화면을 엽니다. 포털에 접근할 수 있어도 일반 인터넷은 아직 제한됩니다.', '포털 접근 가능 · 인터넷 사용 미승인'],
+    ['동의 웹요청 전송', '사용자가 버튼을 누르면 포털로 동의 요청을 보냅니다. 클릭 자체로 즉시 모든 통신이 열리는 것은 아니며 서버와 장비의 처리가 남아 있습니다.', '동의 요청 중 · 인터넷 사용 미승인'],
+    ['장비의 승인 규칙 변경', '포털 측 승인 결과가 접속장비에 반영되면 이 기기의 인터넷 접근을 허용합니다. 이후 일반 인터넷 데이터는 포털 웹서버를 거치지 않습니다.', '이 기기의 인터넷 사용 허용'],
+    ['세션 만료 후 다시 제한', '운영자가 정한 승인 유효기간이 끝나면 다시 동의가 필요할 수 있습니다. 무선 연결은 남아 있어도 인터넷 승인 상태는 달라집니다.', '무선 연결됨 · 인터넷 재승인 필요'],
+  ];
+  let step = 0;
+  function render(animate) {
+    const width = Math.floor(select('svg').getBoundingClientRect().width);
+    if (width < 100) return;
+    const mobile = width < 540;
+    const height = mobile ? 430 : 300;
+    const boxWidth = mobile ? width - 60 : Math.min(154, (width - 100) / 3);
+    const boxHeight = 64;
+    const middleX = (width - boxWidth) / 2;
+    const positions = mobile
+      ? [{x:16,y:12},{x:16,y:120},{x:16,y:228},{x:16,y:350}]
+      : [{x:8,y:32},{x:middleX,y:32},{x:width-boxWidth-8,y:32},{x:middleX,y:218}];
+    const [phone, gate, internet, portal] = positions;
+    const center = node => [node.x + boxWidth / 2, node.y + boxHeight / 2];
+    const allowed = step === 4;
+    const active = step > 0;
+    const accent = allowed ? '#67d8ba' : '#f6cc78';
+    root.dataset.step = String(step);
+    root.dataset.gate = allowed ? 'allowed' : 'limited';
+    select('.cp-title').textContent = steps[step][0];
+    select('.cp-description').textContent = steps[step][1];
+    select('.cp-status').textContent = steps[step][2];
+    select('.cp-progress').textContent = (step + 1) + ' / ' + steps.length;
+    select('[data-action="previous"]').disabled = step === 0;
+    select('[data-action="next"]').disabled = step === steps.length - 1;
+    select('[data-action="reset"]').disabled = step === 0;
+    svg.selectAll('*').interrupt().remove();
+    svg.attr('viewBox', '0 0 ' + width + ' ' + height).attr('aria-label', steps[step][0] + '. ' + steps[step][2]);
+    const defs = svg.append('defs');
+    for (const [name, color] of [['data','#95b5c7'],['status',accent],['portal','#73c8e1']]) {
+      defs.append('marker').attr('id','cp-arrow-'+name).attr('viewBox','0 -5 10 10').attr('refX',9).attr('refY',0).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto-start-reverse').append('path').attr('d','M0,-5L10,0L0,5').attr('fill',color);
+    }
+    const dataPath = (from, to) => mobile
+      ? 'M'+center(from)[0]+','+(from.y+boxHeight)+'V'+to.y
+      : 'M'+(from.x+boxWidth)+','+center(from)[1]+'H'+to.x;
+    const wirelessPath = dataPath(phone, gate);
+    const internetPath = dataPath(gate, internet);
+    const portalPath = mobile
+      ? 'M'+(gate.x+boxWidth)+','+center(gate)[1]+'H'+(width-8)+'V'+center(portal)[1]+'H'+(portal.x+boxWidth)
+      : 'M'+center(gate)[0]+','+(gate.y+boxHeight)+'V'+portal.y;
+    const paths = [
+      {name:'wireless',d:wirelessPath,color:active?'#95b5c7':'#526877',dash:active?null:'4 5',marker:'data'},
+      {name:'internet',d:internetPath,color:accent,dash:allowed?null:'5 5',marker:'status'},
+      {name:'portal',d:portalPath,color:'#73c8e1',dash:'3 5',marker:'portal'},
+    ];
+    svg.selectAll('.cp-link').data(paths).join('path').attr('class','cp-link').attr('data-path',d=>d.name).attr('d',d=>d.d).attr('fill','none').attr('stroke',d=>d.color).attr('stroke-width',2).attr('stroke-dasharray',d=>d.dash).attr('marker-start',d=>d.name==='portal'&&step===4?'url(#cp-arrow-portal)':null).attr('marker-end',d=>d.name==='portal'&&step===4?null:'url(#cp-arrow-'+d.marker+')');
+    const labels = [
+      ['휴대폰',active?'와이파이 연결됨':'연결 전'],
+      ['접속장비',allowed?'이 기기 허용':'이 기기 미승인'],
+      ['인터넷',allowed?'일반 통신 가능':'일반 통신 제한'],
+      ['포털·상태 API',active?'제한 중에도 접근':'연결 후 접근'],
+    ];
+    positions.forEach((position,index) => {
+      const group = svg.append('g').attr('class','cp-node').attr('transform','translate('+position.x+','+position.y+')');
+      group.append('rect').attr('width',boxWidth).attr('height',boxHeight).attr('rx',8).attr('fill','#244052').attr('stroke',index===1?accent:'#698b9f').attr('stroke-width',index===1?2:1);
+      group.append('text').attr('x',boxWidth/2).attr('y',25).attr('text-anchor','middle').attr('font-weight',700).text(labels[index][0]);
+      group.append('text').attr('class','cp-node-detail').attr('x',boxWidth/2).attr('y',47).attr('text-anchor','middle').text(labels[index][1]);
+    });
+    if (!allowed) {
+      const p = mobile ? [center(gate)[0],gate.y+boxHeight+22] : [gate.x+boxWidth+(internet.x-gate.x-boxWidth)/2,center(gate)[1]];
+      svg.append('circle').attr('cx',p[0]).attr('cy',p[1]).attr('r',11).attr('fill','#172431').attr('stroke',accent).attr('stroke-width',2);
+      svg.append('path').attr('d','M'+(p[0]-5)+','+(p[1]-5)+'L'+(p[0]+5)+','+(p[1]+5)+'M'+(p[0]+5)+','+(p[1]-5)+'L'+(p[0]-5)+','+(p[1]+5)).attr('stroke',accent).attr('stroke-width',2);
+    }
+    if (animate && !motion.matches && step > 0 && step < 5) {
+      const path = svg.select('[data-path="'+(step===2||step===3||step===4?'portal':'wireless')+'"]').node();
+      const length = path.getTotalLength();
+      svg.append('circle').attr('class','cp-packet').attr('r',5).attr('fill',step===4?'#67d8ba':'#eaf4f7').transition().duration(300).ease(d3.easeLinear).attrTween('transform',()=>t=>{
+        const point = path.getPointAtLength((step===4?1-t:t)*length);
+        return 'translate('+point.x+','+point.y+')';
+      }).remove();
+    }
+  }
+  select('svg').removeAttribute('hidden');
+  select('.cp-hint').hidden = false;
+  select('.cp-controls').hidden = false;
+  select('.cp-legend').hidden = false;
+  root.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+    const action = button.dataset.action;
+    step = action === 'reset' ? 0 : Math.max(0, Math.min(steps.length - 1, step + (action === 'next' ? 1 : -1)));
+    render(action === 'next');
+  }));
+  new ResizeObserver(() => render(false)).observe(select('svg'));
+  motion.addEventListener('change', () => render(false));
+  render(false);
+})();
+</script>
